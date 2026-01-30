@@ -110,7 +110,9 @@ jobs:
 
       - name: Publish to npm
         if: steps.check_version.outputs.is_higher == 'true'
-        run: npm publish --access public
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Skip publish - version not higher
         if: steps.check_version.outputs.is_higher != 'true'
