@@ -1,11 +1,12 @@
 # Yggdrasil MCP - CI and npm Publishing
-# Runs tests on all pushes, publishes to npm on main branch when version increases
+# Runs tests on all pushes, publishes to npm only on version tags (v*)
 
 name: Yggdrasil MCP CI
 
 on:
   push:
     branches: ['**']
+    tags: ['v*'] # Trigger on version tags for npm publish
   pull_request:
     branches: ['**']
 
@@ -51,12 +52,13 @@ jobs:
   publish:
     name: Publish to npm
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Only publish on version tags (v*)
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      id-token: write # Required for npm OIDC provenance
+      id-token: write # Required for npm OIDC authentication
 
     steps:
       - name: Checkout code
@@ -67,9 +69,6 @@ jobs:
         with:
           node-version: 22.x
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Update npm to latest (required for OIDC ≥11.5.1)
-        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: |
@@ -83,37 +82,24 @@ jobs:
       - name: Set executable permissions
         run: chmod +x dist/*.js
 
-      - name: Check version and determine if publish is needed
-        id: check_version
+      - name: Verify tag matches package.json version
         run: |
-          # Get current version from package.json
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Current version in package.json: $CURRENT_VERSION"
+          # Extract version from tag (remove 'v' prefix)
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Tag version: $TAG_VERSION"
 
-          # Get latest version from npm (if it exists)
-          if LATEST_VERSION=$(npm view yggdrasil-mcp version 2>/dev/null); then
-            echo "Latest published version: $LATEST_VERSION"
+          # Get version from package.json
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "Package.json version: $PACKAGE_VERSION"
 
-            # Compare versions using node
-            IS_HIGHER=$(node -e "const semver = require('semver'); console.log(semver.gt('$CURRENT_VERSION', '$LATEST_VERSION') ? 'true' : 'false')")
-            echo "is_higher=$IS_HIGHER" >> $GITHUB_OUTPUT
-
-            if [ "$IS_HIGHER" = "true" ]; then
-              echo "Current version is higher than latest published version. Proceeding with publish."
-            else
-              echo "Current version is not higher than latest published version. Skipping publish."
-            fi
-          else
-            echo "No published version found. This appears to be the first publish."
-            echo "is_higher=true" >> $GITHUB_OUTPUT
+          # Verify they match
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
           fi
+          echo "✅ Tag version matches package.json version"
 
       - name: Publish to npm
-        if: steps.check_version.outputs.is_higher == 'true'
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Skip publish - version not higher
-        if: steps.check_version.outputs.is_higher != 'true'
-        run: echo "✅ Build successful but publish skipped - current version is not higher than the latest published version."
+        # Uses OIDC authentication via setup-node + id-token permission
+        # No NPM_TOKEN secret needed, no --provenance (requires public repo)
+        run: npm publish --access public
