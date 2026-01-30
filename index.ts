@@ -4,6 +4,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 
+import {
+  booleanSchema,
+  numberSchema,
+  optionalBooleanSchema,
+  optionalNumberSchema,
+} from './coercion.js';
 import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
@@ -12,45 +18,6 @@ const server = new McpServer({
 });
 
 const thinkingServer = new SequentialThinkingServer();
-
-// Helper functions for safe string coercion (fixes Claude Code string serialization bug #3084)
-// See: https://github.com/anthropics/claude-code/issues/3084
-const coerceBoolean = (val: unknown): boolean => {
-  if (typeof val === 'boolean') return val;
-  if (typeof val === 'string') {
-    const lower = val.toLowerCase();
-    if (lower === 'true') return true;
-    if (lower === 'false') return false;
-  }
-  throw new Error(`Cannot coerce "${String(val)}" to boolean`);
-};
-
-const coerceNumber = (val: unknown): number => {
-  if (typeof val === 'number') return val;
-  if (typeof val === 'string' && val.trim() !== '') {
-    const num = Number(val);
-    if (!Number.isNaN(num)) return num;
-  }
-  throw new Error(`Cannot coerce "${String(val)}" to number`);
-};
-
-// Zod schemas with safe preprocess coercion
-const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
-const numberSchema = z.preprocess(coerceNumber, z.number().int().min(1));
-// Optional schemas: .optional() MUST be OUTSIDE z.preprocess() for JSON Schema detection
-// See: https://github.com/modelcontextprotocol/servers - Anthropic's original schema
-const optionalBooleanSchema = z
-  .preprocess(
-    (val) => (val === undefined || val === null ? undefined : coerceBoolean(val)),
-    z.boolean()
-  )
-  .optional();
-const optionalNumberSchema = z
-  .preprocess(
-    (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
-    z.number().int().min(1)
-  )
-  .optional();
 
 server.registerTool(
   'sequentialthinking',

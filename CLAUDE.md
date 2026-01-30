@@ -241,11 +241,12 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ### Test Coverage
 
-| File       | Coverage              |
-| ---------- | --------------------- |
-| lib.ts     | ~97%                  |
-| index.ts   | 0% (MCP server setup) |
-| **Target** | 80%+ overall          |
+| File        | Coverage                          |
+| ----------- | --------------------------------- |
+| coercion.ts | 100%                              |
+| lib.ts      | ~97%                              |
+| index.ts    | Excluded (MCP server bootstrap)   |
+| **Target**  | **90%+ overall** (enforced in CI) |
 
 ## Version Policy
 
@@ -267,98 +268,38 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ### v0.7.0 (2026-01-31)
 
-**Full Lint Skill Compliance**
+**Full Lint Skill Compliance + Test Infrastructure**
 
 **New Features:**
 
 - Full lint skill compliance with 6 additional ESLint plugins
 - Strict TypeScript checking (strictTypeChecked + stylisticTypeChecked)
+- 90% test coverage threshold enforced in CI
+- Extracted `coercion.ts` module with comprehensive test suite (23 tests)
 - Node 24.x added to CI test matrix
 
 **Technical Changes:**
 
+- `coercion.ts`: Extracted coercion helpers into testable module
 - `eslint.config.js`: Full plugin stack (stylistic, import, unicorn, sonarjs, promise, n)
 - `tsconfig.eslint.json`: Separate tsconfig for linting (includes test files)
-- `.prettierignore`: Added ignore patterns for build outputs
-- `package.json`: Added `engines: >=18`, `check` script, `--max-warnings=0`
+- `vitest.config.ts`: Ironclad-compliant config with 90% thresholds, reporters, timeouts
+- `package.json`: TypeScript ^5.7.0, `engines: >=18`, `check` script
 - `.github/workflows/ci-publish.yml`: Node matrix expanded to 20.x, 22.x, 24.x
 
-**Code Fixes:**
+**Code Quality:**
 
-- `index.ts`: Top-level await, typed catch callback, `String()` for unknown in templates
-- `lib.ts`: Nullish coalescing (`??`), `in` operator for key existence check
-
-**Files Changed:** 13 files
-
----
-
-### v0.6.4 (2026-01-31)
-
-**Node Engines Field**
-
-**Maintenance:**
-
-- Added `engines: { "node": ">=18" }` to match MCP SDK requirement
+- 37 tests total (14 lib.ts + 23 coercion.ts)
+- 98%+ coverage across all metrics
+- All strict TypeScript and ESLint rules passing
 
 ---
 
 ### v0.6.3 (2026-01-30)
 
-**TypeScript Ironclad Stack**
+**Initial Fork Release** — First published version to npm
 
-**New Features:**
-
-- ESLint 9.x flat config with typescript-eslint
-- Prettier 3.x formatting
-- Husky + lint-staged pre-commit hooks
-- Vitest 4.x (upgraded from 2.x, fixes esbuild vulnerability GHSA-67mh-4wv8-2f99)
-
-**CI/CD:**
-
-- Lint and typecheck steps added to GitHub Actions
-- CI fails on lint errors
-
-**Technical Changes:**
-
-- `eslint.config.js`: ESLint 9 flat config
-- `.prettierrc`: Prettier configuration
-- `.husky/pre-commit`: lint-staged hook
-- `vitest.config.ts`: Vitest 4.x configuration
-
----
-
-### v0.6.2 (2026-01-30)
-
-**GitHub Actions & npm Publishing**
-
-**New Features:**
-
-- GitHub Actions CI/CD pipeline (`ci-publish.yml`)
-- Automated npm publishing via OIDC (no token required)
-- Version comparison before publish (only publishes if version > published)
-- Dependabot weekly dependency updates
-
-**Documentation:**
-
-- Added CLAUDE.md with upstream monitoring protocol
-- Added TODO.md with P2 test coverage task
-
----
-
-### v0.6.1 (2026-01-30)
-
-**Build Fixes**
-
-**Bug Fixes:**
-
-- Added `zod` as direct dependency (was missing, causing CI build failure)
-- Removed NPM_TOKEN from CI (OIDC handles authentication)
-
----
-
-### v0.6.0 (2026-01-30)
-
-**String Coercion Fix**
+Forked from `@modelcontextprotocol/server-sequential-thinking` v0.6.2 with critical fixes:
 
 **Critical Bug Fix:**
 
@@ -366,21 +307,19 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 - Implemented safe `z.preprocess` coercion for boolean and number types
 - `"false"` now correctly converts to `false` (was `true` with `z.coerce`)
 
+**Infrastructure:**
+
+- GitHub Actions CI/CD pipeline with OIDC npm publishing
+- ESLint 9.x flat config with typescript-eslint
+- Prettier 3.x formatting with pre-commit hooks (Husky + lint-staged)
+- Vitest 4.x test framework (fixes esbuild vulnerability GHSA-67mh-4wv8-2f99)
+- Dependabot weekly dependency updates
+
 **Technical:**
 
 - `coerceBoolean()` and `coerceNumber()` helper functions
 - `booleanSchema`, `numberSchema` with `z.preprocess`
 - `optionalBooleanSchema`, `optionalNumberSchema` with `.optional()` outside preprocess
-
----
-
-### v0.5.0 (2026-01-30)
-
-**Initial Fork**
-
-- Forked from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
-- Initial project setup with pnpm
-- Basic test suite
 
 ## Roadmap
 

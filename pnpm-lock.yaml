@@ -76,7 +76,7 @@ importers:
         specifier: ^0.3.4
         version: 0.3.4
       typescript:
-        specifier: ^5.3.3
+        specifier: ^5.7.0
         version: 5.9.3
       typescript-eslint:
         specifier: ^8.54.0
