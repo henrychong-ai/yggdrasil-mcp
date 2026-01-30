@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { z } from 'zod';
 import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
-  name: "sequential-thinking-server",
-  version: "0.2.1",
+  name: 'sequential-thinking-server',
+  version: '0.2.1',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -15,18 +15,18 @@ const thinkingServer = new SequentialThinkingServer();
 // Helper functions for safe string coercion (fixes Claude Code string serialization bug #3084)
 // See: https://github.com/anthropics/claude-code/issues/3084
 const coerceBoolean = (val: unknown): boolean => {
-  if (typeof val === "boolean") return val;
-  if (typeof val === "string") {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
     const lower = val.toLowerCase();
-    if (lower === "true") return true;
-    if (lower === "false") return false;
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
   }
   throw new Error(`Cannot coerce "${val}" to boolean`);
 };
 
 const coerceNumber = (val: unknown): number => {
-  if (typeof val === "number") return val;
-  if (typeof val === "string" && val.trim() !== "") {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string' && val.trim() !== '') {
     const num = Number(val);
     if (!Number.isNaN(num)) return num;
   }
@@ -46,9 +46,9 @@ const optionalNumberSchema = z.preprocess(
 );
 
 server.registerTool(
-  "sequentialthinking",
+  'sequentialthinking',
   {
-    title: "Sequential Thinking",
+    title: 'Sequential Thinking',
     description: `A detailed tool for dynamic and reflective problem-solving through thoughts.
 This tool helps analyze problems through a flexible thinking process that can adapt and evolve.
 Each thought can build on, question, or revise previous insights as understanding deepens.
@@ -104,22 +104,24 @@ You should:
 10. Provide a single, ideally correct answer as the final output
 11. Only set nextThoughtNeeded to false when truly done and a satisfactory answer is reached`,
     inputSchema: {
-      thought: z.string().describe("Your current thinking step"),
-      nextThoughtNeeded: booleanSchema.describe("Whether another thought step is needed"),
-      thoughtNumber: numberSchema.describe("Current thought number (numeric value, e.g., 1, 2, 3)"),
-      totalThoughts: numberSchema.describe("Estimated total thoughts needed (numeric value, e.g., 5, 10)"),
-      isRevision: optionalBooleanSchema.describe("Whether this revises previous thinking"),
-      revisesThought: optionalNumberSchema.describe("Which thought is being reconsidered"),
-      branchFromThought: optionalNumberSchema.describe("Branching point thought number"),
-      branchId: z.string().optional().describe("Branch identifier"),
-      needsMoreThoughts: optionalBooleanSchema.describe("If more thoughts are needed")
+      thought: z.string().describe('Your current thinking step'),
+      nextThoughtNeeded: booleanSchema.describe('Whether another thought step is needed'),
+      thoughtNumber: numberSchema.describe('Current thought number (numeric value, e.g., 1, 2, 3)'),
+      totalThoughts: numberSchema.describe(
+        'Estimated total thoughts needed (numeric value, e.g., 5, 10)'
+      ),
+      isRevision: optionalBooleanSchema.describe('Whether this revises previous thinking'),
+      revisesThought: optionalNumberSchema.describe('Which thought is being reconsidered'),
+      branchFromThought: optionalNumberSchema.describe('Branching point thought number'),
+      branchId: z.string().optional().describe('Branch identifier'),
+      needsMoreThoughts: optionalBooleanSchema.describe('If more thoughts are needed'),
     },
     outputSchema: {
       thoughtNumber: z.number(),
       totalThoughts: z.number(),
       nextThoughtNeeded: z.boolean(),
       branches: z.array(z.string()),
-      thoughtHistoryLength: z.number()
+      thoughtHistoryLength: z.number(),
     },
   },
   async (args) => {
@@ -134,7 +136,7 @@ You should:
 
     return {
       content: result.content,
-      structuredContent: parsedContent
+      structuredContent: parsedContent,
     };
   }
 );
@@ -142,10 +144,10 @@ You should:
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Sequential Thinking MCP Server running on stdio");
+  console.error('Sequential Thinking MCP Server running on stdio');
 }
 
 runServer().catch((error) => {
-  console.error("Fatal error running server:", error);
+  console.error('Fatal error running server:', error);
   process.exit(1);
 });

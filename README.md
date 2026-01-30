@@ -1,18 +1,70 @@
-# Sequential Thinking MCP Server
+# Yggdrasil MCP
 
-An MCP server implementation that provides a tool for dynamic and reflective problem-solving through a structured thinking process.
+**Reasoning orchestration framework** - Tree of Thoughts with multi-agent evaluation.
 
-## Features
+A fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an ambitious roadmap for advanced reasoning capabilities.
 
+## Why Yggdrasil?
+
+In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP embodies that metaphor:
+- **Branches** = Different reasoning paths through possibility space
+- **Roots** = Deep foundational analysis (first principles)
+- **Connections** = Links between thoughts, revisions, and evaluations
+
+## Key Features
+
+### Current (v0.6.x)
+- **String coercion fix** - Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
 - Break down complex problems into manageable steps
 - Revise and refine thoughts as understanding deepens
 - Branch into alternative paths of reasoning
 - Adjust the total number of thoughts dynamically
 - Generate and verify solution hypotheses
 
+### Roadmap
+See [plans/yggdrasil-roadmap.md](plans/yggdrasil-roadmap.md) for the full 5-phase roadmap including:
+- Thought history retrieval and persistence (JSONL)
+- Mermaid diagram export
+- Branch evaluation with multi-agent support
+- Codex/GPT-5.2 cross-model verification
+- n8n workflow integration
+
+## Installation
+
+### Claude Code
+
+```bash
+claude mcp add --scope user yggdrasil "npx -y yggdrasil-mcp"
+```
+
+Or run from local build:
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "node",
+      "args": ["/path/to/yggdrasil-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "npx",
+      "args": ["-y", "yggdrasil-mcp"]
+    }
+  }
+}
+```
+
 ## Tool
 
-### sequential_thinking
+### sequentialthinking
 
 Facilitates a detailed, step-by-step thinking process for problem-solving and analysis.
 
@@ -29,7 +81,7 @@ Facilitates a detailed, step-by-step thinking process for problem-solving and an
 
 ## Usage
 
-The Sequential Thinking tool is designed for:
+Yggdrasil is designed for:
 - Breaking down complex problems into steps
 - Planning and design with room for revision
 - Analysis that might need course correction
@@ -39,117 +91,51 @@ The Sequential Thinking tool is designed for:
 
 ## Configuration
 
-### Usage with Claude Desktop
+### Environment Variables
 
-Add this to your `claude_desktop_config.json`:
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DISABLE_THOUGHT_LOGGING` | `false` | Suppress stderr thought output |
 
-#### npx
-
-```json
-{
-  "mcpServers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    }
-  }
-}
-```
-
-#### docker
-
-```json
-{
-  "mcpServers": {
-    "sequentialthinking": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "mcp/sequentialthinking"
-      ]
-    }
-  }
-}
-```
-
-To disable logging of thought information set env var: `DISABLE_THOUGHT_LOGGING` to `true`.
-Comment
-
-### Usage with VS Code
-
-For quick installation, click one of the installation buttons below...
-
-[![Install with NPX in VS Code](https://img.shields.io/badge/VS_Code-NPM-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=sequentialthinking&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40modelcontextprotocol%2Fserver-sequential-thinking%22%5D%7D) [![Install with NPX in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-NPM-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=sequentialthinking&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40modelcontextprotocol%2Fserver-sequential-thinking%22%5D%7D&quality=insiders)
-
-[![Install with Docker in VS Code](https://img.shields.io/badge/VS_Code-Docker-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=sequentialthinking&config=%7B%22command%22%3A%22docker%22%2C%22args%22%3A%5B%22run%22%2C%22--rm%22%2C%22-i%22%2C%22mcp%2Fsequentialthinking%22%5D%7D) [![Install with Docker in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Docker-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=sequentialthinking&config=%7B%22command%22%3A%22docker%22%2C%22args%22%3A%5B%22run%22%2C%22--rm%22%2C%22-i%22%2C%22mcp%2Fsequentialthinking%22%5D%7D&quality=insiders)
-
-For manual installation, you can configure the MCP server using one of these methods:
-
-**Method 1: User Configuration (Recommended)**
-Add the configuration to your user-level MCP configuration file. Open the Command Palette (`Ctrl + Shift + P`) and run `MCP: Open User Configuration`. This will open your user `mcp.json` file where you can add the server configuration.
-
-**Method 2: Workspace Configuration**
-Alternatively, you can add the configuration to a file called `.vscode/mcp.json` in your workspace. This will allow you to share the configuration with others.
-
-> For more details about MCP configuration in VS Code, see the [official VS Code MCP documentation](https://code.visualstudio.com/docs/copilot/customization/mcp-servers).
-
-For NPX installation:
-
-```json
-{
-  "servers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    }
-  }
-}
-```
-
-For Docker installation:
-
-```json
-{
-  "servers": {
-    "sequential-thinking": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "mcp/sequentialthinking"
-      ]
-    }
-  }
-}
-```
-
-### Usage with Codex CLI
-
-Run the following:
-
-#### npx
+## Development
 
 ```bash
-codex mcp add sequential-thinking npx -y @modelcontextprotocol/server-sequential-thinking
+# Install dependencies
+pnpm install
+
+# Build
+pnpm build
+
+# Test
+pnpm test
+
+# Watch mode
+pnpm watch
 ```
 
-## Building
+## String Coercion Fix
 
-Docker:
+The critical fix in this fork addresses Claude Code bug #3084 where MCP parameters are serialized as strings regardless of schema type. We use safe `z.preprocess` coercion instead of `z.coerce`:
 
-```bash
-docker build -t mcp/sequentialthinking -f src/sequentialthinking/Dockerfile .
+```typescript
+// z.coerce.boolean() is DANGEROUS - treats "false" as truthy!
+// Our safe implementation:
+const coerceBoolean = (val: unknown): boolean => {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") {
+    if (val.toLowerCase() === "true") return true;
+    if (val.toLowerCase() === "false") return false;
+  }
+  throw new Error(`Cannot coerce "${val}" to boolean`);
+};
 ```
+
+## Upstream
+
+This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking).
+
+We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
 ## License
 
-This MCP server is licensed under the MIT License. This means you are free to use, modify, and distribute the software, subject to the terms and conditions of the MIT License. For more details, please see the LICENSE file in the project repository.
+MIT License - see LICENSE file for details.
