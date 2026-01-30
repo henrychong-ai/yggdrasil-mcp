@@ -100,6 +100,7 @@ jobs:
           echo "✅ Tag version matches package.json version"
 
       - name: Publish to npm
-        # Uses OIDC authentication via setup-node + id-token permission
-        # No NPM_TOKEN secret needed, no --provenance (requires public repo)
+        # Unscoped packages require NPM_TOKEN (OIDC only works for scoped @org/pkg)
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
