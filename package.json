@@ -35,9 +35,25 @@
   ],
   "scripts": {
     "build": "shx rm -rf dist && tsc && shx chmod +x dist/*.js",
-    "prepare": "npm run build",
+    "prepare": "husky",
     "watch": "tsc --watch",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "fix": "pnpm lint:fix && pnpm format",
+    "typecheck": "tsc --noEmit"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
@@ -46,12 +62,20 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^22",
     "@types/yargs": "^17.0.32",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vitest": "^0.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "semver": "^7.7.3",
     "shx": "^0.3.4",
     "typescript": "^5.3.3",
-    "vitest": "^2.1.8"
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^4.0.18"
   }
 }

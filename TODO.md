@@ -2,43 +2,23 @@
 
 ## P1 - High Priority
 
-### Implement Full Ironclad Stack (Lint, Test, Coverage)
-**Status**: Pending
-**Created**: 2025-01-30
-
-Implement comprehensive code quality infrastructure matching mcp-neo4j-knowledge-graph standards.
-
-**Linting:**
-- [ ] ESLint with typescript-eslint
-- [ ] Prettier for formatting
-- [ ] eslint-config-prettier to avoid conflicts
-- [ ] Add `lint`, `lint:fix`, `format`, `fix` scripts
-
-**Testing:**
-- [ ] Expand vitest test coverage
-- [ ] Add unit tests for string coercion logic
-- [ ] Add integration tests for MCP tool registration
-- [ ] Target: 80%+ coverage
-
-**Git Hooks:**
-- [ ] Husky for git hooks
-- [ ] lint-staged for pre-commit checks
-- [ ] Run lint + format on staged files
-
-**CI Integration:**
-- [ ] Add lint step to GitHub Actions workflow
-- [ ] Fail CI on lint errors
-- [ ] Add coverage reporting
-
-**Reference:** See `mcp-neo4j-knowledge-graph` repo for implementation patterns.
-
----
+*None currently*
 
 ---
 
 ## P2 - Medium Priority
 
-*None yet*
+### Expand Test Coverage to 80%+
+**Status**: Pending
+**Created**: 2025-01-30
+
+Current coverage: ~46% (lib.ts: 97%, index.ts: 0%)
+
+**Tasks:**
+- [ ] Add unit tests for index.ts MCP server setup
+- [ ] Add integration tests for MCP tool registration
+- [ ] Add tests for string coercion edge cases
+- [ ] Target: 80%+ overall coverage
 
 ---
 
@@ -49,6 +29,36 @@ Implement comprehensive code quality infrastructure matching mcp-neo4j-knowledge
 ---
 
 ## Completed
+
+### Implement Full Ironclad Stack
+**Status**: ✅ Completed
+**Created**: 2025-01-30
+**Completed**: 2025-01-30
+
+Implemented TypeScript ironclad stack with:
+
+**Linting:**
+- ✅ ESLint 9.x with flat config (`eslint.config.js`)
+- ✅ typescript-eslint 8.x
+- ✅ Prettier 3.x
+- ✅ eslint-config-prettier
+- ✅ eslint-plugin-vitest for test files
+- ✅ Scripts: `lint`, `lint:fix`, `format`, `format:check`, `fix`, `typecheck`
+
+**Testing:**
+- ✅ Vitest 4.0.18 (upgraded from 2.1.8)
+- ✅ @vitest/coverage-v8 4.0.18
+- ✅ Fixed esbuild security vulnerability (GHSA-67mh-4wv8-2f99)
+
+**Git Hooks:**
+- ✅ Husky 9.x
+- ✅ lint-staged 16.x
+- ✅ Pre-commit: runs eslint --fix and prettier --write on staged .ts files
+
+**CI Integration:**
+- ✅ Lint step added to GitHub Actions
+- ✅ Type check step added
+- ✅ CI fails on lint errors
 
 ### Initial npm Publish
 **Status**: ✅ Completed

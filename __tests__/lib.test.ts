@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SequentialThinkingServer, ThoughtData } from '../lib.js';
+import { SequentialThinkingServer } from '../lib.js';
 
 // Mock chalk to avoid ESM issues
 vi.mock('chalk', () => {
@@ -31,7 +31,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'This is my first thought',
         thoughtNumber: 1,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const result = server.processThought(input);
@@ -52,7 +52,7 @@ describe('SequentialThinkingServer', () => {
         nextThoughtNeeded: true,
         isRevision: true,
         revisesThought: 1,
-        needsMoreThoughts: false
+        needsMoreThoughts: false,
       };
 
       const result = server.processThought(input);
@@ -68,21 +68,21 @@ describe('SequentialThinkingServer', () => {
         thought: 'First thought',
         thoughtNumber: 1,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const input2 = {
         thought: 'Second thought',
         thoughtNumber: 2,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const input3 = {
         thought: 'Final thought',
         thoughtNumber: 3,
         totalThoughts: 3,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       server.processThought(input1);
@@ -99,7 +99,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Thought 5',
         thoughtNumber: 5,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const result = server.processThought(input);
@@ -115,7 +115,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Main thought',
         thoughtNumber: 1,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const input2 = {
@@ -124,7 +124,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 3,
         nextThoughtNeeded: true,
         branchFromThought: 1,
-        branchId: 'branch-a'
+        branchId: 'branch-a',
       };
 
       const input3 = {
@@ -133,7 +133,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 3,
         nextThoughtNeeded: false,
         branchFromThought: 1,
-        branchId: 'branch-b'
+        branchId: 'branch-b',
       };
 
       server.processThought(input1);
@@ -154,7 +154,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 2,
         nextThoughtNeeded: true,
         branchFromThought: 1,
-        branchId: 'branch-a'
+        branchId: 'branch-a',
       };
 
       const input2 = {
@@ -163,7 +163,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 2,
         nextThoughtNeeded: false,
         branchFromThought: 1,
-        branchId: 'branch-a'
+        branchId: 'branch-a',
       };
 
       server.processThought(input1);
@@ -181,7 +181,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'a'.repeat(10000),
         thoughtNumber: 1,
         totalThoughts: 1,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       const result = server.processThought(input);
@@ -193,7 +193,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Only thought',
         thoughtNumber: 1,
         totalThoughts: 1,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       const result = server.processThought(input);
@@ -209,7 +209,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Final thought',
         thoughtNumber: 3,
         totalThoughts: 3,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       const result = server.processThought(input);
@@ -225,7 +225,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Test thought',
         thoughtNumber: 1,
         totalThoughts: 1,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       const result = server.processThought(input);
@@ -242,7 +242,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Test thought',
         thoughtNumber: 1,
         totalThoughts: 1,
-        nextThoughtNeeded: false
+        nextThoughtNeeded: false,
       };
 
       const result = server.processThought(input);
@@ -270,7 +270,7 @@ describe('SequentialThinkingServer', () => {
         thought: 'Test thought with logging',
         thoughtNumber: 1,
         totalThoughts: 3,
-        nextThoughtNeeded: true
+        nextThoughtNeeded: true,
       };
 
       const result = serverWithLogging.processThought(input);
@@ -284,7 +284,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 3,
         nextThoughtNeeded: true,
         isRevision: true,
-        revisesThought: 1
+        revisesThought: 1,
       };
 
       const result = serverWithLogging.processThought(input);
@@ -298,7 +298,7 @@ describe('SequentialThinkingServer', () => {
         totalThoughts: 3,
         nextThoughtNeeded: false,
         branchFromThought: 1,
-        branchId: 'branch-a'
+        branchId: 'branch-a',
       };
 
       const result = serverWithLogging.processThought(input);
