@@ -9,14 +9,14 @@
 
 ## Current State
 
-| Aspect | Status |
-|--------|--------|
-| Core tool | `sequentialthinking` with branching/revision |
-| String coercion | Fixed (our contribution) |
-| State | In-memory only, lost on restart |
-| Retrieval | Cannot query past thoughts |
-| Tools | Single tool only |
-| Metadata | Basic fields only |
+| Aspect          | Status                                       |
+| --------------- | -------------------------------------------- |
+| Core tool       | `sequentialthinking` with branching/revision |
+| String coercion | Fixed (our contribution)                     |
+| State           | In-memory only, lost on restart              |
+| Retrieval       | Cannot query past thoughts                   |
+| Tools           | Single tool only                             |
+| Metadata        | Basic fields only                            |
 
 ---
 
@@ -24,23 +24,23 @@
 
 ### 1. New Tools (High Priority)
 
-| Tool | Purpose | Effort |
-|------|---------|--------|
-| `get_thought_history` | Retrieve all thoughts in session | Low |
-| `get_thought` | Get specific thought by number | Low |
-| `get_branch` | Get all thoughts in a branch | Low |
-| `summarize_thinking` | Generate summary of thought chain | Medium |
-| `clear_session` | Reset state for new problem | Low |
-| `compare_branches` | Compare outcomes of different branches | Medium |
+| Tool                  | Purpose                                | Effort |
+| --------------------- | -------------------------------------- | ------ |
+| `get_thought_history` | Retrieve all thoughts in session       | Low    |
+| `get_thought`         | Get specific thought by number         | Low    |
+| `get_branch`          | Get all thoughts in a branch           | Low    |
+| `summarize_thinking`  | Generate summary of thought chain      | Medium |
+| `clear_session`       | Reset state for new problem            | Low    |
+| `compare_branches`    | Compare outcomes of different branches | Medium |
 
 ### 2. Enhanced Metadata
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `timestamp` | ISO string | When thought was created |
-| `tags` | string[] | Categorize: "hypothesis", "evidence", "conclusion", "question" |
-| `confidence` | 0-1 float | Express certainty level |
-| `sessionId` | string | Group related thought chains |
+| Field        | Type       | Purpose                                                        |
+| ------------ | ---------- | -------------------------------------------------------------- |
+| `timestamp`  | ISO string | When thought was created                                       |
+| `tags`       | string[]   | Categorize: "hypothesis", "evidence", "conclusion", "question" |
+| `confidence` | 0-1 float  | Express certainty level                                        |
+| `sessionId`  | string     | Group related thought chains                                   |
 
 ### 3. Persistence Layer
 
@@ -55,22 +55,22 @@ Options:
 
 ### 4. Output Formats
 
-| Format | Use Case |
-|--------|----------|
-| JSON | Default, programmatic |
-| Markdown | Human-readable summary |
-| Mermaid | Visual flowchart of thought progression |
-| Tree | ASCII tree view of branches |
+| Format   | Use Case                                |
+| -------- | --------------------------------------- |
+| JSON     | Default, programmatic                   |
+| Markdown | Human-readable summary                  |
+| Mermaid  | Visual flowchart of thought progression |
+| Tree     | ASCII tree view of branches             |
 
 ### 5. Thinking Frameworks
 
-| Framework | Structure |
-|-----------|-----------|
-| `first-principles` | Assumptions → Fundamentals → Build up |
-| `5-whys` | Problem → Why? (×5) → Root cause |
-| `hypothesis-testing` | Hypothesis → Evidence → Test → Conclude |
-| `pros-cons` | Option → Pros → Cons → Weigh → Decide |
-| `design-thinking` | Empathize → Define → Ideate → Prototype → Test |
+| Framework            | Structure                                      |
+| -------------------- | ---------------------------------------------- |
+| `first-principles`   | Assumptions → Fundamentals → Build up          |
+| `5-whys`             | Problem → Why? (×5) → Root cause               |
+| `hypothesis-testing` | Hypothesis → Evidence → Test → Conclude        |
+| `pros-cons`          | Option → Pros → Cons → Weigh → Decide          |
+| `design-thinking`    | Empathize → Define → Ideate → Prototype → Test |
 
 ### 6. Validation & Quality
 
@@ -85,42 +85,42 @@ Options:
 
 #### Architecture Options
 
-| Approach | Independence | Latency | Best For |
-|----------|--------------|---------|----------|
-| **MCP Self-Eval** | None (same context) | Minimal | Quick validation |
-| **Claude Task Tool** | High (isolated agent) | Moderate | Deep analysis |
-| **Codex Integration** | Very High (GPT-5.2) | Higher | Cross-model verification |
-| **n8n Orchestration** | Configurable | Variable | Complex pipelines |
+| Approach              | Independence          | Latency  | Best For                 |
+| --------------------- | --------------------- | -------- | ------------------------ |
+| **MCP Self-Eval**     | None (same context)   | Minimal  | Quick validation         |
+| **Claude Task Tool**  | High (isolated agent) | Moderate | Deep analysis            |
+| **Codex Integration** | Very High (GPT-5.2)   | Higher   | Cross-model verification |
+| **n8n Orchestration** | Configurable          | Variable | Complex pipelines        |
 
 #### New Tools for Evaluation
 
-| Tool | Purpose | Effort |
-|------|---------|--------|
-| `evaluate_branch` | Score a branch on multiple criteria | Medium |
-| `compare_branches` | Side-by-side comparison with recommendation | Medium |
-| `spawn_evaluator` | Trigger external evaluation (Codex/Task) | High |
-| `aggregate_evaluations` | Combine multiple evaluator scores | Medium |
+| Tool                    | Purpose                                     | Effort |
+| ----------------------- | ------------------------------------------- | ------ |
+| `evaluate_branch`       | Score a branch on multiple criteria         | Medium |
+| `compare_branches`      | Side-by-side comparison with recommendation | Medium |
+| `spawn_evaluator`       | Trigger external evaluation (Codex/Task)    | High   |
+| `aggregate_evaluations` | Combine multiple evaluator scores           | Medium |
 
 #### Branch Selection Algorithms
 
-| Algorithm | Description |
-|-----------|-------------|
-| **Max Score** | Highest total score wins |
-| **Weighted Voting** | Criteria weighted by importance |
-| **MCTS-Style** | Iterative expansion of promising branches |
-| **Risk-Adjusted** | Penalize high-variance branches |
-| **Consensus** | Multiple evaluators must agree |
+| Algorithm           | Description                               |
+| ------------------- | ----------------------------------------- |
+| **Max Score**       | Highest total score wins                  |
+| **Weighted Voting** | Criteria weighted by importance           |
+| **MCTS-Style**      | Iterative expansion of promising branches |
+| **Risk-Adjusted**   | Penalize high-variance branches           |
+| **Consensus**       | Multiple evaluators must agree            |
 
 #### Evaluation Criteria
 
-| Criterion | Weight | Description |
-|-----------|--------|-------------|
-| Feasibility | 0.25 | Can this be implemented/executed? |
-| Completeness | 0.20 | Does it address all aspects? |
-| Coherence | 0.20 | Is the logic sound throughout? |
-| Novelty | 0.15 | Does it offer unique insights? |
-| Convergence | 0.10 | Does it lead to actionable conclusion? |
-| Risk | 0.10 | What could go wrong? |
+| Criterion    | Weight | Description                            |
+| ------------ | ------ | -------------------------------------- |
+| Feasibility  | 0.25   | Can this be implemented/executed?      |
+| Completeness | 0.20   | Does it address all aspects?           |
+| Coherence    | 0.20   | Is the logic sound throughout?         |
+| Novelty      | 0.15   | Does it offer unique insights?         |
+| Convergence  | 0.10   | Does it lead to actionable conclusion? |
+| Risk         | 0.10   | What could go wrong?                   |
 
 ---
 
@@ -175,19 +175,19 @@ Options:
 
 ## Key Differentiators vs Official Package
 
-| Feature | Official | Yggdrasil |
-|---------|----------|-----------|
-| String coercion | Broken | Fixed |
-| Retrieve history | No | Yes |
-| Persistence | No | JSONL |
-| Summarization | No | Yes |
-| Visual export | No | Mermaid |
-| Frameworks | No | Built-in |
-| Metadata | Basic | Extended |
-| Branch evaluation | No | Self + Multi-agent |
-| Cross-model verification | No | Codex/GPT-5.2 |
-| MCP Resources | No | Branch exposure |
-| Evaluation strategies | No | Configurable |
+| Feature                  | Official | Yggdrasil          |
+| ------------------------ | -------- | ------------------ |
+| String coercion          | Broken   | Fixed              |
+| Retrieve history         | No       | Yes                |
+| Persistence              | No       | JSONL              |
+| Summarization            | No       | Yes                |
+| Visual export            | No       | Mermaid            |
+| Frameworks               | No       | Built-in           |
+| Metadata                 | Basic    | Extended           |
+| Branch evaluation        | No       | Self + Multi-agent |
+| Cross-model verification | No       | Codex/GPT-5.2      |
+| MCP Resources            | No       | Branch exposure    |
+| Evaluation strategies    | No       | Configurable       |
 
 ---
 
@@ -240,10 +240,10 @@ interface ThoughtData {
   nextThoughtNeeded: boolean;
 
   // New fields
-  timestamp?: string;        // ISO 8601
-  sessionId?: string;        // Group related chains
-  tags?: string[];           // ["hypothesis", "evidence", etc.]
-  confidence?: number;       // 0.0 - 1.0
+  timestamp?: string; // ISO 8601
+  sessionId?: string; // Group related chains
+  tags?: string[]; // ["hypothesis", "evidence", etc.]
+  confidence?: number; // 0.0 - 1.0
 }
 ```
 
@@ -258,11 +258,11 @@ interface ThoughtData {
 
 ### Environment Variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `YGGDRASIL_DATA_PATH` | `./yggdrasil-data.jsonl` | Persistence file location |
-| `YGGDRASIL_PERSIST` | `false` | Enable/disable persistence |
-| `DISABLE_THOUGHT_LOGGING` | `false` | Suppress stderr output |
+| Variable                  | Default                  | Purpose                    |
+| ------------------------- | ------------------------ | -------------------------- |
+| `YGGDRASIL_DATA_PATH`     | `./yggdrasil-data.jsonl` | Persistence file location  |
+| `YGGDRASIL_PERSIST`       | `false`                  | Enable/disable persistence |
+| `DISABLE_THOUGHT_LOGGING` | `false`                  | Suppress stderr output     |
 
 ---
 
@@ -281,7 +281,7 @@ interface BranchResource {
   uri: string;
   name: string;
   description: string;
-  mimeType: "application/json";
+  mimeType: 'application/json';
 }
 ```
 
@@ -290,20 +290,20 @@ interface BranchResource {
 ```typescript
 interface BranchEvaluation {
   branchId: string;
-  evaluatorId: string;           // "self" | "codex" | "claude-task-{id}"
-  evaluatorModel?: string;       // "gpt-5.2-codex" | "claude-sonnet" etc.
+  evaluatorId: string; // "self" | "codex" | "claude-task-{id}"
+  evaluatorModel?: string; // "gpt-5.2-codex" | "claude-sonnet" etc.
   timestamp: string;
   scores: {
-    feasibility: number;         // 0-10
-    completeness: number;        // 0-10
-    coherence: number;           // 0-10
-    novelty: number;             // 0-10
-    convergence: number;         // 0-10
-    risk: number;                // 0-10 (lower is better)
+    feasibility: number; // 0-10
+    completeness: number; // 0-10
+    coherence: number; // 0-10
+    novelty: number; // 0-10
+    convergence: number; // 0-10
+    risk: number; // 0-10 (lower is better)
   };
-  weightedScore: number;         // Computed from weights
+  weightedScore: number; // Computed from weights
   rationale: string;
-  recommendation: "pursue" | "abandon" | "refine" | "merge";
+  recommendation: 'pursue' | 'abandon' | 'refine' | 'merge';
 }
 
 interface AggregatedEvaluation {
@@ -312,7 +312,7 @@ interface AggregatedEvaluation {
   consensusScore: number;
   variance: number;
   finalRecommendation: string;
-  selectedBy: "max_score" | "weighted_voting" | "consensus" | "mcts";
+  selectedBy: 'max_score' | 'weighted_voting' | 'consensus' | 'mcts';
 }
 ```
 
@@ -350,7 +350,7 @@ async function evaluateWithCodex(branch: Branch): Promise<BranchEvaluation> {
 
 ## Branch: ${branch.id}
 ## Thoughts:
-${branch.thoughts.map(t => `${t.thoughtNumber}. ${t.thought}`).join('\n')}
+${branch.thoughts.map((t) => `${t.thoughtNumber}. ${t.thought}`).join('\n')}
 
 Score 0-10 on each criterion:
 - Feasibility: Can this be implemented/executed?
@@ -364,7 +364,7 @@ Return JSON: { scores: {...}, rationale: "...", recommendation: "pursue|abandon|
 
   const result = await mcpClient.callTool('mcp__codex__codex', {
     prompt,
-    config: { model: 'gpt-5.2-codex' }  // xhigh reasoning default
+    config: { model: 'gpt-5.2-codex' }, // xhigh reasoning default
   });
 
   return parseCodexResponse(result, branch.id);
@@ -389,7 +389,7 @@ Return your evaluation as JSON matching the BranchEvaluation interface.`;
   return {
     promptTemplate: taskPrompt,
     expectedSchema: 'BranchEvaluation',
-    subagentType: 'general-purpose'
+    subagentType: 'general-purpose',
   };
 }
 ```
@@ -430,6 +430,7 @@ Yggdrasil positions itself not just as "sequential thinking with bug fixes" but 
 ### Why "Yggdrasil"?
 
 In Norse mythology, Yggdrasil is the World Tree connecting all realms. For this MCP:
+
 - **Branches** = Different reasoning paths through possibility space
 - **Roots** = Deep foundational analysis (first principles)
 - **Connections** = Links between thoughts, revisions, and evaluations

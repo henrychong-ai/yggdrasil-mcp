@@ -7,6 +7,7 @@ A fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with cr
 ## Why Yggdrasil?
 
 In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP embodies that metaphor:
+
 - **Branches** = Different reasoning paths through possibility space
 - **Roots** = Deep foundational analysis (first principles)
 - **Connections** = Links between thoughts, revisions, and evaluations
@@ -14,6 +15,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 ## Key Features
 
 ### Current (v0.6.x)
+
 - **String coercion fix** - Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
 - Break down complex problems into manageable steps
 - Revise and refine thoughts as understanding deepens
@@ -22,7 +24,9 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 - Generate and verify solution hypotheses
 
 ### Roadmap
+
 See [plans/yggdrasil-roadmap.md](plans/yggdrasil-roadmap.md) for the full 5-phase roadmap including:
+
 - Thought history retrieval and persistence (JSONL)
 - Mermaid diagram export
 - Branch evaluation with multi-agent support
@@ -38,6 +42,7 @@ claude mcp add --scope user yggdrasil "npx -y yggdrasil-mcp"
 ```
 
 Or run from local build:
+
 ```json
 {
   "mcpServers": {
@@ -69,6 +74,7 @@ Or run from local build:
 Facilitates a detailed, step-by-step thinking process for problem-solving and analysis.
 
 **Inputs:**
+
 - `thought` (string): The current thinking step
 - `nextThoughtNeeded` (boolean): Whether another thought step is needed
 - `thoughtNumber` (integer): Current thought number
@@ -82,6 +88,7 @@ Facilitates a detailed, step-by-step thinking process for problem-solving and an
 ## Usage
 
 Yggdrasil is designed for:
+
 - Breaking down complex problems into steps
 - Planning and design with room for revision
 - Analysis that might need course correction
@@ -93,8 +100,8 @@ Yggdrasil is designed for:
 
 ### Environment Variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
+| Variable                  | Default | Purpose                        |
+| ------------------------- | ------- | ------------------------------ |
 | `DISABLE_THOUGHT_LOGGING` | `false` | Suppress stderr thought output |
 
 ## Development
@@ -121,10 +128,10 @@ The critical fix in this fork addresses Claude Code bug #3084 where MCP paramete
 // z.coerce.boolean() is DANGEROUS - treats "false" as truthy!
 // Our safe implementation:
 const coerceBoolean = (val: unknown): boolean => {
-  if (typeof val === "boolean") return val;
-  if (typeof val === "string") {
-    if (val.toLowerCase() === "true") return true;
-    if (val.toLowerCase() === "false") return false;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    if (val.toLowerCase() === 'true') return true;
+    if (val.toLowerCase() === 'false') return false;
   }
   throw new Error(`Cannot coerce "${val}" to boolean`);
 };
