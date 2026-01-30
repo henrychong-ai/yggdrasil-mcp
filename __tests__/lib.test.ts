@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import { SequentialThinkingServer } from '../lib.js';
 
 // Mock chalk to avoid ESM issues
@@ -178,7 +179,7 @@ describe('SequentialThinkingServer', () => {
   describe('processThought - edge cases', () => {
     it('should handle very long thought strings', () => {
       const input = {
-        thought: 'a'.repeat(10000),
+        thought: 'a'.repeat(10_000),
         thoughtNumber: 1,
         totalThoughts: 1,
         nextThoughtNeeded: false,

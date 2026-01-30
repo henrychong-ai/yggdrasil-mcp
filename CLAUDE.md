@@ -6,13 +6,13 @@ Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with crit
 
 ## Project Overview
 
-| Aspect | Details |
-|--------|---------|
-| **Origin** | Fork of `@modelcontextprotocol/server-sequential-thinking` |
+| Aspect       | Details                                                                          |
+| ------------ | -------------------------------------------------------------------------------- |
+| **Origin**   | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream** | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Key Fix** | Claude Code string coercion bug #3084 |
-| **MCP Name** | `yggdrasil` (was `st`) |
-| **Tool** | `mcp__yggdrasil__sequentialthinking` |
+| **Key Fix**  | Claude Code string coercion bug #3084                                            |
+| **MCP Name** | `yggdrasil` (was `st`)                                                           |
+| **Tool**     | `mcp__yggdrasil__sequentialthinking`                                             |
 
 ## Upstream Monitoring Protocol
 
@@ -28,6 +28,7 @@ Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with crit
 ### How to Check
 
 1. **Fetch upstream changes**:
+
    ```bash
    # View recent commits to upstream
    gh api repos/modelcontextprotocol/servers/commits \
@@ -35,6 +36,7 @@ Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with crit
    ```
 
 2. **Compare specific file**:
+
    ```bash
    # Fetch current upstream index.ts
    curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/sequentialthinking/index.ts" -o /tmp/upstream-st.ts
@@ -50,13 +52,13 @@ Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with crit
 
 ### What to Look For
 
-| Change Type | Action |
-|-------------|--------|
-| Bug fixes | Apply if not already fixed differently |
-| New parameters | Evaluate and add with string coercion |
-| Schema changes | Update our schemas, maintain coercion |
-| New features | Assess fit with roadmap, adapt as needed |
-| Breaking changes | Document in changelog, evaluate impact |
+| Change Type      | Action                                   |
+| ---------------- | ---------------------------------------- |
+| Bug fixes        | Apply if not already fixed differently   |
+| New parameters   | Evaluate and add with string coercion    |
+| Schema changes   | Update our schemas, maintain coercion    |
+| New features     | Assess fit with roadmap, adapt as needed |
+| Breaking changes | Document in changelog, evaluate impact   |
 
 ### Applying Upstream Changes
 
@@ -67,12 +69,12 @@ Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with crit
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `index.ts` | Main MCP server with string coercion fix |
-| `lib.ts` | Shared utilities |
-| `plans/yggdrasil-roadmap.md` | 5-phase improvement roadmap |
-| `__tests__/` | Test suite |
+| File                         | Purpose                                  |
+| ---------------------------- | ---------------------------------------- |
+| `index.ts`                   | Main MCP server with string coercion fix |
+| `lib.ts`                     | Shared utilities                         |
+| `plans/yggdrasil-roadmap.md` | 5-phase improvement roadmap              |
+| `__tests__/`                 | Test suite                               |
 
 ## String Coercion Fix (Critical)
 
@@ -81,11 +83,11 @@ Our key contribution - fixes Claude Code bug #3084 where MCP parameters are seri
 ```typescript
 // Safe coercion that properly handles "false" → false
 const coerceBoolean = (val: unknown): boolean => {
-  if (typeof val === "boolean") return val;
-  if (typeof val === "string") {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
     const lower = val.toLowerCase();
-    if (lower === "true") return true;
-    if (lower === "false") return false;
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
   }
   throw new Error(`Cannot coerce "${val}" to boolean`);
 };
@@ -110,6 +112,7 @@ pnpm watch
 ## Roadmap
 
 See `plans/yggdrasil-roadmap.md` for the 5-phase roadmap:
+
 1. **v1.0** - Core enhancements (current)
 2. **v1.1** - Differentiation (persistence, Mermaid)
 3. **v1.2** - Self-evaluation tools

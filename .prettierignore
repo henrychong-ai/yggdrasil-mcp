@@ -1,5 +1,17 @@
+# Build outputs
 dist/
+
+# Dependencies
 node_modules/
-coverage/
+
+# Package manager locks
 pnpm-lock.yaml
-*.md
+
+# Coverage
+coverage/
+
+# Cache
+.eslintcache
+
+# IDE and OS
+.DS_Store

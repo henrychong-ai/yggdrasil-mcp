@@ -3,11 +3,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+
 import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.2.1',
+  version: '0.7.0',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -21,7 +22,7 @@ const coerceBoolean = (val: unknown): boolean => {
     if (lower === 'true') return true;
     if (lower === 'false') return false;
   }
-  throw new Error(`Cannot coerce "${val}" to boolean`);
+  throw new Error(`Cannot coerce "${String(val)}" to boolean`);
 };
 
 const coerceNumber = (val: unknown): number => {
@@ -30,20 +31,26 @@ const coerceNumber = (val: unknown): number => {
     const num = Number(val);
     if (!Number.isNaN(num)) return num;
   }
-  throw new Error(`Cannot coerce "${val}" to number`);
+  throw new Error(`Cannot coerce "${String(val)}" to number`);
 };
 
 // Zod schemas with safe preprocess coercion
 const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
 const numberSchema = z.preprocess(coerceNumber, z.number().int().min(1));
-const optionalBooleanSchema = z.preprocess(
-  (val) => (val === undefined || val === null ? undefined : coerceBoolean(val)),
-  z.boolean().optional()
-);
-const optionalNumberSchema = z.preprocess(
-  (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
-  z.number().int().min(1).optional()
-);
+// Optional schemas: .optional() MUST be OUTSIDE z.preprocess() for JSON Schema detection
+// See: https://github.com/modelcontextprotocol/servers - Anthropic's original schema
+const optionalBooleanSchema = z
+  .preprocess(
+    (val) => (val === undefined || val === null ? undefined : coerceBoolean(val)),
+    z.boolean()
+  )
+  .optional();
+const optionalNumberSchema = z
+  .preprocess(
+    (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
+    z.number().int().min(1)
+  )
+  .optional();
 
 server.registerTool(
   'sequentialthinking',
@@ -124,7 +131,7 @@ You should:
       thoughtHistoryLength: z.number(),
     },
   },
-  async (args) => {
+  (args) => {
     const result = thinkingServer.processThought(args);
 
     if (result.isError) {
@@ -132,7 +139,7 @@ You should:
     }
 
     // Parse the JSON response to get structured content
-    const parsedContent = JSON.parse(result.content[0].text);
+    const parsedContent = JSON.parse(result.content[0].text) as Record<string, unknown>;
 
     return {
       content: result.content,
@@ -147,7 +154,7 @@ async function runServer() {
   console.error('Sequential Thinking MCP Server running on stdio');
 }
 
-runServer().catch((error) => {
+await runServer().catch((error: unknown) => {
   console.error('Fatal error running server:', error);
   process.exit(1);
 });

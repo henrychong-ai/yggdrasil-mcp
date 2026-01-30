@@ -19,7 +19,7 @@ export class SequentialThinkingServer {
 
   constructor() {
     this.disableThoughtLogging =
-      (process.env.DISABLE_THOUGHT_LOGGING || '').toLowerCase() === 'true';
+      (process.env.DISABLE_THOUGHT_LOGGING ?? '').toLowerCase() === 'true';
   }
 
   private formatThought(thoughtData: ThoughtData): string {
@@ -33,8 +33,8 @@ export class SequentialThinkingServer {
       branchId,
     } = thoughtData;
 
-    let prefix = '';
-    let context = '';
+    let prefix: string;
+    let context: string;
 
     if (isRevision) {
       prefix = chalk.yellow('🔄 Revision');
@@ -59,7 +59,7 @@ export class SequentialThinkingServer {
   }
 
   public processThought(input: ThoughtData): {
-    content: Array<{ type: 'text'; text: string }>;
+    content: { type: 'text'; text: string }[];
     isError?: boolean;
   } {
     try {
@@ -72,7 +72,7 @@ export class SequentialThinkingServer {
       this.thoughtHistory.push(input);
 
       if (input.branchFromThought && input.branchId) {
-        if (!this.branches[input.branchId]) {
+        if (!(input.branchId in this.branches)) {
           this.branches[input.branchId] = [];
         }
         this.branches[input.branchId].push(input);
