@@ -1,15 +1,15 @@
 {
-  "name": "@modelcontextprotocol/server-sequential-thinking",
-  "version": "0.6.2",
-  "description": "MCP server for sequential thinking and problem solving",
+  "name": "@henrychong-ai/sequential-thinking-mcp",
+  "version": "0.6.3",
+  "description": "MCP server for sequential thinking - fork with Claude Code string coercion fix",
   "license": "MIT",
-  "mcpName": "io.github.modelcontextprotocol/server-sequential-thinking",
-  "author": "Anthropic, PBC (https://anthropic.com)",
-  "homepage": "https://modelcontextprotocol.io",
-  "bugs": "https://github.com/modelcontextprotocol/servers/issues",
+  "mcpName": "io.github.henrychong-ai/sequential-thinking-mcp",
+  "author": "Henry Chong (fork), Anthropic, PBC (original)",
+  "homepage": "https://github.com/henrychong-ai/sequential-thinking-mcp",
+  "bugs": "https://github.com/henrychong-ai/sequential-thinking-mcp/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/modelcontextprotocol/servers.git"
+    "url": "https://github.com/henrychong-ai/sequential-thinking-mcp.git"
   },
   "type": "module",
   "bin": {
