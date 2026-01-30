@@ -1,25 +1,40 @@
 {
-  "name": "@henrychong-ai/sequential-thinking-mcp",
+  "name": "yggdrasil-mcp",
   "version": "0.6.3",
-  "description": "MCP server for sequential thinking - fork with Claude Code string coercion fix",
+  "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
-  "mcpName": "io.github.henrychong-ai/sequential-thinking-mcp",
-  "author": "Henry Chong (fork), Anthropic, PBC (original)",
-  "homepage": "https://github.com/henrychong-ai/sequential-thinking-mcp",
-  "bugs": "https://github.com/henrychong-ai/sequential-thinking-mcp/issues",
+  "author": "Henry Chong <henrychong-ai@gmail.com>",
+  "contributors": [
+    "Anthropic, PBC (original)"
+  ],
+  "homepage": "https://github.com/henrychong-ai/yggdrasil-mcp",
+  "bugs": "https://github.com/henrychong-ai/yggdrasil-mcp/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/henrychong-ai/sequential-thinking-mcp.git"
+    "url": "https://github.com/henrychong-ai/yggdrasil-mcp.git"
   },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "sequential-thinking",
+    "tree-of-thoughts",
+    "reasoning",
+    "llm",
+    "ai",
+    "claude"
+  ],
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
+    "yggdrasil-mcp": "dist/index.js",
     "mcp-server-sequential-thinking": "dist/index.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "build": "shx rm -rf dist && tsc && shx chmod +x dist/*.js",
     "prepare": "npm run build",
     "watch": "tsc --watch",
     "test": "vitest run --coverage"
@@ -33,6 +48,7 @@
     "@types/node": "^22",
     "@types/yargs": "^17.0.32",
     "@vitest/coverage-v8": "^2.1.8",
+    "semver": "^7.7.3",
     "shx": "^0.3.4",
     "typescript": "^5.3.3",
     "vitest": "^2.1.8"
