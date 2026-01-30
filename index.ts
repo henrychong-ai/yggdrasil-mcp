@@ -7,10 +7,43 @@ import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
   name: "sequential-thinking-server",
-  version: "0.2.0",
+  version: "0.2.1",
 });
 
 const thinkingServer = new SequentialThinkingServer();
+
+// Helper functions for safe string coercion (fixes Claude Code string serialization bug #3084)
+// See: https://github.com/anthropics/claude-code/issues/3084
+const coerceBoolean = (val: unknown): boolean => {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") {
+    const lower = val.toLowerCase();
+    if (lower === "true") return true;
+    if (lower === "false") return false;
+  }
+  throw new Error(`Cannot coerce "${val}" to boolean`);
+};
+
+const coerceNumber = (val: unknown): number => {
+  if (typeof val === "number") return val;
+  if (typeof val === "string" && val.trim() !== "") {
+    const num = Number(val);
+    if (!Number.isNaN(num)) return num;
+  }
+  throw new Error(`Cannot coerce "${val}" to number`);
+};
+
+// Zod schemas with safe preprocess coercion
+const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
+const numberSchema = z.preprocess(coerceNumber, z.number().int().min(1));
+const optionalBooleanSchema = z.preprocess(
+  (val) => (val === undefined || val === null ? undefined : coerceBoolean(val)),
+  z.boolean().optional()
+);
+const optionalNumberSchema = z.preprocess(
+  (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
+  z.number().int().min(1).optional()
+);
 
 server.registerTool(
   "sequentialthinking",
@@ -72,14 +105,14 @@ You should:
 11. Only set nextThoughtNeeded to false when truly done and a satisfactory answer is reached`,
     inputSchema: {
       thought: z.string().describe("Your current thinking step"),
-      nextThoughtNeeded: z.boolean().describe("Whether another thought step is needed"),
-      thoughtNumber: z.number().int().min(1).describe("Current thought number (numeric value, e.g., 1, 2, 3)"),
-      totalThoughts: z.number().int().min(1).describe("Estimated total thoughts needed (numeric value, e.g., 5, 10)"),
-      isRevision: z.boolean().optional().describe("Whether this revises previous thinking"),
-      revisesThought: z.number().int().min(1).optional().describe("Which thought is being reconsidered"),
-      branchFromThought: z.number().int().min(1).optional().describe("Branching point thought number"),
+      nextThoughtNeeded: booleanSchema.describe("Whether another thought step is needed"),
+      thoughtNumber: numberSchema.describe("Current thought number (numeric value, e.g., 1, 2, 3)"),
+      totalThoughts: numberSchema.describe("Estimated total thoughts needed (numeric value, e.g., 5, 10)"),
+      isRevision: optionalBooleanSchema.describe("Whether this revises previous thinking"),
+      revisesThought: optionalNumberSchema.describe("Which thought is being reconsidered"),
+      branchFromThought: optionalNumberSchema.describe("Branching point thought number"),
       branchId: z.string().optional().describe("Branch identifier"),
-      needsMoreThoughts: z.boolean().optional().describe("If more thoughts are needed")
+      needsMoreThoughts: optionalBooleanSchema.describe("If more thoughts are needed")
     },
     outputSchema: {
       thoughtNumber: z.number(),
