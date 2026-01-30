@@ -221,29 +221,18 @@ We periodically sync relevant changes from upstream while maintaining our string
 ### v0.7.0 (2026-01-31)
 
 - **Full lint skill compliance** with 6 additional ESLint plugins
-- **Strict TypeScript** checking (strictTypeChecked + stylisticTypeChecked)
-- Node 24.x added to CI test matrix
-- Code fixes: top-level await, nullish coalescing, typed catch callbacks
+- **90% test coverage** threshold enforced (currently 98%+)
+- Extracted `coercion.ts` module with 23 comprehensive tests
+- Strict TypeScript checking (strictTypeChecked + stylisticTypeChecked)
+- Node 24.x added to CI test matrix, TypeScript ^5.7.0
 
 ### v0.6.3 (2026-01-30)
 
-- **TypeScript ironclad stack**: ESLint 9.x, Prettier, Husky, lint-staged
-- Vitest 4.x upgrade (fixes esbuild security vulnerability)
-- CI lint and typecheck steps
-
-### v0.6.2 (2026-01-30)
-
-- GitHub Actions CI/CD with OIDC npm publishing
-- Dependabot weekly updates
-
-### v0.6.0 (2026-01-30)
-
+- **Initial fork release** from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
 - **Critical fix**: Claude Code string coercion bug #3084
 - Safe `z.preprocess` coercion for boolean and number types
-
-### v0.5.0 (2026-01-30)
-
-- Initial fork from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
+- GitHub Actions CI/CD with OIDC npm publishing
+- TypeScript ironclad stack: ESLint 9.x, Prettier, Husky, lint-staged, Vitest 4.x
 
 ## License
 
