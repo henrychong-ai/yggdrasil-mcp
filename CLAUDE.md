@@ -1,84 +1,129 @@
-# Yggdrasil-MCP
+# CLAUDE.md
 
-**Reasoning orchestration MCP server** - Tree of Thoughts with multi-agent evaluation.
-
-Fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and enhanced features.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-| Aspect       | Details                                                                          |
-| ------------ | -------------------------------------------------------------------------------- |
-| **Origin**   | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
-| **Upstream** | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Key Fix**  | Claude Code string coercion bug #3084                                            |
-| **MCP Name** | `yggdrasil` (was `st`)                                                           |
-| **Tool**     | `mcp__yggdrasil__sequentialthinking`                                             |
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.0.
 
-## Upstream Monitoring Protocol
+| Aspect        | Details                                                                          |
+| ------------- | -------------------------------------------------------------------------------- |
+| **Package**   | `yggdrasil-mcp`                                                                  |
+| **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
+| **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
+| **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
+| **Key Fix**   | Claude Code string coercion bug #3084                                            |
+| **Tool Name** | `sequentialthinking`                                                             |
+| **MCP Tool**  | `mcp__yggdrasil__sequentialthinking`                                             |
 
-**IMPORTANT**: Periodically check the upstream Anthropic repository for changes that should be applied to this fork.
+## Tech Stack
 
-### When to Check
+| Layer           | Technology                                             |
+| --------------- | ------------------------------------------------------ |
+| Language        | TypeScript 5.3.3                                       |
+| Runtime         | Node.js >=18                                           |
+| MCP SDK         | @modelcontextprotocol/sdk 1.25.2                       |
+| Validation      | Zod 4.3.6                                              |
+| Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
+| Linting         | ESLint 9.39.2 (flat config) + typescript-eslint 8.54.0 |
+| Formatting      | Prettier 3.8.1                                         |
+| Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
+| Package Manager | pnpm                                                   |
+| CI/CD           | GitHub Actions (OIDC npm publish)                      |
 
-- When starting a new session in this repo
-- Before implementing new features
-- When user mentions "check upstream" or "sync with upstream"
-- Monthly maintenance reviews
+### ESLint Plugin Stack (Full Lint Skill Compliance)
 
-### How to Check
+| Plugin                   | Purpose                                     |
+| ------------------------ | ------------------------------------------- |
+| typescript-eslint        | TypeScript strict + stylistic type checking |
+| @stylistic/eslint-plugin | Code style rules                            |
+| eslint-plugin-import     | Import ordering and validation              |
+| eslint-plugin-unicorn    | Modern JavaScript patterns                  |
+| eslint-plugin-sonarjs    | Bug detection, cognitive complexity         |
+| eslint-plugin-promise    | Async/await patterns                        |
+| eslint-plugin-n          | Node.js-specific rules                      |
+| eslint-plugin-vitest     | Test file rules                             |
+| eslint-config-prettier   | Disable conflicting rules                   |
 
-1. **Fetch upstream changes**:
+## Development Commands
 
-   ```bash
-   # View recent commits to upstream
-   gh api repos/modelcontextprotocol/servers/commits \
-     --jq '.[] | select(.commit.message | test("sequential"; "i")) | {sha: .sha[0:7], date: .commit.author.date[0:10], message: .commit.message | split("\n")[0]}'
-   ```
+```bash
+# Install dependencies
+pnpm install
 
-2. **Compare specific file**:
+# Build (cleans dist/ first)
+pnpm build
 
-   ```bash
-   # Fetch current upstream index.ts
-   curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/sequentialthinking/index.ts" -o /tmp/upstream-st.ts
+# Run tests with coverage
+pnpm test
 
-   # Compare with our version
-   diff -u /tmp/upstream-st.ts index.ts
-   ```
+# Watch mode for tests
+pnpm test:watch
 
-3. **Check upstream package.json version**:
-   ```bash
-   curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/sequentialthinking/package.json" | jq '.version'
-   ```
+# Lint (zero warnings allowed)
+pnpm lint
 
-### What to Look For
+# Lint with auto-fix
+pnpm lint:fix
 
-| Change Type      | Action                                   |
-| ---------------- | ---------------------------------------- |
-| Bug fixes        | Apply if not already fixed differently   |
-| New parameters   | Evaluate and add with string coercion    |
-| Schema changes   | Update our schemas, maintain coercion    |
-| New features     | Assess fit with roadmap, adapt as needed |
-| Breaking changes | Document in changelog, evaluate impact   |
+# Format with Prettier
+pnpm format
 
-### Applying Upstream Changes
+# Check formatting
+pnpm format:check
 
-1. **Never blindly copy** - upstream lacks our string coercion fix
-2. **Apply changes selectively** - maintain our `z.preprocess` wrappers
-3. **Test thoroughly** - our fix addresses Claude Code bug #3084
-4. **Document** - note upstream version synced to in commit message
+# Full quality check (lint + format + typecheck)
+pnpm check
 
-## Key Files
+# TypeScript type checking
+pnpm typecheck
 
-| File                         | Purpose                                  |
-| ---------------------------- | ---------------------------------------- |
-| `index.ts`                   | Main MCP server with string coercion fix |
-| `lib.ts`                     | Shared utilities                         |
-| `plans/yggdrasil-roadmap.md` | 5-phase improvement roadmap              |
-| `__tests__/`                 | Test suite                               |
+# Watch mode for TypeScript
+pnpm watch
+```
+
+## Project Structure
+
+```
+yggdrasil-mcp/
+├── index.ts                 # MCP server entry point with string coercion fix
+├── lib.ts                   # SequentialThinkingServer class
+├── __tests__/
+│   └── lib.test.ts          # Vitest test suite (14 tests)
+├── dist/                    # Compiled output (npm package)
+├── plans/
+│   └── yggdrasil-roadmap.md # 5-phase feature roadmap
+├── .github/
+│   ├── workflows/
+│   │   └── ci-publish.yml   # CI + npm OIDC publish
+│   └── dependabot.yml       # Weekly dependency updates
+├── eslint.config.js         # ESLint 9 flat config (full plugin stack)
+├── tsconfig.json            # TypeScript config (ES2022, NodeNext)
+├── tsconfig.eslint.json     # TypeScript config for linting (includes tests)
+├── vitest.config.ts         # Vitest configuration
+├── .prettierrc              # Prettier configuration
+├── .prettierignore          # Prettier ignore patterns
+└── .husky/
+    └── pre-commit           # lint-staged on commit
+```
 
 ## String Coercion Fix (Critical)
 
-Our key contribution - fixes Claude Code bug #3084 where MCP parameters are serialized as strings:
+**This is the key contribution of this fork.** Fixes Claude Code bug #3084 where MCP parameters are serialized as strings regardless of schema type.
+
+### The Problem
+
+Claude Code serializes all MCP tool parameters as strings:
+
+- `nextThoughtNeeded: true` → `"true"` (string)
+- `thoughtNumber: 5` → `"5"` (string)
+
+Using `z.coerce.boolean()` is **dangerous** because it treats any non-empty string as truthy:
+
+- `"false"` → `true` (WRONG!)
+- `"0"` → `true` (WRONG!)
+
+### Our Solution
 
 ```typescript
 // Safe coercion that properly handles "false" → false
@@ -89,25 +134,253 @@ const coerceBoolean = (val: unknown): boolean => {
     if (lower === 'true') return true;
     if (lower === 'false') return false;
   }
-  throw new Error(`Cannot coerce "${val}" to boolean`);
+  throw new Error(`Cannot coerce "${String(val)}" to boolean`);
 };
 
-// Applied via z.preprocess, NOT z.coerce (which treats "false" as truthy)
+// Applied via z.preprocess, NOT z.coerce
 const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
 ```
 
-## Development
+### Schema Architecture
+
+```typescript
+// Required schemas
+const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
+const numberSchema = z.preprocess(coerceNumber, z.number().int().min(1));
+
+// Optional schemas: .optional() MUST be OUTSIDE z.preprocess()
+// This is required for correct JSON Schema detection by MCP SDK
+const optionalBooleanSchema = z
+  .preprocess(
+    (val) => (val === undefined || val === null ? undefined : coerceBoolean(val)),
+    z.boolean()
+  )
+  .optional(); // ← OUTSIDE preprocess
+```
+
+## Tool Parameters
+
+### Required
+
+| Parameter           | Type    | Description                            |
+| ------------------- | ------- | -------------------------------------- |
+| `thought`           | string  | Current thinking step content          |
+| `nextThoughtNeeded` | boolean | Whether another thought step is needed |
+| `thoughtNumber`     | integer | Current thought number (≥1)            |
+| `totalThoughts`     | integer | Estimated total thoughts needed (≥1)   |
+
+### Optional
+
+| Parameter           | Type    | Description                                |
+| ------------------- | ------- | ------------------------------------------ |
+| `isRevision`        | boolean | Whether this revises previous thinking     |
+| `revisesThought`    | integer | Which thought number is being reconsidered |
+| `branchFromThought` | integer | Branching point thought number             |
+| `branchId`          | string  | Branch identifier                          |
+| `needsMoreThoughts` | boolean | If more thoughts are needed                |
+
+## Upstream Monitoring Protocol
+
+**IMPORTANT**: Periodically check the upstream Anthropic repository for changes.
+
+### When to Check
+
+- When starting a new session in this repo
+- Before implementing new features
+- When user mentions "check upstream" or "sync with upstream"
+- Monthly maintenance reviews
+
+### How to Check
 
 ```bash
-# Build
-pnpm build
+# View recent commits to upstream
+gh api repos/modelcontextprotocol/servers/commits \
+  --jq '.[] | select(.commit.message | test("sequential"; "i")) | {sha: .sha[0:7], date: .commit.author.date[0:10], message: .commit.message | split("\n")[0]}'
 
-# Test
-pnpm test
+# Fetch current upstream index.ts
+curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/sequentialthinking/index.ts" -o /tmp/upstream-st.ts
 
-# Watch mode
-pnpm watch
+# Compare with our version
+diff -u /tmp/upstream-st.ts index.ts
+
+# Check upstream package.json version
+curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/sequentialthinking/package.json" | jq '.version'
 ```
+
+### Applying Upstream Changes
+
+| Rule                   | Rationale                                 |
+| ---------------------- | ----------------------------------------- |
+| **Never blindly copy** | Upstream lacks our string coercion fix    |
+| **Apply selectively**  | Maintain `z.preprocess` wrappers          |
+| **Test thoroughly**    | Our fix addresses Claude Code bug #3084   |
+| **Document**           | Note upstream version synced to in commit |
+
+## CI/CD Pipeline
+
+### GitHub Actions (`ci-publish.yml`)
+
+| Job                | Trigger                               | Node Versions    |
+| ------------------ | ------------------------------------- | ---------------- |
+| **Build and Test** | All pushes, PRs                       | 20.x, 22.x, 24.x |
+| **Publish to npm** | Push to main (if version > published) | 22.x             |
+
+### npm Publishing
+
+- **Authentication**: OIDC (no NPM_TOKEN required)
+- **Provenance**: Enabled via `id-token: write` permission
+- **Version Check**: Only publishes if `package.json` version > npm registry version
+
+## Configuration
+
+### Environment Variables
+
+| Variable                  | Default | Purpose                        |
+| ------------------------- | ------- | ------------------------------ |
+| `DISABLE_THOUGHT_LOGGING` | `false` | Suppress stderr thought output |
+
+### Test Coverage
+
+| File       | Coverage              |
+| ---------- | --------------------- |
+| lib.ts     | ~97%                  |
+| index.ts   | 0% (MCP server setup) |
+| **Target** | 80%+ overall          |
+
+## Version Policy
+
+**MANDATORY:** Every git commit must increment the version number following semantic versioning:
+
+| Change Type   | Version   | Examples                                        |
+| ------------- | --------- | ----------------------------------------------- |
+| **Patch (Z)** | x.y.**Z** | Bug fixes, typo corrections, minor improvements |
+| **Minor (Y)** | x.**Y**.0 | New features, non-breaking enhancements         |
+| **Major (X)** | **X**.0.0 | Breaking changes, architecture changes          |
+
+**Files to Update:**
+
+1. `package.json` - Package version
+2. `index.ts` - MCP server version (line ~11)
+3. `CLAUDE.md` - Version in Project Overview + changelog entry
+
+## Version History
+
+### v0.7.0 (2026-01-31)
+
+**Full Lint Skill Compliance**
+
+**New Features:**
+
+- Full lint skill compliance with 6 additional ESLint plugins
+- Strict TypeScript checking (strictTypeChecked + stylisticTypeChecked)
+- Node 24.x added to CI test matrix
+
+**Technical Changes:**
+
+- `eslint.config.js`: Full plugin stack (stylistic, import, unicorn, sonarjs, promise, n)
+- `tsconfig.eslint.json`: Separate tsconfig for linting (includes test files)
+- `.prettierignore`: Added ignore patterns for build outputs
+- `package.json`: Added `engines: >=18`, `check` script, `--max-warnings=0`
+- `.github/workflows/ci-publish.yml`: Node matrix expanded to 20.x, 22.x, 24.x
+
+**Code Fixes:**
+
+- `index.ts`: Top-level await, typed catch callback, `String()` for unknown in templates
+- `lib.ts`: Nullish coalescing (`??`), `in` operator for key existence check
+
+**Files Changed:** 13 files
+
+---
+
+### v0.6.4 (2026-01-31)
+
+**Node Engines Field**
+
+**Maintenance:**
+
+- Added `engines: { "node": ">=18" }` to match MCP SDK requirement
+
+---
+
+### v0.6.3 (2026-01-30)
+
+**TypeScript Ironclad Stack**
+
+**New Features:**
+
+- ESLint 9.x flat config with typescript-eslint
+- Prettier 3.x formatting
+- Husky + lint-staged pre-commit hooks
+- Vitest 4.x (upgraded from 2.x, fixes esbuild vulnerability GHSA-67mh-4wv8-2f99)
+
+**CI/CD:**
+
+- Lint and typecheck steps added to GitHub Actions
+- CI fails on lint errors
+
+**Technical Changes:**
+
+- `eslint.config.js`: ESLint 9 flat config
+- `.prettierrc`: Prettier configuration
+- `.husky/pre-commit`: lint-staged hook
+- `vitest.config.ts`: Vitest 4.x configuration
+
+---
+
+### v0.6.2 (2026-01-30)
+
+**GitHub Actions & npm Publishing**
+
+**New Features:**
+
+- GitHub Actions CI/CD pipeline (`ci-publish.yml`)
+- Automated npm publishing via OIDC (no token required)
+- Version comparison before publish (only publishes if version > published)
+- Dependabot weekly dependency updates
+
+**Documentation:**
+
+- Added CLAUDE.md with upstream monitoring protocol
+- Added TODO.md with P2 test coverage task
+
+---
+
+### v0.6.1 (2026-01-30)
+
+**Build Fixes**
+
+**Bug Fixes:**
+
+- Added `zod` as direct dependency (was missing, causing CI build failure)
+- Removed NPM_TOKEN from CI (OIDC handles authentication)
+
+---
+
+### v0.6.0 (2026-01-30)
+
+**String Coercion Fix**
+
+**Critical Bug Fix:**
+
+- Fixed Claude Code bug #3084 where MCP parameters are serialized as strings
+- Implemented safe `z.preprocess` coercion for boolean and number types
+- `"false"` now correctly converts to `false` (was `true` with `z.coerce`)
+
+**Technical:**
+
+- `coerceBoolean()` and `coerceNumber()` helper functions
+- `booleanSchema`, `numberSchema` with `z.preprocess`
+- `optionalBooleanSchema`, `optionalNumberSchema` with `.optional()` outside preprocess
+
+---
+
+### v0.5.0 (2026-01-30)
+
+**Initial Fork**
+
+- Forked from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
+- Initial project setup with pnpm
+- Basic test suite
 
 ## Roadmap
 
@@ -118,3 +391,27 @@ See `plans/yggdrasil-roadmap.md` for the 5-phase roadmap:
 3. **v1.2** - Self-evaluation tools
 4. **v2.0** - Multi-agent evaluation (Codex integration)
 5. **v2.5** - Advanced orchestration (n8n, MCTS)
+
+## Troubleshooting
+
+### ESLint Parsing Errors for Test Files
+
+If you see "file was not found by the project service":
+
+- Ensure `tsconfig.eslint.json` exists and includes test files
+- ESLint config should use `project: './tsconfig.eslint.json'`
+
+### Pre-commit Hook Failures
+
+If lint-staged fails:
+
+1. Run `pnpm lint:fix` to auto-fix issues
+2. Run `pnpm format` to format files
+3. Stage fixed files and commit again
+
+### npm Publish Skipped
+
+If CI shows "publish skipped - version not higher":
+
+- Increment version in `package.json`
+- Also update version in `index.ts` (MCP server version)

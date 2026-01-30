@@ -1,6 +1,10 @@
 # Yggdrasil MCP
 
-**Reasoning orchestration framework** - Tree of Thoughts with multi-agent evaluation.
+[![npm version](https://img.shields.io/npm/v/yggdrasil-mcp.svg)](https://www.npmjs.com/package/yggdrasil-mcp)
+[![CI](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-publish.yml/badge.svg)](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Reasoning orchestration MCP server** — Tree of Thoughts with multi-agent evaluation.
 
 A fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an ambitious roadmap for advanced reasoning capabilities.
 
@@ -14,9 +18,10 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v0.6.x)
+### Current (v0.7.x)
 
-- **String coercion fix** - Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
+- **String coercion fix** — Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
+- **Strict TypeScript** — Full lint skill compliance with strictTypeChecked
 - Break down complex problems into manageable steps
 - Revise and refine thoughts as understanding deepens
 - Branch into alternative paths of reasoning
@@ -41,20 +46,7 @@ See [plans/yggdrasil-roadmap.md](plans/yggdrasil-roadmap.md) for the full 5-phas
 claude mcp add --scope user yggdrasil "npx -y yggdrasil-mcp"
 ```
 
-Or run from local build:
-
-```json
-{
-  "mcpServers": {
-    "yggdrasil": {
-      "command": "node",
-      "args": ["/path/to/yggdrasil-mcp/dist/index.js"]
-    }
-  }
-}
-```
-
-### Claude Desktop
+Or add to `~/.claude.json`:
 
 ```json
 {
@@ -67,42 +59,126 @@ Or run from local build:
 }
 ```
 
-## Tool
+### Claude Desktop
 
-### sequentialthinking
+Add to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "npx",
+      "args": ["-y", "yggdrasil-mcp"]
+    }
+  }
+}
+```
+
+### Local Development
+
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "node",
+      "args": ["/path/to/yggdrasil-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+## Tool: sequentialthinking
 
 Facilitates a detailed, step-by-step thinking process for problem-solving and analysis.
 
-**Inputs:**
+### Parameters
 
-- `thought` (string): The current thinking step
-- `nextThoughtNeeded` (boolean): Whether another thought step is needed
-- `thoughtNumber` (integer): Current thought number
-- `totalThoughts` (integer): Estimated total thoughts needed
-- `isRevision` (boolean, optional): Whether this revises previous thinking
-- `revisesThought` (integer, optional): Which thought is being reconsidered
-- `branchFromThought` (integer, optional): Branching point thought number
-- `branchId` (string, optional): Branch identifier
-- `needsMoreThoughts` (boolean, optional): If more thoughts are needed
+#### Required
 
-## Usage
+| Parameter           | Type    | Description                            |
+| ------------------- | ------- | -------------------------------------- |
+| `thought`           | string  | The current thinking step              |
+| `nextThoughtNeeded` | boolean | Whether another thought step is needed |
+| `thoughtNumber`     | integer | Current thought number (≥1)            |
+| `totalThoughts`     | integer | Estimated total thoughts needed (≥1)   |
+
+#### Optional
+
+| Parameter           | Type    | Description                            |
+| ------------------- | ------- | -------------------------------------- |
+| `isRevision`        | boolean | Whether this revises previous thinking |
+| `revisesThought`    | integer | Which thought is being reconsidered    |
+| `branchFromThought` | integer | Branching point thought number         |
+| `branchId`          | string  | Branch identifier                      |
+| `needsMoreThoughts` | boolean | If more thoughts are needed            |
+
+### Output
+
+```json
+{
+  "thoughtNumber": 3,
+  "totalThoughts": 5,
+  "nextThoughtNeeded": true,
+  "branches": ["branch-a"],
+  "thoughtHistoryLength": 3
+}
+```
+
+## Use Cases
 
 Yggdrasil is designed for:
 
-- Breaking down complex problems into steps
-- Planning and design with room for revision
-- Analysis that might need course correction
-- Problems where the full scope might not be clear initially
-- Tasks that need to maintain context over multiple steps
-- Situations where irrelevant information needs to be filtered out
+- **Complex problem decomposition** — Break down multi-step problems
+- **Iterative planning** — Design with room for revision
+- **Course correction** — Analysis that adapts as understanding deepens
+- **Scope discovery** — Problems where the full scope isn't clear initially
+- **Context maintenance** — Tasks requiring state across multiple steps
+- **Information filtering** — Situations where irrelevant details need filtering
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable                  | Default | Purpose                        |
+| Variable                  | Default | Description                    |
 | ------------------------- | ------- | ------------------------------ |
 | `DISABLE_THOUGHT_LOGGING` | `false` | Suppress stderr thought output |
+
+## The String Coercion Fix
+
+This fork addresses a critical bug in Claude Code (#3084) where MCP parameters are serialized as strings regardless of their schema type.
+
+### The Problem
+
+```typescript
+// Claude Code sends:
+{ nextThoughtNeeded: "true", thoughtNumber: "5" }
+
+// Instead of:
+{ nextThoughtNeeded: true, thoughtNumber: 5 }
+```
+
+Using `z.coerce.boolean()` is **dangerous**:
+
+```typescript
+z.coerce.boolean().parse('false'); // Returns TRUE! (non-empty string = truthy)
+```
+
+### Our Solution
+
+```typescript
+// Safe coercion that correctly handles "false" → false
+const coerceBoolean = (val: unknown): boolean => {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    if (val.toLowerCase() === 'true') return true;
+    if (val.toLowerCase() === 'false') return false;
+  }
+  throw new Error(`Cannot coerce "${val}" to boolean`);
+};
+
+// Applied via z.preprocess (NOT z.coerce)
+const booleanSchema = z.preprocess(coerceBoolean, z.boolean());
+```
 
 ## Development
 
@@ -113,29 +189,26 @@ pnpm install
 # Build
 pnpm build
 
-# Test
+# Run tests
 pnpm test
+
+# Lint
+pnpm lint
+
+# Format
+pnpm format
+
+# Full quality check
+pnpm check
 
 # Watch mode
 pnpm watch
 ```
 
-## String Coercion Fix
+### Requirements
 
-The critical fix in this fork addresses Claude Code bug #3084 where MCP parameters are serialized as strings regardless of schema type. We use safe `z.preprocess` coercion instead of `z.coerce`:
-
-```typescript
-// z.coerce.boolean() is DANGEROUS - treats "false" as truthy!
-// Our safe implementation:
-const coerceBoolean = (val: unknown): boolean => {
-  if (typeof val === 'boolean') return val;
-  if (typeof val === 'string') {
-    if (val.toLowerCase() === 'true') return true;
-    if (val.toLowerCase() === 'false') return false;
-  }
-  throw new Error(`Cannot coerce "${val}" to boolean`);
-};
-```
+- Node.js ≥18
+- pnpm
 
 ## Upstream
 
@@ -143,6 +216,44 @@ This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://git
 
 We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
+## Changelog
+
+### v0.7.0 (2026-01-31)
+
+- **Full lint skill compliance** with 6 additional ESLint plugins
+- **Strict TypeScript** checking (strictTypeChecked + stylisticTypeChecked)
+- Node 24.x added to CI test matrix
+- Code fixes: top-level await, nullish coalescing, typed catch callbacks
+
+### v0.6.3 (2026-01-30)
+
+- **TypeScript ironclad stack**: ESLint 9.x, Prettier, Husky, lint-staged
+- Vitest 4.x upgrade (fixes esbuild security vulnerability)
+- CI lint and typecheck steps
+
+### v0.6.2 (2026-01-30)
+
+- GitHub Actions CI/CD with OIDC npm publishing
+- Dependabot weekly updates
+
+### v0.6.0 (2026-01-30)
+
+- **Critical fix**: Claude Code string coercion bug #3084
+- Safe `z.preprocess` coercion for boolean and number types
+
+### v0.5.0 (2026-01-30)
+
+- Initial fork from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
+
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please ensure:
+
+1. All tests pass (`pnpm test`)
+2. Linting passes (`pnpm lint`)
+3. Code is formatted (`pnpm format`)
+4. Version is incremented appropriately
