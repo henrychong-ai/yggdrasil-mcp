@@ -34,31 +34,6 @@ Implement comprehensive code quality infrastructure matching mcp-neo4j-knowledge
 
 ---
 
-### Configure NPM_TOKEN GitHub Secret
-**Status**: Pending
-**Created**: 2025-01-30
-
-Add NPM_TOKEN secret to enable automated publishing via GitHub Actions.
-
-**Steps:**
-
-1. **Get npm token from 1Password:**
-   ```bash
-   op read "op://Technology/npm/Access Tokens/claude-code" --account my.1password.com
-   ```
-
-2. **Add secret to GitHub repo:**
-   - Go to: https://github.com/henrychong-ai/yggdrasil-mcp/settings/secrets/actions
-   - Click "New repository secret"
-   - Name: `NPM_TOKEN`
-   - Value: (paste token from step 1)
-   - Click "Add secret"
-
-3. **Test by pushing a version bump to main:**
-   - Update version in package.json (e.g., 0.6.3 → 0.6.4)
-   - Push to main
-   - Check Actions tab for successful publish
-
 ---
 
 ## P2 - Medium Priority
@@ -93,8 +68,7 @@ Created `.github/workflows/ci-publish.yml` with:
 - Build and test on all branches (Node 20.x, 22.x)
 - Auto-publish to npm on main branch push
 - Version comparison (only publishes if version > published)
-- npm OIDC provenance attestation (`--provenance` flag)
-- NPM_TOKEN secret for authentication
+- npm OIDC authentication (no token required, same as mcp-neo4j-knowledge-graph)
 
 Also added:
 - `.github/dependabot.yml` for weekly dependency updates
