@@ -95,7 +95,7 @@ yggdrasil-mcp/
 │   └── yggdrasil-roadmap.md # 5-phase feature roadmap
 ├── .github/
 │   ├── workflows/
-│   │   └── ci-publish.yml   # CI + npm OIDC publish
+│   │   └── ci-cd.yml        # CI + npm publish on v* tags
 │   └── dependabot.yml       # Weekly dependency updates
 ├── eslint.config.js         # ESLint 9 flat config (full plugin stack)
 ├── tsconfig.json            # TypeScript config (ES2022, NodeNext)
@@ -218,18 +218,18 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ## CI/CD Pipeline
 
-### GitHub Actions (`ci-publish.yml`)
+### GitHub Actions (`ci-cd.yml`)
 
-| Job                | Trigger                               | Node Versions    |
-| ------------------ | ------------------------------------- | ---------------- |
-| **Build and Test** | All pushes, PRs                       | 20.x, 22.x, 24.x |
-| **Publish to npm** | Push to main (if version > published) | 22.x             |
+| Job                | Trigger           | Node Versions    |
+| ------------------ | ----------------- | ---------------- |
+| **Build and Test** | All pushes, PRs   | 20.x, 22.x, 24.x |
+| **Publish to npm** | Tags matching v*  | 24.x             |
 
 ### npm Publishing
 
-- **Authentication**: OIDC (no NPM_TOKEN required)
-- **Provenance**: Enabled via `id-token: write` permission
-- **Version Check**: Only publishes if `package.json` version > npm registry version
+- **Trigger**: Only on version tags (e.g., `v0.7.1`)
+- **Authentication**: NPM_TOKEN secret (unscoped packages require explicit token, not OIDC)
+- **Version Check**: Tag must match `package.json` version
 
 ## Configuration
 
@@ -295,7 +295,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 - `tsconfig.eslint.json`: Separate tsconfig for linting (includes test files)
 - `vitest.config.ts`: Ironclad-compliant config with 90% thresholds, reporters, timeouts
 - `package.json`: TypeScript ^5.7.0, `engines: >=18`, `check` script
-- `.github/workflows/ci-publish.yml`: Node matrix expanded to 20.x, 22.x, 24.x
+- `.github/workflows/ci-cd.yml`: Node matrix expanded to 20.x, 22.x, 24.x
 
 **Code Quality:**
 
