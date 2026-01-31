@@ -14,7 +14,7 @@ import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.7.1',
+  version: '0.7.2',
 });
 
 const thinkingServer = new SequentialThinkingServer();

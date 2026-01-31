@@ -218,10 +218,14 @@ We periodically sync relevant changes from upstream while maintaining our string
 
 ## Changelog
 
+### v0.7.2 (2026-01-31)
+
+- Documentation: Task integration plan, updated TODO.md
+- Scaffolding: LICENSE, `.node-version`, `exports`, `packageManager` field
+
 ### v0.7.1 (2026-01-31)
 
 - CI/CD: pnpm 9→10, Node 24.x for publish, renamed workflow to `ci-cd.yml`
-- Scaffolding: Added LICENSE, `.node-version`, `exports` field, `packageManager` field
 
 ### v0.7.0 (2026-01-31)
 
