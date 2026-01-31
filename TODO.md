@@ -8,19 +8,7 @@ _None currently_
 
 ## P2 - Medium Priority
 
-### Expand Test Coverage to 80%+
-
-**Status**: Pending
-**Created**: 2025-01-30
-
-Current coverage: ~46% (lib.ts: 97%, index.ts: 0%)
-
-**Tasks:**
-
-- [ ] Add unit tests for index.ts MCP server setup
-- [ ] Add integration tests for MCP tool registration
-- [ ] Add tests for string coercion edge cases
-- [ ] Target: 80%+ overall coverage
+_None currently_
 
 ---
 
@@ -31,6 +19,16 @@ _None yet_
 ---
 
 ## Completed
+
+### Expand Test Coverage to 90%+
+
+**Status**: ✅ Completed
+**Created**: 2025-01-30
+**Completed**: 2025-01-31
+
+Coverage now at 98%+ (37 tests across lib.ts and coercion.ts). 90% threshold enforced in CI.
+
+---
 
 ### Implement Full Ironclad Stack
 
@@ -84,12 +82,11 @@ Published `yggdrasil-mcp@0.6.3` to npm registry.
 **Created**: 2025-01-30
 **Completed**: 2025-01-30
 
-Created `.github/workflows/ci-publish.yml` with:
+Created `.github/workflows/ci-cd.yml` with:
 
-- Build and test on all branches (Node 20.x, 22.x)
-- Auto-publish to npm on main branch push
-- Version comparison (only publishes if version > published)
-- npm OIDC authentication (no token required, same as mcp-neo4j-knowledge-graph)
+- Build and test on all branches (Node 20.x, 22.x, 24.x)
+- Publish to npm on v* tags
+- NPM_TOKEN authentication (unscoped packages require explicit token)
 
 Also added:
 
