@@ -88,8 +88,10 @@ pnpm watch
 yggdrasil-mcp/
 ├── index.ts                 # MCP server entry point with string coercion fix
 ├── lib.ts                   # SequentialThinkingServer class
+├── coercion.ts              # Safe type coercion helpers (boolean, number)
 ├── __tests__/
-│   └── lib.test.ts          # Vitest test suite (14 tests)
+│   ├── lib.test.ts          # Server test suite (14 tests)
+│   └── coercion.test.ts     # Coercion test suite (23 tests)
 ├── dist/                    # Compiled output (npm package)
 ├── plans/
 │   └── yggdrasil-roadmap.md # 5-phase feature roadmap
@@ -103,6 +105,8 @@ yggdrasil-mcp/
 ├── vitest.config.ts         # Vitest configuration
 ├── .prettierrc              # Prettier configuration
 ├── .prettierignore          # Prettier ignore patterns
+├── .node-version            # Node.js version (24)
+├── LICENSE                  # MIT (Anthropic + Henry Chong)
 └── .husky/
     └── pre-commit           # lint-staged on commit
 ```

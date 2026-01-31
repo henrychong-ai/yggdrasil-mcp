@@ -33,9 +33,16 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "engines": {
     "node": ">=18"
   },
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "build": "shx rm -rf dist && tsc && shx chmod +x dist/*.js",
     "prepare": "husky",

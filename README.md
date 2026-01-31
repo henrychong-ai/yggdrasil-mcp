@@ -1,7 +1,7 @@
 # Yggdrasil MCP
 
 [![npm version](https://img.shields.io/npm/v/yggdrasil-mcp.svg)](https://www.npmjs.com/package/yggdrasil-mcp)
-[![CI](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-publish.yml/badge.svg)](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-publish.yml)
+[![CI](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Reasoning orchestration MCP server** — Tree of Thoughts with multi-agent evaluation.
@@ -207,8 +207,8 @@ pnpm watch
 
 ### Requirements
 
-- Node.js ≥18
-- pnpm
+- Node.js ≥18 (`.node-version` pins to 24)
+- pnpm (corepack-managed via `packageManager` field)
 
 ## Upstream
 
@@ -217,6 +217,11 @@ This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://git
 We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
 ## Changelog
+
+### v0.7.1 (2026-01-31)
+
+- CI/CD: pnpm 9→10, Node 24.x for publish, renamed workflow to `ci-cd.yml`
+- Scaffolding: Added LICENSE, `.node-version`, `exports` field, `packageManager` field
 
 ### v0.7.0 (2026-01-31)
 
