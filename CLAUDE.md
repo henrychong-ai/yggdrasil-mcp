@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.2.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.4.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | --------------- | ------------------------------------------------------ |
 | Language        | TypeScript 5.3.3                                       |
 | Runtime         | Node.js >=18                                           |
-| MCP SDK         | @modelcontextprotocol/sdk 1.25.2                       |
+| MCP SDK         | @modelcontextprotocol/sdk 1.26.0                       |
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
 | Linting         | ESLint 9.39.2 (flat config) + typescript-eslint 8.54.0 |
@@ -94,11 +94,21 @@ yggdrasil-mcp/
 │   └── coercion.test.ts     # Coercion test suite (23 tests)
 ├── dist/                    # Compiled output (npm package)
 ├── plans/
-│   └── yggdrasil-roadmap.md # 5-phase feature roadmap
+│   ├── yggdrasil-roadmap.md # 5-phase feature roadmap
+│   ├── task-integration-plan.md    # Claude Code Tasks integration
+│   └── branch-evaluation-approaches.md # Evaluation strategies
 ├── .github/
 │   ├── workflows/
 │   │   └── ci-cd.yml        # CI + npm publish on v* tags
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md    # Bug report template
+│   │   ├── feature_request.md # Feature request template
+│   │   └── config.yml       # Template chooser config
+│   ├── PULL_REQUEST_TEMPLATE.md # PR checklist
 │   └── dependabot.yml       # Weekly dependency updates
+├── CONTRIBUTING.md          # Contribution guidelines
+├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1
+├── SECURITY.md              # Vulnerability reporting policy
 ├── eslint.config.js         # ESLint 9 flat config (full plugin stack)
 ├── tsconfig.json            # TypeScript config (ES2022, NodeNext)
 ├── tsconfig.eslint.json     # TypeScript config for linting (includes tests)
@@ -269,6 +279,28 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.7.4 (2026-02-05)
+
+**Security Fix**
+
+- Fix @isaacs/brace-expansion vulnerability (CVE-2026-25547) via pnpm override to 5.0.1
+
+---
+
+### v0.7.3 (2026-02-05)
+
+**Security Fix + Public Release Preparation**
+
+- Fix @modelcontextprotocol/sdk vulnerability (CVE-2026-25536) - upgrade to 1.26.0
+- Add community files: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md
+- Add GitHub issue templates (bug report, feature request)
+- Add pull request template with checklist
+- Enhance .gitignore with comprehensive patterns
+- Remove unused yargs dependency
+- Rewrite git history: change author email, redact 1Password references
+
+---
 
 ### v0.7.2 (2026-01-31)
 
