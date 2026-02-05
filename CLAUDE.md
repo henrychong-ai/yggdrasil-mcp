@@ -227,7 +227,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 | Job                | Trigger           | Node Versions    |
 | ------------------ | ----------------- | ---------------- |
 | **Build and Test** | All pushes, PRs   | 20.x, 22.x, 24.x |
-| **Publish to npm** | Tags matching v*  | 24.x             |
+| **Publish to npm** | Tags matching v\* | 24.x             |
 
 ### npm Publishing
 

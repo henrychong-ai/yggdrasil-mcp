@@ -85,7 +85,7 @@ Published `yggdrasil-mcp@0.6.3` to npm registry.
 Created `.github/workflows/ci-cd.yml` with:
 
 - Build and test on all branches (Node 20.x, 22.x, 24.x)
-- Publish to npm on v* tags
+- Publish to npm on v\* tags
 - NPM_TOKEN authentication (unscoped packages require explicit token)
 
 Also added:

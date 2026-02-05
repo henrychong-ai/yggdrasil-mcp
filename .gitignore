@@ -1,6 +1,38 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# Test coverage
 coverage/
+
+# Logs
 *.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Package manager locks (pnpm project)
 package-lock.json
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.*.local
+*.local
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

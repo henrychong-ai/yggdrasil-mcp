@@ -11,6 +11,7 @@
 This plan outlines the integration between Yggdrasil's reasoning capabilities and Claude Code's Task management system. The goal is to create a **reasoning-first task management** approach where tasks are systematically derived from structured thinking rather than created ad-hoc.
 
 **Key Value Proposition:**
+
 - Every task has a traceable reasoning trail
 - Task failures trigger structured analysis
 - Complex work is broken down systematically
@@ -22,33 +23,33 @@ This plan outlines the integration between Yggdrasil's reasoning capabilities an
 
 ### Claude Code Tasks
 
-| Feature | Description |
-|---------|-------------|
-| **Tools** | TaskCreate, TaskUpdate, TaskList, TaskGet |
-| **Status Flow** | pending → in_progress → completed |
-| **Dependencies** | blockedBy/blocks relationships |
-| **Display** | Ctrl+T task list, spinner with activeForm |
-| **Persistence** | Session-persistent, survives context compaction |
+| Feature          | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| **Tools**        | TaskCreate, TaskUpdate, TaskList, TaskGet       |
+| **Status Flow**  | pending → in_progress → completed               |
+| **Dependencies** | blockedBy/blocks relationships                  |
+| **Display**      | Ctrl+T task list, spinner with activeForm       |
+| **Persistence**  | Session-persistent, survives context compaction |
 
 ### Yggdrasil (sequentialthinking)
 
-| Feature | Description |
-|---------|-------------|
-| **Purpose** | Structured reasoning with branching |
-| **Branching** | branchFromThought, branchId |
-| **Revision** | isRevision, revisesThought |
-| **State** | In-memory only (currently) |
-| **Output** | Formatted thought boxes |
+| Feature       | Description                         |
+| ------------- | ----------------------------------- |
+| **Purpose**   | Structured reasoning with branching |
+| **Branching** | branchFromThought, branchId         |
+| **Revision**  | isRevision, revisesThought          |
+| **State**     | In-memory only (currently)          |
+| **Output**    | Formatted thought boxes             |
 
 ### Conceptual Comparison
 
-| Aspect | Tasks | Thoughts |
-|--------|-------|----------|
-| **Purpose** | WHAT to do (execution) | HOW to think (reasoning) |
-| **Granularity** | Action-oriented | Analysis-oriented |
-| **Dependencies** | Explicit (blockedBy) | Implicit (sequence) |
-| **Branching** | No native support | Native support |
-| **Parallelism** | Can run parallel | Sequential by design |
+| Aspect           | Tasks                  | Thoughts                 |
+| ---------------- | ---------------------- | ------------------------ |
+| **Purpose**      | WHAT to do (execution) | HOW to think (reasoning) |
+| **Granularity**  | Action-oriented        | Analysis-oriented        |
+| **Dependencies** | Explicit (blockedBy)   | Implicit (sequence)      |
+| **Branching**    | No native support      | Native support           |
+| **Parallelism**  | Can run parallel       | Sequential by design     |
 
 ---
 
@@ -147,7 +148,7 @@ Tasks can trigger Yggdrasil analysis:
 
 ```typescript
 if (taskComplexity > threshold || taskFails) {
-  await callTool("sequentialthinking", {
+  await callTool('sequentialthinking', {
     thought: `Task "${task.subject}" needs analysis...`,
     sessionId: task.id,
   });
@@ -214,12 +215,14 @@ if (taskComplexity > threshold || taskFails) {
 ```
 
 **Behavior:**
+
 - If `createTask: true`, call TaskCreate after recording thought
 - Auto-generate subject from thought content (first sentence)
 - Auto-generate activeForm (e.g., "Analyzing authentication flow")
 - Map thought dependencies to task blockedBy
 
 **Implementation:**
+
 1. Add optional params to Zod schema
 2. Extract subject/activeForm from thought text
 3. Call TaskCreate when createTask is true
@@ -239,10 +242,10 @@ interface GenerateTasksInput {
   mode: 'all' | 'conclusions' | 'branch' | 'actionable';
   branchId?: string;
   sessionId?: string;
-  autoStart?: boolean;           // Start first unblocked task
-  parallel?: boolean;            // Allow parallel task creation
+  autoStart?: boolean; // Start first unblocked task
+  parallel?: boolean; // Allow parallel task creation
   dependencyInference?: 'strict' | 'loose' | 'none';
-  minConfidence?: number;        // Only thoughts above this confidence
+  minConfidence?: number; // Only thoughts above this confidence
 }
 ```
 
@@ -343,19 +346,19 @@ interface UnifiedSession {
 
 **Task → Yggdrasil Triggers:**
 
-| Trigger | Action |
-|---------|--------|
-| Task complexity > threshold | Spawn decomposition analysis |
-| Task fails | Analyze failure, propose alternatives |
-| Task blocked > timeout | Investigate blockers |
-| Decision needed | Branch evaluation |
+| Trigger                     | Action                                |
+| --------------------------- | ------------------------------------- |
+| Task complexity > threshold | Spawn decomposition analysis          |
+| Task fails                  | Analyze failure, propose alternatives |
+| Task blocked > timeout      | Investigate blockers                  |
+| Decision needed             | Branch evaluation                     |
 
 **Implementation:**
 
 ```typescript
 async function onTaskEvent(event: TaskEvent) {
   if (event.type === 'failed') {
-    await callTool("sequentialthinking", {
+    await callTool('sequentialthinking', {
       thought: `Task "${event.task.subject}" failed. Analyzing...`,
       sessionId: event.task.id,
       thoughtNumber: 1,
@@ -376,7 +379,7 @@ async function onTaskEvent(event: TaskEvent) {
 async function evaluateTaskPlan(tasks: Task[]): Promise<Evaluation> {
   const prompt = `Evaluate this task plan:\n${JSON.stringify(tasks)}`;
 
-  return await callTool("mcp__codex__codex", {
+  return await callTool('mcp__codex__codex', {
     prompt,
     config: { model: 'gpt-5.2-codex' },
   });
@@ -412,9 +415,9 @@ async function triggerWorkflow(config: WorkflowConfig, session: UnifiedSession) 
 
 ```typescript
 interface MCTSConfig {
-  simulations: number;       // Number of rollouts
+  simulations: number; // Number of rollouts
   explorationConstant: number; // UCB1 tuning
-  maxDepth: number;          // Max task chain length
+  maxDepth: number; // Max task chain length
 }
 
 async function optimizeTaskOrder(tasks: Task[], config: MCTSConfig): Promise<Task[]> {
@@ -445,26 +448,26 @@ async function executeParallel(group: Task[], config: ParallelConfig) {
 
 ### Benefits
 
-| Benefit | Description |
-|---------|-------------|
-| **Traceability** | Every task has reasoning trail |
-| **Visibility** | User sees thinking + doing |
-| **Adaptability** | Failures trigger analysis |
-| **Auditability** | Complete decision record |
-| **Resumability** | Task list persists |
-| **Parallelism** | Independent tasks run simultaneously |
-| **Dependencies** | Explicit blocking prevents errors |
-| **Progress** | Real-time status via task display |
+| Benefit          | Description                          |
+| ---------------- | ------------------------------------ |
+| **Traceability** | Every task has reasoning trail       |
+| **Visibility**   | User sees thinking + doing           |
+| **Adaptability** | Failures trigger analysis            |
+| **Auditability** | Complete decision record             |
+| **Resumability** | Task list persists                   |
+| **Parallelism**  | Independent tasks run simultaneously |
+| **Dependencies** | Explicit blocking prevents errors    |
+| **Progress**     | Real-time status via task display    |
 
 ### Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| Task completion rate | > 95% |
-| Dependency accuracy | > 90% inferred correctly |
-| User satisfaction | Positive feedback on traceability |
-| Performance | < 100ms overhead per thought |
-| Adoption | Used in > 50% of complex tasks |
+| Metric               | Target                            |
+| -------------------- | --------------------------------- |
+| Task completion rate | > 95%                             |
+| Dependency accuracy  | > 90% inferred correctly          |
+| User satisfaction    | Positive feedback on traceability |
+| Performance          | < 100ms overhead per thought      |
+| Adoption             | Used in > 50% of complex tasks    |
 
 ---
 
@@ -472,21 +475,21 @@ async function executeParallel(group: Task[], config: ParallelConfig) {
 
 ### Dependencies
 
-| Dependency | Status | Risk |
-|------------|--------|------|
-| Claude Code Task API | Internal, undocumented | May change |
-| Yggdrasil persistence (v1.1) | Planned | Required for session linking |
-| Codex MCP (v2.0) | Available | External dependency |
-| n8n integration (v2.5) | Planned | Complex setup |
+| Dependency                   | Status                 | Risk                         |
+| ---------------------------- | ---------------------- | ---------------------------- |
+| Claude Code Task API         | Internal, undocumented | May change                   |
+| Yggdrasil persistence (v1.1) | Planned                | Required for session linking |
+| Codex MCP (v2.0)             | Available              | External dependency          |
+| n8n integration (v2.5)       | Planned                | Complex setup                |
 
 ### Risks
 
-| Risk | Mitigation |
-|------|------------|
-| Task API changes | Abstract behind interface |
-| Performance overhead | Lazy evaluation, caching |
-| Complexity creep | Phased rollout, feature flags |
-| User confusion | Clear documentation, gradual disclosure |
+| Risk                 | Mitigation                              |
+| -------------------- | --------------------------------------- |
+| Task API changes     | Abstract behind interface               |
+| Performance overhead | Lazy evaluation, caching                |
+| Complexity creep     | Phased rollout, feature flags           |
+| User confusion       | Clear documentation, gradual disclosure |
 
 ---
 
