@@ -774,6 +774,26 @@ describe('DeepPlanningServer', () => {
       expect(step.title).toBe('Canonical');
       expect(step.description).toBe('Canonical Desc');
     });
+
+    it('should fall back when title/description are non-string types', () => {
+      const step = normalizePlanStep({ title: 42, description: true }, 0);
+      expect(step.title).toBe('Step 1');
+      expect(step.description).toBe('');
+    });
+
+    it('should skip null alias values and check next alias', () => {
+      const step = normalizePlanStep({ title: null, action: 'Fallback Action' }, 0);
+      expect(step.title).toBe('Fallback Action');
+    });
+
+    it('should handle completely empty object', () => {
+      const step = normalizePlanStep({}, 4);
+      expect(step.title).toBe('Step 5');
+      expect(step.description).toBe('');
+      expect(step.files).toBeUndefined();
+      expect(step.dependencies).toBeUndefined();
+      expect(step.complexity).toBeUndefined();
+    });
   });
 
   describe('finalize with step aliases', () => {
