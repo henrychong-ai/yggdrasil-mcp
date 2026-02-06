@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.0.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.1.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
+| **Version**   | 0.8.1                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -314,6 +315,17 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.8.1 (2026-02-06)
+
+**Fix: Step field normalization in deep_planning**
+
+- Fix finalize phase rendering "Step N: undefined" when step objects use non-canonical field names
+- Add `normalizePlanStep()` helper that maps common aliases: `action`→`title`, `detail`→`description`, `name`→`title`, `details`/`info`→`description`
+- Falls back to "Step N" / "" when no recognized field is present
+- 8 new tests for step normalization (101 total)
+
+---
 
 ### v0.8.0 (2026-02-06)
 

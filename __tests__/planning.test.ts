@@ -6,6 +6,7 @@ import {
   type DeepPlanningInput,
   type DeepPlanningOutput,
   type EvaluationScores,
+  normalizePlanStep,
 } from '../planning.js';
 
 function parseOutput(
@@ -714,6 +715,90 @@ describe('DeepPlanningServer', () => {
       const highRisk: EvaluationScores = { feasibility: 5, completeness: 5, coherence: 5, risk: 9 };
 
       expect(calculateWeightedScore(lowRisk)).toBeGreaterThan(calculateWeightedScore(highRisk));
+    });
+  });
+
+  // ─── Step Normalization ─────────────────────────────────────────────────
+
+  describe('normalizePlanStep', () => {
+    it('should pass through canonical title/description fields', () => {
+      const step = normalizePlanStep({ title: 'Setup', description: 'Install deps' }, 0);
+      expect(step.title).toBe('Setup');
+      expect(step.description).toBe('Install deps');
+    });
+
+    it('should map action to title and detail to description', () => {
+      const step = normalizePlanStep({ action: 'Deploy', detail: 'Push to prod' }, 0);
+      expect(step.title).toBe('Deploy');
+      expect(step.description).toBe('Push to prod');
+    });
+
+    it('should map name to title and details to description', () => {
+      const step = normalizePlanStep({ name: 'Configure', details: 'Set env vars' }, 0);
+      expect(step.title).toBe('Configure');
+      expect(step.description).toBe('Set env vars');
+    });
+
+    it('should map step to title and info to description', () => {
+      const step = normalizePlanStep({ step: 'Test', info: 'Run vitest' }, 0);
+      expect(step.title).toBe('Test');
+      expect(step.description).toBe('Run vitest');
+    });
+
+    it('should fall back to "Step N" when no title alias found', () => {
+      const step = normalizePlanStep({ order: 1 }, 2);
+      expect(step.title).toBe('Step 3');
+      expect(step.description).toBe('');
+    });
+
+    it('should preserve optional fields (files, dependencies, complexity)', () => {
+      const step = normalizePlanStep(
+        { title: 'T', description: 'D', files: ['a.ts'], dependencies: [1], complexity: 'high' },
+        0
+      );
+      expect(step.files).toEqual(['a.ts']);
+      expect(step.dependencies).toEqual([1]);
+      expect(step.complexity).toBe('high');
+    });
+
+    it('should prefer canonical fields over aliases', () => {
+      const step = normalizePlanStep(
+        {
+          title: 'Canonical',
+          action: 'Alias',
+          description: 'Canonical Desc',
+          detail: 'Alias Desc',
+        },
+        0
+      );
+      expect(step.title).toBe('Canonical');
+      expect(step.description).toBe('Canonical Desc');
+    });
+  });
+
+  describe('finalize with step aliases', () => {
+    it('should render steps correctly when using action/detail field names', () => {
+      initSession(server);
+      addApproach(server, 'a', 'Approach A');
+      evaluateApproach(server, 'a');
+
+      const result = parseOutput(
+        server.processPlanningStep({
+          phase: 'finalize',
+          selectedBranch: 'a',
+          steps: JSON.stringify([
+            { order: 1, action: 'Set up Redis', detail: 'Use Upstash' },
+            { order: 2, action: 'Add middleware', detail: 'Cache layer' },
+          ]),
+        })
+      );
+
+      expect(result.status).toBe('complete');
+      expect(result.plan).toContain('### Step 1: Set up Redis');
+      expect(result.plan).toContain('Use Upstash');
+      expect(result.plan).toContain('### Step 2: Add middleware');
+      expect(result.plan).toContain('Cache layer');
+      expect(result.plan).not.toContain('undefined');
     });
   });
 

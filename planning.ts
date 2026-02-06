@@ -170,6 +170,19 @@ function parseJsonArray<T>(value: string | undefined, fieldName: string): T[] {
   }
 }
 
+export function normalizePlanStep(raw: Record<string, unknown>, index: number): PlanStep {
+  const rawTitle = raw.title ?? raw.action ?? raw.name ?? raw.step;
+  const rawDescription = raw.description ?? raw.detail ?? raw.details ?? raw.info;
+
+  return {
+    title: typeof rawTitle === 'string' ? rawTitle : `Step ${String(index + 1)}`,
+    description: typeof rawDescription === 'string' ? rawDescription : '',
+    ...(raw.files ? { files: raw.files as string[] } : {}),
+    ...(raw.dependencies ? { dependencies: raw.dependencies as number[] } : {}),
+    ...(raw.complexity ? { complexity: raw.complexity as 'low' | 'medium' | 'high' } : {}),
+  };
+}
+
 export function calculateWeightedScore(scores: EvaluationScores): number {
   const raw =
     scores.feasibility * SCORE_WEIGHTS.feasibility +
@@ -523,7 +536,8 @@ export class DeepPlanningServer {
     }
 
     session.selectedApproach = input.selectedBranch;
-    session.steps = parseJsonArray<PlanStep>(input.steps, 'steps');
+    const rawSteps = parseJsonArray<Record<string, unknown>>(input.steps, 'steps');
+    session.steps = rawSteps.map((raw, i) => normalizePlanStep(raw, i));
     session.risks = parseJsonArray<PlanRisk>(input.risks, 'risks');
     session.assumptions = parseJsonStringArray(input.assumptions, 'assumptions');
     session.successCriteria = parseJsonStringArray(input.successCriteria, 'successCriteria');
