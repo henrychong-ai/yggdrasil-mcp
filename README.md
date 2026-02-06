@@ -18,7 +18,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v0.7.x)
+### Current (v0.7.5)
 
 - **String coercion fix** — Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
 - **Strict TypeScript** — Full lint skill compliance with strictTypeChecked
@@ -30,7 +30,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ### Roadmap
 
-See [plans/yggdrasil-roadmap.md](plans/yggdrasil-roadmap.md) for the full 5-phase roadmap including:
+See [.claude/plans/yggdrasil-roadmap.md](.claude/plans/yggdrasil-roadmap.md) for the full 5-phase roadmap including:
 
 - Thought history retrieval and persistence (JSONL)
 - Mermaid diagram export
@@ -87,7 +87,7 @@ Add to your Claude Desktop config:
 }
 ```
 
-## Tool: sequentialthinking
+## Tool: sequential_thinking
 
 Facilitates a detailed, step-by-step thinking process for problem-solving and analysis.
 
@@ -217,6 +217,10 @@ This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://git
 We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
 ## Changelog
+
+### v0.7.5 (2026-02-06)
+
+- **Rename** MCP tool from `sequentialthinking` to `sequential_thinking` (snake_case ecosystem alignment)
 
 ### v0.7.2 (2026-01-31)
 

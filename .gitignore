@@ -26,6 +26,9 @@ package-lock.json
 .env.*.local
 *.local
 
+# Claude Code (local config)
+.claude/
+
 # IDE/Editor
 .idea/
 .vscode/
@@ -36,3 +39,6 @@ package-lock.json
 # Temporary files
 *.tmp
 *.temp
+
+# Project management
+TODO.md

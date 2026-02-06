@@ -14,13 +14,13 @@ import { SequentialThinkingServer } from './lib.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.7.4',
+  version: '0.7.5',
 });
 
 const thinkingServer = new SequentialThinkingServer();
 
 server.registerTool(
-  'sequentialthinking',
+  'sequential_thinking',
   {
     title: 'Sequential Thinking',
     description: `A detailed tool for dynamic and reflective problem-solving through thoughts.

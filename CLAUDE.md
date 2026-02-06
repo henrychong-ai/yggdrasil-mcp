@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.4.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.5.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
-| **Tool Name** | `sequentialthinking`                                                             |
-| **MCP Tool**  | `mcp__yggdrasil__sequentialthinking`                                             |
+| **Tool Name** | `sequential_thinking`                                                            |
+| **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
 
 ## Tech Stack
 
@@ -93,10 +93,14 @@ yggdrasil-mcp/
 │   ├── lib.test.ts          # Server test suite (14 tests)
 │   └── coercion.test.ts     # Coercion test suite (23 tests)
 ├── dist/                    # Compiled output (npm package)
-├── plans/
-│   ├── yggdrasil-roadmap.md # 5-phase feature roadmap
-│   ├── task-integration-plan.md    # Claude Code Tasks integration
-│   └── branch-evaluation-approaches.md # Evaluation strategies
+├── .claude/
+│   ├── plans/               # Implementation plans (gitignored)
+│   │   ├── yggdrasil-roadmap.md
+│   │   ├── task-integration-plan.md
+│   │   ├── branch-evaluation-approaches.md
+│   │   ├── rename-sequential-thinking.md
+│   │   └── deep-planning-tool.md
+│   └── settings.json        # Claude Code project settings
 ├── .github/
 │   ├── workflows/
 │   │   └── ci-cd.yml        # CI + npm publish on v* tags
@@ -279,6 +283,17 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.7.5 (2026-02-06)
+
+**Tool Rename**
+
+- Rename MCP tool from `sequentialthinking` to `sequential_thinking` for ecosystem alignment
+- 90%+ of public MCP servers use snake_case naming convention
+- Move plans to `.claude/plans/` directory with `plansDirectory` setting
+- Add `.claude/` and `TODO.md` to `.gitignore`
+
+---
 
 ### v0.7.4 (2026-02-05)
 
