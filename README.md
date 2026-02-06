@@ -18,8 +18,9 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v0.7.5)
+### Current (v0.8.0)
 
+- **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
 - **String coercion fix** — Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
 - **Strict TypeScript** — Full lint skill compliance with strictTypeChecked
 - Break down complex problems into manageable steps
@@ -124,6 +125,57 @@ Facilitates a detailed, step-by-step thinking process for problem-solving and an
 }
 ```
 
+## Tool: deep_planning
+
+Structured planning tool that manages multi-phase planning sessions. Complements `sequential_thinking` by tracking state while the LLM reasons deeply between phases.
+
+### Workflow
+
+```
+init → clarify* → explore+ → evaluate+ → finalize → done
+```
+
+### Parameters
+
+| Parameter         | Type   | Phases           | Description                                          |
+| ----------------- | ------ | ---------------- | ---------------------------------------------------- |
+| `phase`           | enum   | All              | `init`, `clarify`, `explore`, `evaluate`, `finalize` |
+| `problem`         | string | init             | Problem statement                                    |
+| `context`         | string | init             | Additional background                                |
+| `constraints`     | string | init             | JSON array of constraint strings                     |
+| `question`        | string | clarify          | Clarifying question                                  |
+| `answer`          | string | clarify          | Answer to the question                               |
+| `branchId`        | string | explore/evaluate | Unique approach identifier                           |
+| `name`            | string | explore          | Short approach name                                  |
+| `description`     | string | explore          | Detailed approach description                        |
+| `pros`/`cons`     | string | explore          | JSON arrays of strings                               |
+| `feasibility`     | number | evaluate         | Score 0-10                                           |
+| `completeness`    | number | evaluate         | Score 0-10                                           |
+| `coherence`       | number | evaluate         | Score 0-10                                           |
+| `risk`            | number | evaluate         | Score 0-10 (lower is better)                         |
+| `rationale`       | string | evaluate         | Reasoning for scores                                 |
+| `recommendation`  | string | evaluate         | `pursue`, `refine`, or `abandon`                     |
+| `selectedBranch`  | string | finalize         | Branch ID of chosen approach                         |
+| `steps`           | string | finalize         | JSON array of step objects                           |
+| `risks`           | string | finalize         | JSON array of risk objects                           |
+| `assumptions`     | string | finalize         | JSON array of strings                                |
+| `successCriteria` | string | finalize         | JSON array of strings                                |
+| `format`          | string | finalize         | `markdown` (default) or `json`                       |
+
+### Output
+
+```json
+{
+  "sessionId": "dp-abc123",
+  "phase": "explore",
+  "status": "ok",
+  "approachCount": 2,
+  "evaluationCount": 0,
+  "validNextPhases": ["explore", "evaluate", "clarify"],
+  "message": "Approach recorded..."
+}
+```
+
 ## Use Cases
 
 Yggdrasil is designed for:
@@ -217,6 +269,12 @@ This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://git
 We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
 ## Changelog
+
+### v0.8.0 (2026-02-06)
+
+- **New tool: `deep_planning`** — Structured multi-phase planning sessions with weighted evaluation scoring
+- Add `optionalScoreSchema` coercion utility for 0-10 score fields
+- 93 tests total (51 planning + 28 coercion + 14 lib), 97%+ coverage
 
 ### v0.7.5 (2026-02-06)
 

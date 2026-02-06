@@ -9,12 +9,14 @@ import {
   numberSchema,
   optionalBooleanSchema,
   optionalNumberSchema,
+  optionalScoreSchema,
 } from './coercion.js';
 import { SequentialThinkingServer } from './lib.js';
+import { DeepPlanningServer } from './planning.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.7.5',
+  version: '0.8.0',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -113,6 +115,72 @@ You should:
       structuredContent: parsedContent,
     };
   }
+);
+
+const planningServer = new DeepPlanningServer();
+
+server.registerTool(
+  'deep_planning',
+  {
+    title: 'Deep Planning',
+    description: `A structured planning tool that manages multi-phase planning sessions.
+Complements sequential_thinking by tracking planning state while the LLM reasons deeply.
+
+Workflow: init → clarify → explore → evaluate → finalize
+- init: Define the problem, context, and constraints
+- clarify: Record clarifying questions and answers (repeatable)
+- explore: Record approach branches with pros/cons (repeatable)
+- evaluate: Score approaches on feasibility, completeness, coherence, risk (repeatable)
+- finalize: Select best approach and generate structured implementation plan
+
+Each phase returns valid next phases to guide the workflow.
+Complex fields (pros, cons, steps, risks, constraints) are passed as JSON strings.
+
+Use sequential_thinking for deep reasoning between phases.
+Use deep_planning to record conclusions and track planning state.`,
+    inputSchema: {
+      phase: z
+        .enum(['init', 'clarify', 'explore', 'evaluate', 'finalize'])
+        .describe('Current planning phase'),
+      // Init fields
+      problem: z.string().optional().describe('Problem statement (required for init)'),
+      context: z.string().optional().describe('Additional background context'),
+      constraints: z.string().optional().describe('JSON array of constraint strings'),
+      // Clarify fields
+      question: z.string().optional().describe('Clarifying question (required for clarify)'),
+      answer: z.string().optional().describe('Answer to the clarifying question'),
+      // Explore fields
+      branchId: z
+        .string()
+        .optional()
+        .describe('Unique approach identifier (required for explore/evaluate)'),
+      name: z.string().optional().describe('Short approach name (required for explore)'),
+      description: z.string().optional().describe('Detailed approach description'),
+      pros: z.string().optional().describe('JSON array of advantage strings'),
+      cons: z.string().optional().describe('JSON array of disadvantage strings'),
+      // Evaluate fields
+      feasibility: optionalScoreSchema.describe('Feasibility score 0-10'),
+      completeness: optionalScoreSchema.describe('Completeness score 0-10'),
+      coherence: optionalScoreSchema.describe('Coherence score 0-10'),
+      risk: optionalScoreSchema.describe('Risk score 0-10 (lower is better)'),
+      rationale: z.string().optional().describe('Reasoning for evaluation scores'),
+      recommendation: z.string().optional().describe('pursue, refine, or abandon'),
+      // Finalize fields
+      selectedBranch: z
+        .string()
+        .optional()
+        .describe('Branch ID of chosen approach (required for finalize)'),
+      steps: z.string().optional().describe('JSON array of implementation step objects'),
+      risks: z
+        .string()
+        .optional()
+        .describe('JSON array of risk objects with description and mitigation'),
+      assumptions: z.string().optional().describe('JSON array of assumption strings'),
+      successCriteria: z.string().optional().describe('JSON array of success criteria strings'),
+      format: z.string().optional().describe('Output format: markdown (default) or json'),
+    },
+  },
+  (args) => planningServer.processPlanningStep(args)
 );
 
 async function runServer() {

@@ -74,3 +74,14 @@ export const optionalNumberSchema = z
     z.number().int().min(1).optional()
   )
   .optional();
+
+/**
+ * Zod schema for optional score (0-10 float) with safe coercion.
+ * Used for evaluation scores in deep_planning tool.
+ */
+export const optionalScoreSchema = z
+  .preprocess(
+    (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
+    z.number().min(0).max(10).optional()
+  )
+  .optional();

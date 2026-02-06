@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.7.5.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.0.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -86,12 +86,14 @@ pnpm watch
 
 ```
 yggdrasil-mcp/
-├── index.ts                 # MCP server entry point with string coercion fix
+├── index.ts                 # MCP server entry point, tool registration
 ├── lib.ts                   # SequentialThinkingServer class
-├── coercion.ts              # Safe type coercion helpers (boolean, number)
+├── planning.ts              # DeepPlanningServer class (structured planning sessions)
+├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
-│   ├── lib.test.ts          # Server test suite (14 tests)
-│   └── coercion.test.ts     # Coercion test suite (23 tests)
+│   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
+│   ├── planning.test.ts     # Deep planning test suite (51 tests)
+│   └── coercion.test.ts     # Coercion test suite (28 tests)
 ├── dist/                    # Compiled output (npm package)
 ├── .claude/
 │   ├── plans/               # Implementation plans (gitignored)
@@ -197,6 +199,34 @@ const optionalBooleanSchema = z
 | `branchId`          | string  | Branch identifier                          |
 | `needsMoreThoughts` | boolean | If more thoughts are needed                |
 
+## deep_planning Tool
+
+Structured planning tool that manages multi-phase planning sessions. Complements `sequential_thinking` by tracking planning state while the LLM reasons deeply between phases.
+
+### Workflow
+
+```
+init → clarify* → explore+ → evaluate+ → finalize → done
+```
+
+### Phase Parameters
+
+| Phase        | Required Fields    | Optional Fields                                                                          |
+| ------------ | ------------------ | ---------------------------------------------------------------------------------------- |
+| **init**     | `problem`          | `context`, `constraints` (JSON array string)                                             |
+| **clarify**  | `question`         | `answer`                                                                                 |
+| **explore**  | `branchId`, `name` | `description`, `pros`, `cons` (JSON array strings)                                       |
+| **evaluate** | `branchId`         | `feasibility`, `completeness`, `coherence`, `risk` (0-10), `rationale`, `recommendation` |
+| **finalize** | `selectedBranch`   | `steps`, `risks` (JSON array strings), `assumptions`, `successCriteria`, `format`        |
+
+### Evaluation Scoring
+
+Weighted score calculation: `feasibility*0.3 + completeness*0.25 + coherence*0.25 + (10-risk)*0.2`
+
+### Output
+
+Each call returns: `sessionId`, `phase`, `status`, `approachCount`, `evaluationCount`, `validNextPhases`, `message`, and optionally `plan` (in finalize phase).
+
 ## Upstream Monitoring Protocol
 
 **IMPORTANT**: Periodically check the upstream Anthropic repository for changes.
@@ -263,6 +293,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 | ----------- | --------------------------------- |
 | coercion.ts | 100%                              |
 | lib.ts      | ~97%                              |
+| planning.ts | ~97%                              |
 | index.ts    | Excluded (MCP server bootstrap)   |
 | **Target**  | **90%+ overall** (enforced in CI) |
 
@@ -283,6 +314,20 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.8.0 (2026-02-06)
+
+**New Tool: deep_planning**
+
+- Add `deep_planning` MCP tool for structured multi-phase planning sessions
+- Planning workflow: init → clarify → explore → evaluate → finalize
+- Weighted evaluation scoring (feasibility, completeness, coherence, risk)
+- Markdown and JSON plan output formats
+- Add `optionalScoreSchema` to coercion utilities for 0-10 score fields
+- Add `DeepPlanningServer` class in new `planning.ts` module
+- 51 new tests for planning engine (93 total, 97%+ coverage)
+
+---
 
 ### v0.7.5 (2026-02-06)
 

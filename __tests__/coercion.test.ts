@@ -7,6 +7,7 @@ import {
   numberSchema,
   optionalBooleanSchema,
   optionalNumberSchema,
+  optionalScoreSchema,
 } from '../coercion.js';
 
 describe('coerceBoolean', () => {
@@ -152,5 +153,35 @@ describe('optionalNumberSchema', () => {
   it('should reject invalid values', () => {
     expect(() => optionalNumberSchema.parse(0)).toThrow();
     expect(() => optionalNumberSchema.parse(-1)).toThrow();
+  });
+});
+
+describe('optionalScoreSchema', () => {
+  it('should return undefined for undefined/null', () => {
+    expect(optionalScoreSchema.parse()).toBeUndefined();
+    expect(optionalScoreSchema.parse(null)).toBeUndefined();
+  });
+
+  it('should parse valid scores (0-10)', () => {
+    expect(optionalScoreSchema.parse(0)).toBe(0);
+    expect(optionalScoreSchema.parse(5)).toBe(5);
+    expect(optionalScoreSchema.parse(10)).toBe(10);
+    expect(optionalScoreSchema.parse(7.5)).toBe(7.5);
+  });
+
+  it('should parse string scores', () => {
+    expect(optionalScoreSchema.parse('0')).toBe(0);
+    expect(optionalScoreSchema.parse('8.5')).toBe(8.5);
+    expect(optionalScoreSchema.parse('10')).toBe(10);
+  });
+
+  it('should reject scores outside 0-10 range', () => {
+    expect(() => optionalScoreSchema.parse(-1)).toThrow();
+    expect(() => optionalScoreSchema.parse(11)).toThrow();
+    expect(() => optionalScoreSchema.parse('15')).toThrow();
+  });
+
+  it('should reject non-numeric values', () => {
+    expect(() => optionalScoreSchema.parse('abc')).toThrow();
   });
 });
