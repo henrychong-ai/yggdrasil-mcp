@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.1.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.2.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.8.1                                                                            |
+| **Version**   | 0.8.2                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -315,6 +315,17 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.8.2 (2026-02-06)
+
+**Fix: Allow session restart in deep_planning**
+
+- Fix `init` being rejected after a completed session (`done` → `init` transition blocked)
+- Allow `init` from any state — it always creates a fresh session regardless of current phase
+- Add `'init'` to `done` valid transitions for UX guidance in `validNextPhases` output
+- 4 new session restart tests, 1 updated test (108 total)
+
+---
 
 ### v0.8.1 (2026-02-06)
 

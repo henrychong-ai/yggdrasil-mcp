@@ -163,6 +163,69 @@ describe('DeepPlanningServer', () => {
     });
   });
 
+  // ─── Session Restart (init always valid) ─────────────────────────────
+
+  describe('session restart', () => {
+    it('should allow init after done (new session after completion)', () => {
+      initSession(server);
+      addApproach(server, 'a', 'Approach A');
+      evaluateApproach(server, 'a');
+      const finalized = parseOutput(
+        server.processPlanningStep({ phase: 'finalize', selectedBranch: 'a' })
+      );
+      expect(finalized.status).toBe('complete');
+      expect(finalized.validNextPhases).toContain('init');
+
+      const restarted = initSession(server, { problem: 'New problem' });
+      expect(restarted.status).toBe('ok');
+      expect(restarted.phase).toBe('init');
+      expect(restarted.approachCount).toBe(0);
+      expect(restarted.evaluationCount).toBe(0);
+    });
+
+    it('should allow init mid-session (abandon and restart)', () => {
+      initSession(server, { problem: 'Original problem' });
+      addApproach(server, 'a', 'Approach A');
+
+      const restarted = initSession(server, { problem: 'Different problem' });
+      expect(restarted.status).toBe('ok');
+      expect(restarted.approachCount).toBe(0);
+    });
+
+    it('should allow double init (immediate restart)', () => {
+      initSession(server, { problem: 'First' });
+      const second = initSession(server, { problem: 'Second' });
+
+      expect(second.status).toBe('ok');
+      expect(second.phase).toBe('init');
+    });
+
+    it('should have clean state after re-init (no data leak)', () => {
+      initSession(server);
+      addApproach(server, 'a', 'Approach A');
+      evaluateApproach(server, 'a');
+      parseOutput(
+        server.processPlanningStep({
+          phase: 'clarify',
+          question: 'Q?',
+          answer: 'A',
+          isRevision: undefined,
+          revisesThought: undefined,
+        } as unknown as DeepPlanningInput)
+      );
+
+      const fresh = initSession(server, { problem: 'Clean slate' });
+      expect(fresh.approachCount).toBe(0);
+      expect(fresh.evaluationCount).toBe(0);
+
+      // Verify we can build a full new session without interference
+      addApproach(server, 'b', 'New Approach');
+      const output = evaluateApproach(server, 'b');
+      expect(output.approachCount).toBe(1);
+      expect(output.evaluationCount).toBe(1);
+    });
+  });
+
   // ─── Phase Transitions (Invalid) ───────────────────────────────────────
 
   describe('invalid phase transitions', () => {
@@ -207,7 +270,7 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('Cannot transition');
     });
 
-    it('should reject init when session already exists', () => {
+    it('should allow init when session already exists (restart)', () => {
       initSession(server);
       const result = server.processPlanningStep({
         phase: 'init',
@@ -215,8 +278,9 @@ describe('DeepPlanningServer', () => {
       });
       const output = parseOutput(result);
 
-      expect(result.isError).toBe(true);
-      expect(output.message).toContain('Cannot transition');
+      expect(result.isError).toBeUndefined();
+      expect(output.status).toBe('ok');
+      expect(output.phase).toBe('init');
     });
   });
 

@@ -124,7 +124,7 @@ const VALID_TRANSITIONS: Record<string, PlanPhase[]> = {
   explore: ['explore', 'evaluate', 'clarify'],
   evaluate: ['evaluate', 'explore', 'finalize'],
   finalize: [],
-  done: [],
+  done: ['init'],
 };
 
 const SCORE_WEIGHTS = {
@@ -362,6 +362,11 @@ export class DeepPlanningServer {
 
     if (requestedPhase !== 'init' && !this.session) {
       return 'No active planning session. Call with phase "init" first.';
+    }
+
+    // init is always valid — it creates a fresh session regardless of current state
+    if (requestedPhase === 'init') {
+      return null;
     }
 
     const validNext = this.getValidNextPhases();
