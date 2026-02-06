@@ -200,6 +200,35 @@ describe('DeepPlanningServer', () => {
       expect(second.phase).toBe('init');
     });
 
+    it('should not include init in validNextPhases during active session', () => {
+      const initOutput = initSession(server);
+      expect(initOutput.validNextPhases).not.toContain('init');
+
+      addApproach(server, 'a', 'Approach A');
+      const exploreOutput = parseOutput(
+        server.processPlanningStep({ phase: 'explore', branchId: 'b', name: 'B' })
+      );
+      expect(exploreOutput.validNextPhases).not.toContain('init');
+
+      const evalOutput = evaluateApproach(server, 'a');
+      expect(evalOutput.validNextPhases).not.toContain('init');
+    });
+
+    it('should return old session metadata on failed init (missing problem)', () => {
+      initSession(server, { problem: 'Original' });
+      addApproach(server, 'a', 'Approach A');
+
+      const result = server.processPlanningStep({ phase: 'init' });
+      const output = parseOutput(result);
+
+      expect(result.isError).toBe(true);
+      expect(output.status).toBe('error');
+      expect(output.message).toContain('requires a "problem" field');
+      // Old session metadata leaks into error response — documented behaviour
+      expect(output.sessionId).toMatch(/^dp-/);
+      expect(output.approachCount).toBe(1);
+    });
+
     it('should have clean state after re-init (no data leak)', () => {
       initSession(server);
       addApproach(server, 'a', 'Approach A');
