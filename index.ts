@@ -16,7 +16,7 @@ import { DeepPlanningServer } from './planning.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.8.2',
+  version: '0.9.0',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -181,6 +181,86 @@ Use deep_planning to record conclusions and track planning state.`,
     },
   },
   (args) => planningServer.processPlanningStep(args)
+);
+
+// ─── list_plans tool ────────────────────────────────────────────────────────
+
+server.registerTool(
+  'list_plans',
+  {
+    title: 'List Plans',
+    description: `List saved deep_planning sessions from the plans index.
+Supports optional filters:
+- status: "complete" (finalized plans) or "in-progress" (active sessions)
+- keyword: Search in problem text (case-insensitive)
+
+Returns a JSON array of plan summaries sorted by creation date (newest first).`,
+    inputSchema: {
+      status: z
+        .enum(['complete', 'in-progress'])
+        .optional()
+        .describe('Filter by status: "complete" or "in-progress"'),
+      keyword: z.string().optional().describe('Search keyword in problem text'),
+    },
+  },
+  async (args) => {
+    const persistence = planningServer.getPersistence();
+    const plans = await persistence.listPlans({
+      status: args.status,
+      keyword: args.keyword,
+    });
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify(
+            {
+              count: plans.length,
+              plans,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+
+// ─── get_plan tool ──────────────────────────────────────────────────────────
+
+server.registerTool(
+  'get_plan',
+  {
+    title: 'Get Plan',
+    description: `Retrieve a saved deep_planning session by its session ID.
+Returns the plan in the requested format:
+- "markdown": Rendered Markdown plan (default, only available for finalized plans)
+- "jsonl": Raw JSONL event log (full session history for reconstruction)`,
+    inputSchema: {
+      sessionId: z.string().describe('The session ID to retrieve (e.g., "dp-kR3xT9vW")'),
+      format: z
+        .enum(['markdown', 'jsonl'])
+        .optional()
+        .describe('Output format: "markdown" (default) or "jsonl"'),
+    },
+  },
+  async (args) => {
+    const persistence = planningServer.getPersistence();
+    const result = await persistence.getPlan(args.sessionId, args.format ?? 'markdown');
+
+    if (!result.found) {
+      return {
+        content: [{ type: 'text' as const, text: result.content }],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [{ type: 'text' as const, text: result.content }],
+    };
+  }
 );
 
 async function runServer() {

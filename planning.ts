@@ -8,6 +8,8 @@
 
 import chalk from 'chalk';
 
+import { generateId, PersistenceManager } from './persistence.js';
+
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
 export interface Clarification {
@@ -322,9 +324,11 @@ function buildFooterSection(session: PlanningSession): string[] {
 export class DeepPlanningServer {
   private session: PlanningSession | null = null;
   private disableLogging: boolean;
+  private persistence: PersistenceManager;
 
-  constructor() {
+  constructor(projectRoot?: string) {
     this.disableLogging = (process.env.DISABLE_THOUGHT_LOGGING ?? '').toLowerCase() === 'true';
+    this.persistence = new PersistenceManager(projectRoot);
   }
 
   private log(message: string): void {
@@ -385,7 +389,7 @@ export class DeepPlanningServer {
       return this.makeOutput('error', 'Phase "init" requires a "problem" field.');
     }
 
-    const sessionId = `dp-${Date.now().toString(36)}`;
+    const sessionId = `dp-${generateId(8)}`;
     const now = new Date().toISOString();
 
     this.session = {
@@ -407,6 +411,20 @@ export class DeepPlanningServer {
 
     this.log(chalk.blue(`\n📋 Planning session started: ${sessionId}`));
     this.log(chalk.blue(`   Problem: ${input.problem}`));
+
+    // Persist: append JSONL event + create index entry (fire-and-forget)
+    void this.persistence.appendEvent(this.session);
+    void this.persistence.updateIndex(sessionId, {
+      problem: input.problem,
+      createdAt: now,
+      finalizedAt: null,
+      selectedBranch: null,
+      phase: 'init',
+      filePaths: {
+        jsonl: `${sessionId}.jsonl`,
+        markdown: null,
+      },
+    });
 
     return this.makeOutput(
       'ok',
@@ -430,6 +448,9 @@ export class DeepPlanningServer {
     if (input.answer) {
       this.log(chalk.yellow(`   💬 Answer: ${input.answer}`));
     }
+
+    // Persist: append JSONL event (fire-and-forget)
+    void this.persistence.appendEvent(session);
 
     return this.makeOutput(
       'ok',
@@ -458,6 +479,9 @@ export class DeepPlanningServer {
     session.updatedAt = new Date().toISOString();
 
     this.log(chalk.green(`   🌿 Approach: ${input.name} (${input.branchId})`));
+
+    // Persist: append JSONL event (fire-and-forget)
+    void this.persistence.appendEvent(session);
 
     return this.makeOutput(
       'ok',
@@ -520,6 +544,9 @@ export class DeepPlanningServer {
       )
     );
 
+    // Persist: append JSONL event (fire-and-forget)
+    void this.persistence.appendEvent(session);
+
     return this.makeOutput(
       'ok',
       `Evaluation for "${approach.name}" recorded (score: ${weightedScore.toFixed(2)}/10, ${session.evaluations.length} total). Evaluate more or finalize.`
@@ -554,6 +581,24 @@ export class DeepPlanningServer {
       format === 'json' ? this.generateJsonPlan(session) : this.generateMarkdownPlan(session);
 
     this.log(chalk.magenta(`\n✅ Plan finalized: ${approach.name}`));
+
+    // Persist: append JSONL event + write Markdown + update index (fire-and-forget)
+    void this.persistence.appendEvent(session);
+    if (format !== 'json') {
+      void this.persistence.writeMarkdownPlan(session, plan);
+    }
+    const datePrefix = session.createdAt.slice(0, 10).replaceAll('-', '');
+    void this.persistence.updateIndex(session.sessionId, {
+      problem: session.problem,
+      createdAt: session.createdAt,
+      finalizedAt: session.updatedAt,
+      selectedBranch: session.selectedApproach ?? null,
+      phase: 'done',
+      filePaths: {
+        jsonl: `${session.sessionId}.jsonl`,
+        markdown: format === 'json' ? null : `${datePrefix}-${session.sessionId}.md`,
+      },
+    });
 
     return this.makeOutput('complete', `Plan finalized with approach "${approach.name}".`, plan);
   }
@@ -612,6 +657,11 @@ export class DeepPlanningServer {
       null,
       2
     );
+  }
+
+  /** Expose persistence manager for list_plans/get_plan MCP tools. */
+  public getPersistence(): PersistenceManager {
+    return this.persistence;
   }
 
   // ─── Main Entry Point ────────────────────────────────────────────────────

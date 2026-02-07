@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.8.2.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.0.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.8.2                                                                            |
+| **Version**   | 0.9.0                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -90,10 +90,12 @@ yggdrasil-mcp/
 ├── index.ts                 # MCP server entry point, tool registration
 ├── lib.ts                   # SequentialThinkingServer class
 ├── planning.ts              # DeepPlanningServer class (structured planning sessions)
+├── persistence.ts           # Hybrid JSONL + Markdown persistence layer
 ├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
 │   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
-│   ├── planning.test.ts     # Deep planning test suite (51 tests)
+│   ├── planning.test.ts     # Deep planning test suite (68 tests)
+│   ├── persistence.test.ts  # Persistence layer test suite (37 tests)
 │   └── coercion.test.ts     # Coercion test suite (28 tests)
 ├── dist/                    # Compiled output (npm package)
 ├── .claude/
@@ -290,13 +292,14 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ### Test Coverage
 
-| File        | Coverage                          |
-| ----------- | --------------------------------- |
-| coercion.ts | 100%                              |
-| lib.ts      | ~97%                              |
-| planning.ts | ~97%                              |
-| index.ts    | Excluded (MCP server bootstrap)   |
-| **Target**  | **90%+ overall** (enforced in CI) |
+| File           | Coverage                          |
+| -------------- | --------------------------------- |
+| coercion.ts    | 100%                              |
+| lib.ts         | ~97%                              |
+| planning.ts    | ~97%                              |
+| persistence.ts | ~97%                              |
+| index.ts       | Excluded (MCP server bootstrap)   |
+| **Target**     | **90%+ overall** (enforced in CI) |
 
 ## Version Policy
 
@@ -315,6 +318,24 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.9.0 (2026-02-07)
+
+**Feature: Hybrid JSONL + Markdown Persistence for deep_planning**
+
+- Add `persistence.ts` module with zero-dependency persistence layer
+- Session IDs now use 8-char Base62 cryptographic random IDs (`crypto.randomBytes`)
+- Plans directory resolves from CC `plansDirectory` setting chain: env var → project settings → global settings → `~/.claude/plans/`
+- JSONL event log appended on every phase transition (crash-safe incremental persistence)
+- Markdown plan exported on finalize with `YYYYMMDD-{sessionId}.md` naming
+- Atomic JSON index (`yggdrasil-plans-index.json`) for fast listing with write-to-tmp + rename
+- Add `list_plans` MCP tool: filter by status (complete/in-progress), keyword search
+- Add `get_plan` MCP tool: retrieve by sessionId in markdown or jsonl format
+- Index rebuild from JSONL files when index is corrupted or missing
+- Fire-and-forget persistence: async writes never block MCP responses
+- 37 new persistence tests (147 total, 97%+ coverage)
+
+---
 
 ### v0.8.2 (2026-02-06)
 
