@@ -98,6 +98,7 @@ const INDEX_FILENAME = 'yggdrasil-plans-index.json';
 export class PersistenceManager {
   private plansDir: string;
   private dirCreated = false;
+  private pendingWrites: Promise<void>[] = [];
 
   constructor(projectRoot?: string) {
     this.plansDir = resolvePlansDirectory(projectRoot);
@@ -113,6 +114,25 @@ export class PersistenceManager {
   /** Get the resolved plans directory path. */
   public getPlansDir(): string {
     return this.plansDir;
+  }
+
+  /**
+   * Track a fire-and-forget write promise.
+   * Tracked writes are awaited by flush() before session loads.
+   */
+  public track(p: Promise<void>): void {
+    this.pendingWrites.push(p);
+    const cleanup = (): undefined => {
+      this.pendingWrites = this.pendingWrites.filter((w) => w !== p);
+      return undefined;
+    };
+    void p.then(cleanup, cleanup);
+  }
+
+  /** Await all pending fire-and-forget writes. */
+  public async flush(): Promise<void> {
+    await Promise.allSettled(this.pendingWrites);
+    this.pendingWrites = [];
   }
 
   // ─── JSONL Event Writer ──────────────────────────────────────────────────
@@ -199,6 +219,30 @@ export class PersistenceManager {
     const index = await this.readIndex();
     index[sessionId] = entry;
     await this.writeIndex(index);
+  }
+
+  // ─── Session Loading ────────────────────────────────────────────────────
+
+  /**
+   * Load a planning session from its JSONL event log.
+   * Reads the last event line and returns the full session object.
+   * Returns null if the session file doesn't exist or is corrupted.
+   */
+  public async loadSession(sessionId: string): Promise<PlanningSession | null> {
+    try {
+      // Ensure any fire-and-forget writes are flushed before reading
+      await this.flush();
+      const filePath = path.join(this.plansDir, `${sessionId}.jsonl`);
+      const content = await readFile(filePath, 'utf8');
+      const lines = content.trim().split('\n');
+      const lastLine = lines.at(-1);
+      if (!lastLine) return null;
+
+      const event = JSON.parse(lastLine) as { session: PlanningSession };
+      return event.session;
+    } catch {
+      return null;
+    }
   }
 
   // ─── Query Tools ──────────────────────────────────────────────────────────

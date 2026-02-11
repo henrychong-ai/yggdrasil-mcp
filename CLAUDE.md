@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.0.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.1.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.9.0                                                                            |
+| **Version**   | 0.9.1                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -94,7 +94,7 @@ yggdrasil-mcp/
 ├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
 │   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
-│   ├── planning.test.ts     # Deep planning test suite (68 tests)
+│   ├── planning.test.ts     # Deep planning test suite (75 tests)
 │   ├── persistence.test.ts  # Persistence layer test suite (37 tests)
 │   └── coercion.test.ts     # Coercion test suite (28 tests)
 ├── dist/                    # Compiled output (npm package)
@@ -318,6 +318,21 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.9.1 (2026-02-11)
+
+**Feature: Session Resumption for deep_planning**
+
+- Add `sessionId` parameter to `deep_planning` tool for switching between multiple planning sessions
+- Add `tryResumeSession()` method to `DeepPlanningServer` for loading sessions from JSONL persistence
+- Add `loadSession()` method to `PersistenceManager` for reading session state from disk
+- Add write-tracking (`track()` + `flush()`) to `PersistenceManager` for race-condition-safe session loading
+- Change `processPlanningStep` from sync to async to support disk-based session loading
+- Convert fire-and-forget persistence writes to tracked writes (flushed before session loads)
+- Backward compatible: `sessionId` is optional, existing workflows unchanged
+- 7 new session resumption tests (154 total, 97%+ coverage)
+
+---
 
 ### v0.9.0 (2026-02-07)
 

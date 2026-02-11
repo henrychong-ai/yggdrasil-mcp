@@ -16,7 +16,7 @@ import { DeepPlanningServer } from './planning.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '0.9.0',
+  version: '0.9.1',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -142,6 +142,12 @@ Use deep_planning to record conclusions and track planning state.`,
       phase: z
         .enum(['init', 'clarify', 'explore', 'evaluate', 'finalize'])
         .describe('Current planning phase'),
+      sessionId: z
+        .string()
+        .optional()
+        .describe(
+          'Resume a specific session by ID. Required when switching between multiple sessions. Ignored on init phase.'
+        ),
       // Init fields
       problem: z.string().optional().describe('Problem statement (required for init)'),
       context: z.string().optional().describe('Additional background context'),
@@ -180,7 +186,7 @@ Use deep_planning to record conclusions and track planning state.`,
       format: z.string().optional().describe('Output format: markdown (default) or json'),
     },
   },
-  (args) => planningServer.processPlanningStep(args)
+  async (args) => planningServer.processPlanningStep(args)
 );
 
 // ─── list_plans tool ────────────────────────────────────────────────────────

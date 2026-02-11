@@ -75,6 +75,8 @@ export interface PlanningSession {
 
 export interface DeepPlanningInput {
   phase: string;
+  // Session targeting
+  sessionId?: string;
   // Init fields
   problem?: string;
   context?: string;
@@ -412,19 +414,21 @@ export class DeepPlanningServer {
     this.log(chalk.blue(`\n📋 Planning session started: ${sessionId}`));
     this.log(chalk.blue(`   Problem: ${input.problem}`));
 
-    // Persist: append JSONL event + create index entry (fire-and-forget)
-    void this.persistence.appendEvent(this.session);
-    void this.persistence.updateIndex(sessionId, {
-      problem: input.problem,
-      createdAt: now,
-      finalizedAt: null,
-      selectedBranch: null,
-      phase: 'init',
-      filePaths: {
-        jsonl: `${sessionId}.jsonl`,
-        markdown: null,
-      },
-    });
+    // Persist: append JSONL event + create index entry (fire-and-forget, tracked for flush)
+    this.persistence.track(this.persistence.appendEvent(this.session));
+    this.persistence.track(
+      this.persistence.updateIndex(sessionId, {
+        problem: input.problem,
+        createdAt: now,
+        finalizedAt: null,
+        selectedBranch: null,
+        phase: 'init',
+        filePaths: {
+          jsonl: `${sessionId}.jsonl`,
+          markdown: null,
+        },
+      })
+    );
 
     return this.makeOutput(
       'ok',
@@ -450,7 +454,7 @@ export class DeepPlanningServer {
     }
 
     // Persist: append JSONL event (fire-and-forget)
-    void this.persistence.appendEvent(session);
+    this.persistence.track(this.persistence.appendEvent(session));
 
     return this.makeOutput(
       'ok',
@@ -481,7 +485,7 @@ export class DeepPlanningServer {
     this.log(chalk.green(`   🌿 Approach: ${input.name} (${input.branchId})`));
 
     // Persist: append JSONL event (fire-and-forget)
-    void this.persistence.appendEvent(session);
+    this.persistence.track(this.persistence.appendEvent(session));
 
     return this.makeOutput(
       'ok',
@@ -545,7 +549,7 @@ export class DeepPlanningServer {
     );
 
     // Persist: append JSONL event (fire-and-forget)
-    void this.persistence.appendEvent(session);
+    this.persistence.track(this.persistence.appendEvent(session));
 
     return this.makeOutput(
       'ok',
@@ -583,22 +587,24 @@ export class DeepPlanningServer {
     this.log(chalk.magenta(`\n✅ Plan finalized: ${approach.name}`));
 
     // Persist: append JSONL event + write Markdown + update index (fire-and-forget)
-    void this.persistence.appendEvent(session);
+    this.persistence.track(this.persistence.appendEvent(session));
     if (format !== 'json') {
-      void this.persistence.writeMarkdownPlan(session, plan);
+      this.persistence.track(this.persistence.writeMarkdownPlan(session, plan));
     }
     const datePrefix = session.createdAt.slice(0, 10).replaceAll('-', '');
-    void this.persistence.updateIndex(session.sessionId, {
-      problem: session.problem,
-      createdAt: session.createdAt,
-      finalizedAt: session.updatedAt,
-      selectedBranch: session.selectedApproach ?? null,
-      phase: 'done',
-      filePaths: {
-        jsonl: `${session.sessionId}.jsonl`,
-        markdown: format === 'json' ? null : `${datePrefix}-${session.sessionId}.md`,
-      },
-    });
+    this.persistence.track(
+      this.persistence.updateIndex(session.sessionId, {
+        problem: session.problem,
+        createdAt: session.createdAt,
+        finalizedAt: session.updatedAt,
+        selectedBranch: session.selectedApproach ?? null,
+        phase: 'done',
+        filePaths: {
+          jsonl: `${session.sessionId}.jsonl`,
+          markdown: format === 'json' ? null : `${datePrefix}-${session.sessionId}.md`,
+        },
+      })
+    );
 
     return this.makeOutput('complete', `Plan finalized with approach "${approach.name}".`, plan);
   }
@@ -666,11 +672,54 @@ export class DeepPlanningServer {
 
   // ─── Main Entry Point ────────────────────────────────────────────────────
 
-  public processPlanningStep(input: DeepPlanningInput): {
+  /**
+   * Attempt to resume a specific session from disk persistence.
+   * Returns an error response if the session is not found, or null on success/skip.
+   */
+  private async tryResumeSession(
+    input: DeepPlanningInput
+  ): Promise<{ content: { type: 'text'; text: string }[]; isError: true } | null> {
+    if (!input.sessionId || input.phase === 'init') return null;
+    if (this.session?.sessionId === input.sessionId) return null;
+
+    const loaded = await this.persistence.loadSession(input.sessionId);
+    if (!loaded) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                sessionId: input.sessionId,
+                phase: '',
+                status: 'error',
+                approachCount: 0,
+                evaluationCount: 0,
+                validNextPhases: [],
+                message: `Session "${input.sessionId}" not found. Use "list_plans" to see available sessions.`,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+    this.session = loaded;
+    this.log(chalk.blue(`\n🔄 Resumed session: ${input.sessionId}`));
+    return null;
+  }
+
+  public async processPlanningStep(input: DeepPlanningInput): Promise<{
     content: { type: 'text'; text: string }[];
     isError?: boolean;
-  } {
+  }> {
     try {
+      // Session resumption: load a specific session from disk before processing
+      const resumeError = await this.tryResumeSession(input);
+      if (resumeError) return resumeError;
+
       const transitionError = this.validateTransition(input.phase);
       if (transitionError) {
         const errorOutput: DeepPlanningOutput = {

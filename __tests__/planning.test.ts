@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   calculateWeightedScore,
@@ -6,21 +10,22 @@ import {
   type DeepPlanningInput,
   type DeepPlanningOutput,
   type EvaluationScores,
+  type PlanningSession,
   normalizePlanStep,
 } from '../planning.js';
 
 function parseOutput(
-  result: ReturnType<DeepPlanningServer['processPlanningStep']>
+  result: Awaited<ReturnType<DeepPlanningServer['processPlanningStep']>>
 ): DeepPlanningOutput {
   return JSON.parse(result.content[0].text) as DeepPlanningOutput;
 }
 
-function initSession(
+async function initSession(
   server: DeepPlanningServer,
   overrides: Partial<DeepPlanningInput> = {}
-): DeepPlanningOutput {
+): Promise<DeepPlanningOutput> {
   return parseOutput(
-    server.processPlanningStep({
+    await server.processPlanningStep({
       phase: 'init',
       problem: 'Test problem',
       ...overrides,
@@ -28,14 +33,14 @@ function initSession(
   );
 }
 
-function addApproach(
+async function addApproach(
   server: DeepPlanningServer,
   branchId: string,
   name: string,
   overrides: Partial<DeepPlanningInput> = {}
-): DeepPlanningOutput {
+): Promise<DeepPlanningOutput> {
   return parseOutput(
-    server.processPlanningStep({
+    await server.processPlanningStep({
       phase: 'explore',
       branchId,
       name,
@@ -44,13 +49,13 @@ function addApproach(
   );
 }
 
-function evaluateApproach(
+async function evaluateApproach(
   server: DeepPlanningServer,
   branchId: string,
   overrides: Partial<DeepPlanningInput> = {}
-): DeepPlanningOutput {
+): Promise<DeepPlanningOutput> {
   return parseOutput(
-    server.processPlanningStep({
+    await server.processPlanningStep({
       phase: 'evaluate',
       branchId,
       feasibility: 8,
@@ -75,8 +80,8 @@ describe('DeepPlanningServer', () => {
   // ─── Phase Transitions (Valid) ──────────────────────────────────────────
 
   describe('valid phase transitions', () => {
-    it('should initialize a planning session', () => {
-      const output = initSession(server);
+    it('should initialize a planning session', async () => {
+      const output = await initSession(server);
 
       expect(output.status).toBe('ok');
       expect(output.sessionId).toMatch(/^dp-/);
@@ -85,10 +90,10 @@ describe('DeepPlanningServer', () => {
       expect(output.validNextPhases).toContain('explore');
     });
 
-    it('should transition from init to clarify', () => {
-      initSession(server);
+    it('should transition from init to clarify', async () => {
+      await initSession(server);
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'What framework?',
           answer: 'Express',
@@ -99,32 +104,32 @@ describe('DeepPlanningServer', () => {
       expect(output.phase).toBe('clarify');
     });
 
-    it('should transition from init to explore', () => {
-      initSession(server);
-      const output = addApproach(server, 'branch-a', 'Approach A');
+    it('should transition from init to explore', async () => {
+      await initSession(server);
+      const output = await addApproach(server, 'branch-a', 'Approach A');
 
       expect(output.status).toBe('ok');
       expect(output.phase).toBe('explore');
       expect(output.approachCount).toBe(1);
     });
 
-    it('should transition from explore to evaluate', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      const output = evaluateApproach(server, 'branch-a');
+    it('should transition from explore to evaluate', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      const output = await evaluateApproach(server, 'branch-a');
 
       expect(output.status).toBe('ok');
       expect(output.phase).toBe('evaluate');
       expect(output.evaluationCount).toBe(1);
     });
 
-    it('should transition from evaluate to finalize', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should transition from evaluate to finalize', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'branch-a',
           steps: '[]',
@@ -135,12 +140,12 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toBeDefined();
     });
 
-    it('should allow revisiting clarify from explore', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should allow revisiting clarify from explore', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Follow-up question?',
         })
@@ -150,12 +155,12 @@ describe('DeepPlanningServer', () => {
       expect(output.phase).toBe('clarify');
     });
 
-    it('should allow revisiting explore from evaluate', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should allow revisiting explore from evaluate', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
-      const output = addApproach(server, 'branch-b', 'Approach B');
+      const output = await addApproach(server, 'branch-b', 'Approach B');
 
       expect(output.status).toBe('ok');
       expect(output.phase).toBe('explore');
@@ -166,59 +171,59 @@ describe('DeepPlanningServer', () => {
   // ─── Session Restart (init always valid) ─────────────────────────────
 
   describe('session restart', () => {
-    it('should allow init after done (new session after completion)', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Approach A');
-      evaluateApproach(server, 'a');
+    it('should allow init after done (new session after completion)', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Approach A');
+      await evaluateApproach(server, 'a');
       const finalized = parseOutput(
-        server.processPlanningStep({ phase: 'finalize', selectedBranch: 'a' })
+        await server.processPlanningStep({ phase: 'finalize', selectedBranch: 'a' })
       );
       expect(finalized.status).toBe('complete');
       expect(finalized.validNextPhases).toContain('init');
 
-      const restarted = initSession(server, { problem: 'New problem' });
+      const restarted = await initSession(server, { problem: 'New problem' });
       expect(restarted.status).toBe('ok');
       expect(restarted.phase).toBe('init');
       expect(restarted.approachCount).toBe(0);
       expect(restarted.evaluationCount).toBe(0);
     });
 
-    it('should allow init mid-session (abandon and restart)', () => {
-      initSession(server, { problem: 'Original problem' });
-      addApproach(server, 'a', 'Approach A');
+    it('should allow init mid-session (abandon and restart)', async () => {
+      await initSession(server, { problem: 'Original problem' });
+      await addApproach(server, 'a', 'Approach A');
 
-      const restarted = initSession(server, { problem: 'Different problem' });
+      const restarted = await initSession(server, { problem: 'Different problem' });
       expect(restarted.status).toBe('ok');
       expect(restarted.approachCount).toBe(0);
     });
 
-    it('should allow double init (immediate restart)', () => {
-      initSession(server, { problem: 'First' });
-      const second = initSession(server, { problem: 'Second' });
+    it('should allow double init (immediate restart)', async () => {
+      await initSession(server, { problem: 'First' });
+      const second = await initSession(server, { problem: 'Second' });
 
       expect(second.status).toBe('ok');
       expect(second.phase).toBe('init');
     });
 
-    it('should not include init in validNextPhases during active session', () => {
-      const initOutput = initSession(server);
+    it('should not include init in validNextPhases during active session', async () => {
+      const initOutput = await initSession(server);
       expect(initOutput.validNextPhases).not.toContain('init');
 
-      addApproach(server, 'a', 'Approach A');
+      await addApproach(server, 'a', 'Approach A');
       const exploreOutput = parseOutput(
-        server.processPlanningStep({ phase: 'explore', branchId: 'b', name: 'B' })
+        await server.processPlanningStep({ phase: 'explore', branchId: 'b', name: 'B' })
       );
       expect(exploreOutput.validNextPhases).not.toContain('init');
 
-      const evalOutput = evaluateApproach(server, 'a');
+      const evalOutput = await evaluateApproach(server, 'a');
       expect(evalOutput.validNextPhases).not.toContain('init');
     });
 
-    it('should return old session metadata on failed init (missing problem)', () => {
-      initSession(server, { problem: 'Original' });
-      addApproach(server, 'a', 'Approach A');
+    it('should return old session metadata on failed init (missing problem)', async () => {
+      await initSession(server, { problem: 'Original' });
+      await addApproach(server, 'a', 'Approach A');
 
-      const result = server.processPlanningStep({ phase: 'init' });
+      const result = await server.processPlanningStep({ phase: 'init' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
@@ -229,12 +234,12 @@ describe('DeepPlanningServer', () => {
       expect(output.approachCount).toBe(1);
     });
 
-    it('should have clean state after re-init (no data leak)', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Approach A');
-      evaluateApproach(server, 'a');
+    it('should have clean state after re-init (no data leak)', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Approach A');
+      await evaluateApproach(server, 'a');
       parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Q?',
           answer: 'A',
@@ -243,23 +248,216 @@ describe('DeepPlanningServer', () => {
         } as unknown as DeepPlanningInput)
       );
 
-      const fresh = initSession(server, { problem: 'Clean slate' });
+      const fresh = await initSession(server, { problem: 'Clean slate' });
       expect(fresh.approachCount).toBe(0);
       expect(fresh.evaluationCount).toBe(0);
 
       // Verify we can build a full new session without interference
-      addApproach(server, 'b', 'New Approach');
-      const output = evaluateApproach(server, 'b');
+      await addApproach(server, 'b', 'New Approach');
+      const output = await evaluateApproach(server, 'b');
       expect(output.approachCount).toBe(1);
       expect(output.evaluationCount).toBe(1);
+    });
+  });
+
+  // ─── Session Resumption ─────────────────────────────────────────────
+
+  describe('session resumption', () => {
+    let tempDir: string;
+    let resumeServer: DeepPlanningServer;
+
+    beforeEach(async () => {
+      tempDir = await mkdtemp(path.join(tmpdir(), 'ygg-resume-'));
+      vi.stubEnv('YGGDRASIL_PLANS_DIR', tempDir);
+      vi.stubEnv('DISABLE_THOUGHT_LOGGING', 'true');
+      resumeServer = new DeepPlanningServer();
+    });
+
+    afterEach(async () => {
+      await resumeServer.getPersistence().flush();
+      await rm(tempDir, { recursive: true, force: true });
+    });
+
+    it('should resume a session by sessionId after starting a new one', async () => {
+      // Create session A with an approach
+      const sessionA = await initSession(resumeServer, { problem: 'Problem A' });
+      await addApproach(resumeServer, 'a1', 'Approach A1');
+
+      // Create session B (overwrites this.session)
+      const sessionB = await initSession(resumeServer, { problem: 'Problem B' });
+      expect(sessionB.sessionId).not.toBe(sessionA.sessionId);
+
+      // Resume session A by passing sessionId
+      const resumed = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'explore',
+          sessionId: sessionA.sessionId,
+          branchId: 'a2',
+          name: 'Approach A2',
+        })
+      );
+
+      expect(resumed.status).toBe('ok');
+      expect(resumed.sessionId).toBe(sessionA.sessionId);
+      expect(resumed.approachCount).toBe(2); // a1 + a2
+    });
+
+    it('should skip disk read when sessionId matches current session', async () => {
+      const session = await initSession(resumeServer, { problem: 'Same session' });
+
+      // Pass sessionId that matches current — should work without disk read
+      const output = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'explore',
+          sessionId: session.sessionId,
+          branchId: 'b1',
+          name: 'Branch 1',
+        })
+      );
+
+      expect(output.status).toBe('ok');
+      expect(output.sessionId).toBe(session.sessionId);
+    });
+
+    it('should return error for non-existent sessionId', async () => {
+      const result = await resumeServer.processPlanningStep({
+        phase: 'explore',
+        sessionId: 'dp-nonexistent',
+        branchId: 'x',
+        name: 'X',
+      });
+      const output = parseOutput(result);
+
+      expect(result.isError).toBe(true);
+      expect(output.status).toBe('error');
+      expect(output.message).toContain('dp-nonexistent');
+      expect(output.message).toContain('not found');
+    });
+
+    it('should ignore sessionId on init phase', async () => {
+      const sessionA = await initSession(resumeServer, { problem: 'Problem A' });
+
+      // Init with sessionId — should create NEW session, not resume
+      const sessionB = await initSession(resumeServer, {
+        problem: 'Problem B',
+        sessionId: sessionA.sessionId,
+      } as DeepPlanningInput);
+
+      expect(sessionB.sessionId).not.toBe(sessionA.sessionId);
+      expect(sessionB.approachCount).toBe(0);
+    });
+
+    it('should resume and finalize a previously started session', async () => {
+      // Build session A to evaluate phase
+      const sessionA = await initSession(resumeServer, { problem: 'Finalize me' });
+      await addApproach(resumeServer, 'winner', 'The Winner');
+      await evaluateApproach(resumeServer, 'winner');
+
+      // Start session B (overwrites A in memory)
+      await initSession(resumeServer, { problem: 'Different' });
+
+      // Resume session A and finalize it
+      const finalized = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'finalize',
+          sessionId: sessionA.sessionId,
+          selectedBranch: 'winner',
+          steps: '[{"title":"Step 1","description":"Do it"}]',
+        })
+      );
+
+      expect(finalized.status).toBe('complete');
+      expect(finalized.sessionId).toBe(sessionA.sessionId);
+      expect(finalized.plan).toContain('# Plan: The Winner');
+      expect(finalized.plan).toContain('Finalize me');
+    });
+
+    it('should resume from a JSONL file written externally', async () => {
+      // Simulate a session persisted from a previous server instance
+      const session: PlanningSession = {
+        sessionId: 'dp-external1',
+        problem: 'External problem',
+        constraints: [],
+        phase: 'explore',
+        clarifications: [],
+        approaches: [
+          { branchId: 'ext', name: 'External Approach', description: '', pros: [], cons: [] },
+        ],
+        evaluations: [],
+        steps: [],
+        risks: [],
+        assumptions: [],
+        successCriteria: [],
+        createdAt: '2026-02-10T10:00:00.000Z',
+        updatedAt: '2026-02-10T10:05:00.000Z',
+      };
+
+      // Write JSONL file directly
+      const event = JSON.stringify({
+        timestamp: '2026-02-10T10:05:00.000Z',
+        phase: 'explore',
+        session,
+      });
+      await writeFile(path.join(tempDir, 'dp-external1.jsonl'), event + '\n', 'utf8');
+
+      // Resume the external session
+      const output = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'evaluate',
+          sessionId: 'dp-external1',
+          branchId: 'ext',
+          feasibility: 9,
+          completeness: 8,
+          coherence: 7,
+          risk: 2,
+          rationale: 'Good',
+          recommendation: 'pursue',
+        })
+      );
+
+      expect(output.status).toBe('ok');
+      expect(output.sessionId).toBe('dp-external1');
+      expect(output.evaluationCount).toBe(1);
+    });
+
+    it('should handle rapid session switching (A → B → A → B)', async () => {
+      const a = await initSession(resumeServer, { problem: 'Session A' });
+      await addApproach(resumeServer, 'a-branch', 'A Branch');
+
+      const b = await initSession(resumeServer, { problem: 'Session B' });
+      await addApproach(resumeServer, 'b-branch', 'B Branch');
+
+      // Switch back to A
+      const aResumed = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'explore',
+          sessionId: a.sessionId,
+          branchId: 'a-branch-2',
+          name: 'A Branch 2',
+        })
+      );
+      expect(aResumed.sessionId).toBe(a.sessionId);
+      expect(aResumed.approachCount).toBe(2);
+
+      // Switch back to B
+      const bResumed = parseOutput(
+        await resumeServer.processPlanningStep({
+          phase: 'explore',
+          sessionId: b.sessionId,
+          branchId: 'b-branch-2',
+          name: 'B Branch 2',
+        })
+      );
+      expect(bResumed.sessionId).toBe(b.sessionId);
+      expect(bResumed.approachCount).toBe(2);
     });
   });
 
   // ─── Phase Transitions (Invalid) ───────────────────────────────────────
 
   describe('invalid phase transitions', () => {
-    it('should reject non-init calls without a session', () => {
-      const result = server.processPlanningStep({ phase: 'clarify', question: 'test' });
+    it('should reject non-init calls without a session', async () => {
+      const result = await server.processPlanningStep({ phase: 'clarify', question: 'test' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
@@ -267,17 +465,17 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('No active planning session');
     });
 
-    it('should reject invalid phase names', () => {
-      const result = server.processPlanningStep({ phase: 'invalid' });
+    it('should reject invalid phase names', async () => {
+      const result = await server.processPlanningStep({ phase: 'invalid' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('Invalid phase');
     });
 
-    it('should reject finalize directly after init', () => {
-      initSession(server);
-      const result = server.processPlanningStep({
+    it('should reject finalize directly after init', async () => {
+      await initSession(server);
+      const result = await server.processPlanningStep({
         phase: 'finalize',
         selectedBranch: 'test',
       });
@@ -287,9 +485,9 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('Cannot transition');
     });
 
-    it('should reject evaluate directly after init', () => {
-      initSession(server);
-      const result = server.processPlanningStep({
+    it('should reject evaluate directly after init', async () => {
+      await initSession(server);
+      const result = await server.processPlanningStep({
         phase: 'evaluate',
         branchId: 'test',
       });
@@ -299,9 +497,9 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('Cannot transition');
     });
 
-    it('should allow init when session already exists (restart)', () => {
-      initSession(server);
-      const result = server.processPlanningStep({
+    it('should allow init when session already exists (restart)', async () => {
+      await initSession(server);
+      const result = await server.processPlanningStep({
         phase: 'init',
         problem: 'Another problem',
       });
@@ -316,16 +514,16 @@ describe('DeepPlanningServer', () => {
   // ─── Init Phase ─────────────────────────────────────────────────────────
 
   describe('init phase', () => {
-    it('should require problem field', () => {
-      const result = server.processPlanningStep({ phase: 'init' });
+    it('should require problem field', async () => {
+      const result = await server.processPlanningStep({ phase: 'init' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('requires a "problem" field');
     });
 
-    it('should store context and constraints', () => {
-      const output = initSession(server, {
+    it('should store context and constraints', async () => {
+      const output = await initSession(server, {
         context: 'Backend app',
         constraints: '["must use TypeScript", "no external deps"]',
       });
@@ -337,20 +535,20 @@ describe('DeepPlanningServer', () => {
   // ─── Clarify Phase ──────────────────────────────────────────────────────
 
   describe('clarify phase', () => {
-    it('should require question field', () => {
-      initSession(server);
-      const result = server.processPlanningStep({ phase: 'clarify' });
+    it('should require question field', async () => {
+      await initSession(server);
+      const result = await server.processPlanningStep({ phase: 'clarify' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('requires a "question" field');
     });
 
-    it('should record multiple clarifications', () => {
-      initSession(server);
+    it('should record multiple clarifications', async () => {
+      await initSession(server);
 
       parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Q1?',
           answer: 'A1',
@@ -358,7 +556,7 @@ describe('DeepPlanningServer', () => {
       );
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Q2?',
         })
@@ -372,20 +570,20 @@ describe('DeepPlanningServer', () => {
   // ─── Explore Phase ──────────────────────────────────────────────────────
 
   describe('explore phase', () => {
-    it('should require branchId and name', () => {
-      initSession(server);
-      const result = server.processPlanningStep({ phase: 'explore' });
+    it('should require branchId and name', async () => {
+      await initSession(server);
+      const result = await server.processPlanningStep({ phase: 'explore' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('requires "branchId" and "name"');
     });
 
-    it('should reject duplicate branchId', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should reject duplicate branchId', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'explore',
         branchId: 'branch-a',
         name: 'Duplicate',
@@ -396,9 +594,9 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('already exists');
     });
 
-    it('should parse pros and cons as JSON arrays', () => {
-      initSession(server);
-      const output = addApproach(server, 'branch-a', 'Approach A', {
+    it('should parse pros and cons as JSON arrays', async () => {
+      await initSession(server);
+      const output = await addApproach(server, 'branch-a', 'Approach A', {
         pros: '["fast", "simple"]',
         cons: '["limited"]',
       });
@@ -407,9 +605,9 @@ describe('DeepPlanningServer', () => {
       expect(output.approachCount).toBe(1);
     });
 
-    it('should handle missing pros and cons', () => {
-      initSession(server);
-      const output = addApproach(server, 'branch-a', 'Approach A');
+    it('should handle missing pros and cons', async () => {
+      await initSession(server);
+      const output = await addApproach(server, 'branch-a', 'Approach A');
 
       expect(output.status).toBe('ok');
     });
@@ -418,22 +616,22 @@ describe('DeepPlanningServer', () => {
   // ─── Evaluate Phase ─────────────────────────────────────────────────────
 
   describe('evaluate phase', () => {
-    it('should require branchId', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should require branchId', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
-      const result = server.processPlanningStep({ phase: 'evaluate' });
+      const result = await server.processPlanningStep({ phase: 'evaluate' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('requires a "branchId"');
     });
 
-    it('should reject evaluation of non-existent branch', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should reject evaluation of non-existent branch', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'evaluate',
         branchId: 'non-existent',
       });
@@ -443,12 +641,12 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('No approach found');
     });
 
-    it('should reject duplicate evaluation', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should reject duplicate evaluation', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'evaluate',
         branchId: 'branch-a',
       });
@@ -458,11 +656,11 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('already exists');
     });
 
-    it('should reject invalid recommendation', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should reject invalid recommendation', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'evaluate',
         branchId: 'branch-a',
         recommendation: 'invalid',
@@ -473,12 +671,12 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('Invalid recommendation');
     });
 
-    it('should use default scores when not provided', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should use default scores when not provided', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'evaluate',
           branchId: 'branch-a',
         })
@@ -488,11 +686,11 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('score:');
     });
 
-    it('should calculate and report weighted score', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
+    it('should calculate and report weighted score', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
 
-      const output = evaluateApproach(server, 'branch-a', {
+      const output = await evaluateApproach(server, 'branch-a', {
         feasibility: 10,
         completeness: 10,
         coherence: 10,
@@ -508,24 +706,24 @@ describe('DeepPlanningServer', () => {
   // ─── Finalize Phase ─────────────────────────────────────────────────────
 
   describe('finalize phase', () => {
-    it('should require selectedBranch', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should require selectedBranch', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
-      const result = server.processPlanningStep({ phase: 'finalize' });
+      const result = await server.processPlanningStep({ phase: 'finalize' });
       const output = parseOutput(result);
 
       expect(result.isError).toBe(true);
       expect(output.message).toContain('requires a "selectedBranch"');
     });
 
-    it('should reject non-existent selectedBranch', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should reject non-existent selectedBranch', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'finalize',
         selectedBranch: 'non-existent',
       });
@@ -535,17 +733,17 @@ describe('DeepPlanningServer', () => {
       expect(output.message).toContain('No approach found');
     });
 
-    it('should generate markdown plan by default', () => {
-      initSession(server, { problem: 'Auth system' });
-      addApproach(server, 'passport', 'Passport.js', {
+    it('should generate markdown plan by default', async () => {
+      await initSession(server, { problem: 'Auth system' });
+      await addApproach(server, 'passport', 'Passport.js', {
         description: 'Use Passport middleware',
         pros: '["mature"]',
         cons: '["complex config"]',
       });
-      evaluateApproach(server, 'passport');
+      await evaluateApproach(server, 'passport');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'passport',
           steps: '[{"title":"Install deps","description":"pnpm add passport"}]',
@@ -567,13 +765,13 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('## Success Criteria');
     });
 
-    it('should generate JSON plan when format is json', () => {
-      initSession(server);
-      addApproach(server, 'branch-a', 'Approach A');
-      evaluateApproach(server, 'branch-a');
+    it('should generate JSON plan when format is json', async () => {
+      await initSession(server);
+      await addApproach(server, 'branch-a', 'Approach A');
+      await evaluateApproach(server, 'branch-a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'branch-a',
           format: 'json',
@@ -594,17 +792,17 @@ describe('DeepPlanningServer', () => {
   // ─── Markdown Plan Sections ─────────────────────────────────────────────
 
   describe('markdown plan generation', () => {
-    it('should include context and constraints when provided', () => {
-      initSession(server, {
+    it('should include context and constraints when provided', async () => {
+      await initSession(server, {
         problem: 'Auth',
         context: 'Express app',
         constraints: '["TypeScript only", "No external deps"]',
       });
-      addApproach(server, 'a', 'Test Approach');
-      evaluateApproach(server, 'a');
+      await addApproach(server, 'a', 'Test Approach');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -616,20 +814,20 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('TypeScript only');
     });
 
-    it('should include clarifications table', () => {
-      initSession(server);
+    it('should include clarifications table', async () => {
+      await initSession(server);
       parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Which DB?',
           answer: 'PostgreSQL',
         })
       );
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a');
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -640,15 +838,15 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('PostgreSQL');
     });
 
-    it('should include rejected approaches', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Winner');
-      addApproach(server, 'b', 'Loser');
-      evaluateApproach(server, 'a', { recommendation: 'pursue' });
-      evaluateApproach(server, 'b', { recommendation: 'abandon', rationale: 'Too risky' });
+    it('should include rejected approaches', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Winner');
+      await addApproach(server, 'b', 'Loser');
+      await evaluateApproach(server, 'a', { recommendation: 'pursue' });
+      await evaluateApproach(server, 'b', { recommendation: 'abandon', rationale: 'Too risky' });
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -659,10 +857,10 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('Too risky');
     });
 
-    it('should include evaluation scores table', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a', {
+    it('should include evaluation scores table', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a', {
         feasibility: 9,
         completeness: 8,
         coherence: 7,
@@ -670,7 +868,7 @@ describe('DeepPlanningServer', () => {
       });
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -682,13 +880,13 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('| Risk | 2/10 |');
     });
 
-    it('should include step details with files, dependencies, and complexity', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a');
+    it('should include step details with files, dependencies, and complexity', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
           steps: JSON.stringify([
@@ -710,19 +908,19 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).toContain('**Complexity:** low');
     });
 
-    it('should show pending clarifications', () => {
-      initSession(server);
+    it('should show pending clarifications', async () => {
+      await initSession(server);
       parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'Unanswered?',
         })
       );
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a');
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -735,15 +933,15 @@ describe('DeepPlanningServer', () => {
   // ─── JSON Plan Generation ──────────────────────────────────────────────
 
   describe('json plan generation', () => {
-    it('should include rejected approaches with scores', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Winner');
-      addApproach(server, 'b', 'Loser');
-      evaluateApproach(server, 'a');
-      evaluateApproach(server, 'b', { recommendation: 'abandon' });
+    it('should include rejected approaches with scores', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Winner');
+      await addApproach(server, 'b', 'Loser');
+      await evaluateApproach(server, 'a');
+      await evaluateApproach(server, 'b', { recommendation: 'abandon' });
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
           format: 'json',
@@ -890,13 +1088,13 @@ describe('DeepPlanningServer', () => {
   });
 
   describe('finalize with step aliases', () => {
-    it('should render steps correctly when using action/detail field names', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Approach A');
-      evaluateApproach(server, 'a');
+    it('should render steps correctly when using action/detail field names', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Approach A');
+      await evaluateApproach(server, 'a');
 
       const result = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
           steps: JSON.stringify([
@@ -918,8 +1116,8 @@ describe('DeepPlanningServer', () => {
   // ─── Edge Cases ─────────────────────────────────────────────────────────
 
   describe('edge cases', () => {
-    it('should handle invalid JSON for constraints gracefully', () => {
-      const result = server.processPlanningStep({
+    it('should handle invalid JSON for constraints gracefully', async () => {
+      const result = await server.processPlanningStep({
         phase: 'init',
         problem: 'Test',
         constraints: 'not valid json',
@@ -928,10 +1126,10 @@ describe('DeepPlanningServer', () => {
       expect(result.isError).toBe(true);
     });
 
-    it('should handle invalid JSON for pros gracefully', () => {
-      initSession(server);
+    it('should handle invalid JSON for pros gracefully', async () => {
+      await initSession(server);
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'explore',
         branchId: 'a',
         name: 'Test',
@@ -941,12 +1139,12 @@ describe('DeepPlanningServer', () => {
       expect(result.isError).toBe(true);
     });
 
-    it('should handle invalid JSON for steps gracefully', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a');
+    it('should handle invalid JSON for steps gracefully', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a');
 
-      const result = server.processPlanningStep({
+      const result = await server.processPlanningStep({
         phase: 'finalize',
         selectedBranch: 'a',
         steps: 'invalid json',
@@ -955,8 +1153,8 @@ describe('DeepPlanningServer', () => {
       expect(result.isError).toBe(true);
     });
 
-    it('should handle non-array JSON for constraints', () => {
-      const result = server.processPlanningStep({
+    it('should handle non-array JSON for constraints', async () => {
+      const result = await server.processPlanningStep({
         phase: 'init',
         problem: 'Test',
         constraints: '"just a string"',
@@ -965,13 +1163,13 @@ describe('DeepPlanningServer', () => {
       expect(result.isError).toBe(true);
     });
 
-    it('should handle empty finalize with no steps/risks', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Test');
-      evaluateApproach(server, 'a');
+    it('should handle empty finalize with no steps/risks', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Test');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'a',
         })
@@ -982,17 +1180,17 @@ describe('DeepPlanningServer', () => {
       expect(output.plan).not.toContain('## Risks');
     });
 
-    it('should handle finalize with no evaluation for selected branch', () => {
-      initSession(server);
-      addApproach(server, 'a', 'Test');
+    it('should handle finalize with no evaluation for selected branch', async () => {
+      await initSession(server);
+      await addApproach(server, 'a', 'Test');
       // Skip evaluation — go straight from explore to evaluate then finalize
       // Actually we need to evaluate to reach finalize phase
       // But we can evaluate branch a, add branch b, then finalize with b (which has no eval)
-      addApproach(server, 'b', 'Second');
-      evaluateApproach(server, 'a');
+      await addApproach(server, 'b', 'Second');
+      await evaluateApproach(server, 'a');
 
       const output = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'b',
         })
@@ -1007,23 +1205,23 @@ describe('DeepPlanningServer', () => {
   // ─── Logging ────────────────────────────────────────────────────────────
 
   describe('logging', () => {
-    it('should suppress logging when DISABLE_THOUGHT_LOGGING is true', () => {
+    it('should suppress logging when DISABLE_THOUGHT_LOGGING is true', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
       vi.stubEnv('DISABLE_THOUGHT_LOGGING', 'true');
       const silentServer = new DeepPlanningServer();
 
-      initSession(silentServer);
+      await initSession(silentServer);
 
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
-    it('should log when DISABLE_THOUGHT_LOGGING is not set', () => {
+    it('should log when DISABLE_THOUGHT_LOGGING is not set', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
       vi.stubEnv('DISABLE_THOUGHT_LOGGING', '');
       const loggingServer = new DeepPlanningServer();
 
-      initSession(loggingServer);
+      await initSession(loggingServer);
 
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -1033,9 +1231,9 @@ describe('DeepPlanningServer', () => {
   // ─── Full Workflow ──────────────────────────────────────────────────────
 
   describe('full workflow', () => {
-    it('should complete a full planning session end-to-end', () => {
+    it('should complete a full planning session end-to-end', async () => {
       // Init
-      const initOutput = initSession(server, {
+      const initOutput = await initSession(server, {
         problem: 'Implement caching layer',
         context: 'Node.js API server',
         constraints: '["Must support TTL", "Max 100MB memory"]',
@@ -1044,7 +1242,7 @@ describe('DeepPlanningServer', () => {
 
       // Clarify
       const clarifyOutput = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'clarify',
           question: 'What data types need caching?',
           answer: 'API responses and DB query results',
@@ -1053,7 +1251,7 @@ describe('DeepPlanningServer', () => {
       expect(clarifyOutput.status).toBe('ok');
 
       // Explore approach 1
-      const exploreA = addApproach(server, 'redis', 'Redis', {
+      const exploreA = await addApproach(server, 'redis', 'Redis', {
         description: 'Use Redis as external cache',
         pros: '["Battle-tested", "Distributed"]',
         cons: '["External dependency", "Network latency"]',
@@ -1061,7 +1259,7 @@ describe('DeepPlanningServer', () => {
       expect(exploreA.approachCount).toBe(1);
 
       // Explore approach 2
-      const exploreB = addApproach(server, 'lru', 'In-Memory LRU', {
+      const exploreB = await addApproach(server, 'lru', 'In-Memory LRU', {
         description: 'Use node-lru-cache',
         pros: '["No external deps", "Fast"]',
         cons: '["Single process", "Lost on restart"]',
@@ -1069,7 +1267,7 @@ describe('DeepPlanningServer', () => {
       expect(exploreB.approachCount).toBe(2);
 
       // Evaluate both
-      const evalA = evaluateApproach(server, 'redis', {
+      const evalA = await evaluateApproach(server, 'redis', {
         feasibility: 8,
         completeness: 9,
         coherence: 8,
@@ -1078,7 +1276,7 @@ describe('DeepPlanningServer', () => {
       });
       expect(evalA.evaluationCount).toBe(1);
 
-      const evalB = evaluateApproach(server, 'lru', {
+      const evalB = await evaluateApproach(server, 'lru', {
         feasibility: 9,
         completeness: 6,
         coherence: 7,
@@ -1089,7 +1287,7 @@ describe('DeepPlanningServer', () => {
 
       // Finalize
       const finalOutput = parseOutput(
-        server.processPlanningStep({
+        await server.processPlanningStep({
           phase: 'finalize',
           selectedBranch: 'redis',
           steps: JSON.stringify([
