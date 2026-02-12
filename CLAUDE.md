@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.1.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.2.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.9.1                                                                            |
+| **Version**   | 0.9.2                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -26,25 +26,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | MCP SDK         | @modelcontextprotocol/sdk 1.26.0                       |
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
-| Linting         | ESLint 9.39.2 (flat config) + typescript-eslint 8.54.0 |
-| Formatting      | Prettier 3.8.1                                         |
+| Linting         | Oxlint 1.47.0 (Rust-based, 668 built-in rules)         |
+| Formatting      | Biome 2.3.15 (linter disabled, Prettier-compatible)     |
 | Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (OIDC npm publish)                      |
 
-### ESLint Plugin Stack (Full Lint Skill Compliance)
+### Oxlint Plugin Stack (Zero npm Dependencies)
 
-| Plugin                   | Purpose                                     |
-| ------------------------ | ------------------------------------------- |
-| typescript-eslint        | TypeScript strict + stylistic type checking |
-| @stylistic/eslint-plugin | Code style rules                            |
-| eslint-plugin-import     | Import ordering and validation              |
-| eslint-plugin-unicorn    | Modern JavaScript patterns                  |
-| eslint-plugin-sonarjs    | Bug detection, cognitive complexity         |
-| eslint-plugin-promise    | Async/await patterns                        |
-| eslint-plugin-n          | Node.js-specific rules                      |
-| eslint-plugin-vitest     | Test file rules                             |
-| eslint-config-prettier   | Disable conflicting rules                   |
+| Plugin (built-in) | Purpose                                |
+| ----------------- | -------------------------------------- |
+| eslint (core)     | ~200 core JavaScript rules             |
+| typescript        | ~90 TypeScript rules                   |
+| unicorn           | ~100 modern JavaScript patterns        |
+| oxc (deepscan)    | ~30 bug detection rules                |
+| import            | Import validation (sorting via Biome)  |
+| promise           | Async/await patterns                   |
+| node              | Node.js-specific rules                 |
+| vitest            | Test file rules                        |
 
 ## Development Commands
 
@@ -61,13 +60,13 @@ pnpm test
 # Watch mode for tests
 pnpm test:watch
 
-# Lint (zero warnings allowed)
+# Lint with Oxlint (zero warnings allowed)
 pnpm lint
 
 # Lint with auto-fix
 pnpm lint:fix
 
-# Format with Prettier
+# Format with Biome
 pnpm format
 
 # Check formatting
@@ -118,12 +117,10 @@ yggdrasil-mcp/
 ├── CONTRIBUTING.md          # Contribution guidelines
 ├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1
 ├── SECURITY.md              # Vulnerability reporting policy
-├── eslint.config.js         # ESLint 9 flat config (full plugin stack)
+├── oxlint.json              # Oxlint config (8 native plugins, zero npm deps)
+├── biome.json               # Biome formatter config (linter disabled)
 ├── tsconfig.json            # TypeScript config (ES2022, NodeNext)
-├── tsconfig.eslint.json     # TypeScript config for linting (includes tests)
 ├── vitest.config.ts         # Vitest configuration
-├── .prettierrc              # Prettier configuration
-├── .prettierignore          # Prettier ignore patterns
 ├── .node-version            # Node.js version (24)
 ├── LICENSE                  # MIT (Anthropic + Henry Chong)
 └── .husky/
@@ -319,6 +316,22 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ## Version History
 
+### v0.9.2 (2026-02-13)
+
+**Migrate lint stack from ESLint+Prettier to Oxlint+Biome**
+
+- Replace ESLint 9 (flat config + 9 plugins) with Oxlint (668 built-in rules, 8 native plugins)
+- Replace Prettier with Biome formatter (linter disabled, Prettier-compatible settings)
+- Remove 12 lint/format devDependencies, add 2 (oxlint, @biomejs/biome)
+- Delete `eslint.config.js`, `.prettierrc`, `.prettierignore`, `tsconfig.eslint.json`
+- Create `oxlint.json` (plugins: import, promise, node, vitest)
+- Create `biome.json` (format + import sorting, linter disabled)
+- Update package.json scripts and lint-staged config
+- Add `pnpm format:check` step to CI workflow
+- 50-100x faster linting, 25x faster formatting
+
+---
+
 ### v0.9.1 (2026-02-11)
 
 **Feature: Session Resumption for deep_planning**
@@ -509,13 +522,6 @@ See `plans/yggdrasil-roadmap.md` for the 5-phase roadmap:
 5. **v2.5** - Advanced orchestration (n8n, MCTS)
 
 ## Troubleshooting
-
-### ESLint Parsing Errors for Test Files
-
-If you see "file was not found by the project service":
-
-- Ensure `tsconfig.eslint.json` exists and includes test files
-- ESLint config should use `project: './tsconfig.eslint.json'`
 
 ### Pre-commit Hook Failures
 
