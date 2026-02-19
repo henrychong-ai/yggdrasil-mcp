@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.3.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.4.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.9.3                                                                            |
+| **Version**   | 0.9.4                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -21,8 +21,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Layer           | Technology                                             |
 | --------------- | ------------------------------------------------------ |
-| Language        | TypeScript 5.3.3                                       |
-| Runtime         | Node.js >=18                                           |
+| Language        | TypeScript 5.9.3                                       |
+| Runtime         | Node.js 24                                             |
 | MCP SDK         | @modelcontextprotocol/sdk 1.26.0                       |
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
@@ -114,7 +114,7 @@ yggdrasil-mcp/
 ├── SECURITY.md              # Vulnerability reporting policy
 ├── oxlint.json              # Oxlint config (8 native plugins, zero npm deps)
 ├── biome.json               # Biome formatter config (linter disabled)
-├── tsconfig.json            # TypeScript config (ES2022, NodeNext)
+├── tsconfig.json            # TypeScript config (ES2024, NodeNext)
 ├── vitest.config.ts         # Vitest configuration
 ├── .node-version            # Node.js version (24)
 ├── LICENSE                  # MIT (Anthropic + Henry Chong)
@@ -265,7 +265,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 | Job                | Trigger           | Node Versions    |
 | ------------------ | ----------------- | ---------------- |
-| **Build and Test** | All pushes, PRs   | 20.x, 22.x, 24.x |
+| **Build and Test** | All pushes, PRs   | 24.x              |
 | **Publish to npm** | Tags matching v\* | 24.x             |
 
 ### npm Publishing
@@ -310,6 +310,18 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.9.4 (2026-02-19)
+
+**Switch to Node 24 only + ES2024 target**
+
+- Update TypeScript target from ES2022 to ES2024
+- Drop Node 20/22 support, require Node >=24
+- Remove CI build matrix (was 20.x/22.x/24.x, now 24.x only)
+- Upgrade @types/node from ^22 to ^24
+- No source code changes required
+
+---
 
 ### v0.9.3 (2026-02-19)
 

@@ -261,7 +261,7 @@ pnpm watch
 
 ### Requirements
 
-- Node.js ≥18 (`.node-version` pins to 24)
+- Node.js >=24
 - pnpm (corepack-managed via `packageManager` field)
 
 ## Upstream
