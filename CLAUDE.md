@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.0.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.1.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.0.0                                                                            |
+| **Version**   | 1.0.1                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Formatting      | Biome 2.4.2 (linter disabled, Prettier-compatible)      |
 | Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
 | Package Manager | pnpm                                                   |
-| CI/CD           | GitHub Actions (OIDC npm publish)                      |
+| CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
 ### Oxlint Plugin Stack (Zero npm Dependencies)
 
@@ -270,7 +270,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ### npm Publishing
 
-- **Trigger**: Only on version tags (e.g., `v0.7.1`)
+- **Trigger**: Only on version tags (e.g., `v1.0.0`)
 - **Authentication**: NPM_TOKEN secret (unscoped packages require explicit token, not OIDC)
 - **Version Check**: Tag must match `package.json` version
 
@@ -310,6 +310,20 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v1.0.1 (2026-02-19)
+
+**Documentation fixes**
+
+- Fix Tech Stack: "OIDC npm publish" → "npm publish on v* tags" (was incorrect)
+- Fix roadmap file path to use YYYYMMDD-prefixed filename
+- Mark v1.0 roadmap phase as complete
+- Update roadmap: remove stale model references
+- README: add Node.js version badge
+- README: document `list_plans` and `get_plan` tools (were missing)
+- README: link Contributing section to CONTRIBUTING.md
+
+---
 
 ### v1.0.0 (2026-02-19)
 
@@ -556,12 +570,12 @@ Forked from `@modelcontextprotocol/server-sequential-thinking` v0.6.2 with criti
 
 ## Roadmap
 
-See `plans/yggdrasil-roadmap.md` for the 5-phase roadmap:
+See `plans/20260130-yggdrasil-roadmap.md` for the 5-phase roadmap:
 
-1. **v1.0** - Core enhancements (current)
-2. **v1.1** - Differentiation (persistence, Mermaid)
+1. ~~**v1.0** - Core enhancements~~ (complete)
+2. **v1.1** - Differentiation (Mermaid export, thought history retrieval)
 3. **v1.2** - Self-evaluation tools
-4. **v2.0** - Multi-agent evaluation (Codex integration)
+4. **v2.0** - Multi-agent evaluation (cross-model verification)
 5. **v2.5** - Advanced orchestration (n8n, MCTS)
 
 ## Troubleshooting

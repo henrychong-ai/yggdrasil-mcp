@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/yggdrasil-mcp.svg)](https://www.npmjs.com/package/yggdrasil-mcp)
 [![CI](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24-green.svg)](https://nodejs.org/)
 
 **Reasoning orchestration MCP server** — Tree of Thoughts with multi-agent evaluation.
 
@@ -38,7 +39,7 @@ See the [CLAUDE.md](CLAUDE.md) version history for details. The 5-phase roadmap 
 - Thought history retrieval and persistence (JSONL)
 - Mermaid diagram export
 - Branch evaluation with multi-agent support
-- Codex/GPT-5.2 cross-model verification
+- Cross-model verification
 - n8n workflow integration
 
 ## Installation
@@ -177,6 +178,13 @@ init → clarify* → explore+ → evaluate+ → finalize → done
   "message": "Approach recorded..."
 }
 ```
+
+## Tools: list_plans & get_plan
+
+Retrieve saved `deep_planning` sessions.
+
+- **`list_plans`** — List all saved sessions. Optional filters: `status` (`complete` or `in-progress`), `keyword` (search in problem text).
+- **`get_plan`** — Retrieve a session by ID. Formats: `markdown` (default, finalized plans) or `jsonl` (full event log).
 
 ## Use Cases
 
@@ -319,7 +327,7 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Please ensure:
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 1. All tests pass (`pnpm test`)
 2. Linting passes (`pnpm lint`)
