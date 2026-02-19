@@ -62,7 +62,7 @@
       "oxlint --fix --max-warnings=0",
       "biome format --write"
     ],
-    "*.{json,yml,yaml,md}": [
+    "*.{json,yml,yaml}": [
       "biome format --write"
     ]
   },

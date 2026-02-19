@@ -97,14 +97,9 @@ yggdrasil-mcp/
 │   ├── persistence.test.ts  # Persistence layer test suite (37 tests)
 │   └── coercion.test.ts     # Coercion test suite (28 tests)
 ├── dist/                    # Compiled output (npm package)
+├── plans/                   # Implementation plans (gitignored)
 ├── .claude/
-│   ├── plans/               # Implementation plans (gitignored)
-│   │   ├── yggdrasil-roadmap.md
-│   │   ├── task-integration-plan.md
-│   │   ├── branch-evaluation-approaches.md
-│   │   ├── rename-sequential-thinking.md
-│   │   └── deep-planning-tool.md
-│   └── settings.json        # Claude Code project settings
+│   └── settings.json        # Claude Code project settings (gitignored)
 ├── .github/
 │   ├── workflows/
 │   │   └── ci-cd.yml        # CI + npm publish on v* tags
