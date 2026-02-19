@@ -6,14 +6,23 @@ name: Yggdrasil MCP CI
 on:
   push:
     branches: ['**']
-    tags: ['v*'] # Trigger on version tags for npm publish
+    tags: ['v*']
   pull_request:
-    branches: ['**']
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
 
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     strategy:
       matrix:
@@ -21,20 +30,19 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        # Reads version from packageManager field in package.json
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm lint
@@ -54,20 +62,20 @@ jobs:
   publish:
     name: Publish to npm
     needs: build
-    # Only publish on version tags (v*)
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     permissions:
       contents: read
-      id-token: write # Required for npm OIDC authentication
+      id-token: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Use Node.js 24.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
@@ -86,15 +94,12 @@ jobs:
 
       - name: Verify tag matches package.json version
         run: |
-          # Extract version from tag (remove 'v' prefix)
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
           echo "Tag version: $TAG_VERSION"
 
-          # Get version from package.json
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           echo "Package.json version: $PACKAGE_VERSION"
 
-          # Verify they match
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
             exit 1
@@ -102,7 +107,6 @@ jobs:
           echo "✅ Tag version matches package.json version"
 
       - name: Publish to npm
-        # Unscoped packages require NPM_TOKEN (OIDC only works for scoped @org/pkg)
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
