@@ -18,11 +18,13 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v0.8.2)
+### Current (v0.9.3)
 
 - **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
+- **Session resumption** — Resume planning sessions by ID with JSONL persistence
+- **Hybrid persistence** — JSONL event log + Markdown plan export for deep_planning
 - **String coercion fix** — Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
-- **Strict TypeScript** — Full lint skill compliance with strictTypeChecked
+- **Oxlint + Biome** — 50-100x faster linting, zero-config formatting
 - Break down complex problems into manageable steps
 - Revise and refine thoughts as understanding deepens
 - Branch into alternative paths of reasoning
@@ -31,7 +33,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ### Roadmap
 
-See [.claude/plans/yggdrasil-roadmap.md](.claude/plans/yggdrasil-roadmap.md) for the full 5-phase roadmap including:
+See the [CLAUDE.md](CLAUDE.md) version history for details. The 5-phase roadmap includes:
 
 - Thought history retrieval and persistence (JSONL)
 - Mermaid diagram export
@@ -270,50 +272,40 @@ We periodically sync relevant changes from upstream while maintaining our string
 
 ## Changelog
 
-### v0.8.2 (2026-02-06)
+### v0.9.3 (2026-02-19)
 
-- **Fix:** Allow session restart — `init` now works from any state including after completion
-- 108 tests total, 97%+ coverage
+- **Public release** — Repository made public on GitHub
+- CI/CD aligned with skill specs: action upgrades, concurrency, timeouts, permissions
+- Biome VCS integration, lint-staged fixes
 
-### v0.8.1 (2026-02-06)
+### v0.9.2 (2026-02-13)
 
-- **Fix:** Step field normalization in `deep_planning` — accepts `action`/`detail`/`name`/`info` aliases alongside canonical `title`/`description`
-- 101 tests total, 97%+ coverage
+- **Migrate lint stack** from ESLint+Prettier to Oxlint+Biome (50-100x faster)
 
-### v0.8.0 (2026-02-06)
+### v0.9.1 (2026-02-11)
 
-- **New tool: `deep_planning`** — Structured multi-phase planning sessions with weighted evaluation scoring
-- Add `optionalScoreSchema` coercion utility for 0-10 score fields
-- 93 tests total (51 planning + 28 coercion + 14 lib), 97%+ coverage
+- **Session resumption** for `deep_planning` — switch between multiple planning sessions by ID
 
-### v0.7.5 (2026-02-06)
+### v0.9.0 (2026-02-07)
 
-- **Rename** MCP tool from `sequentialthinking` to `sequential_thinking` (snake_case ecosystem alignment)
+- **Hybrid persistence** — JSONL event log + Markdown export for `deep_planning`
+- `list_plans` and `get_plan` MCP tools for plan retrieval
+- 147 tests, 97%+ coverage
 
-### v0.7.2 (2026-01-31)
+### v0.8.0–v0.8.2 (2026-02-06)
 
-- Documentation: Task integration plan, updated TODO.md
-- Scaffolding: LICENSE, `.node-version`, `exports`, `packageManager` field
+- **New tool: `deep_planning`** — Structured multi-phase planning sessions
+- Step field normalization, session restart fixes
+- 108 tests, 97%+ coverage
 
-### v0.7.1 (2026-01-31)
+### v0.7.0–v0.7.5 (2026-01-31 – 2026-02-06)
 
-- CI/CD: pnpm 9→10, Node 24.x for publish, renamed workflow to `ci-cd.yml`
-
-### v0.7.0 (2026-01-31)
-
-- **Full lint skill compliance** with 6 additional ESLint plugins
-- **90% test coverage** threshold enforced (currently 98%+)
-- Extracted `coercion.ts` module with 23 comprehensive tests
-- Strict TypeScript checking (strictTypeChecked + stylisticTypeChecked)
-- Node 24.x added to CI test matrix, TypeScript ^5.7.0
+- Tool rename to `sequential_thinking`, full lint compliance, 90%+ coverage enforcement
+- CI/CD pipeline, LICENSE, community files, security fixes
 
 ### v0.6.3 (2026-01-30)
 
-- **Initial fork release** from `@modelcontextprotocol/server-sequential-thinking` v0.6.2
-- **Critical fix**: Claude Code string coercion bug #3084
-- Safe `z.preprocess` coercion for boolean and number types
-- GitHub Actions CI/CD with OIDC npm publishing
-- TypeScript ironclad stack: ESLint 9.x, Prettier, Husky, lint-staged, Vitest 4.x
+- **Initial fork release** — Critical fix for Claude Code string coercion bug #3084
 
 ## License
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.2.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.3.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.9.2                                                                            |
+| **Version**   | 0.9.3                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -310,6 +310,23 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v0.9.3 (2026-02-19)
+
+**Public release preparation and CI/CD alignment**
+
+- Make repository public on GitHub (henrychong-ai/yggdrasil-mcp)
+- Upgrade GitHub Actions: checkout v4→v6, setup-node v4→v6
+- Add concurrency group, job timeouts, top-level permissions, workflow_dispatch
+- Use `pnpm install --frozen-lockfile` in CI
+- Narrow PR trigger to main branch only
+- Add Biome VCS integration block for gitignore-aware CI
+- Fix lint-staged: remove md/yml/yaml from biome glob (unsupported formats)
+- Move plans directory from `.claude/plans/` to `plans/` at repo root
+- Untrack TODO.md from git (gitignore now effective)
+- Update project structure in CLAUDE.md
+
+---
 
 ### v0.9.2 (2026-02-13)
 

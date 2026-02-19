@@ -1,6 +1,6 @@
 {
   "name": "yggdrasil-mcp",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
   "author": "Henry Chong <henrychong-ai@gmail.com>",
