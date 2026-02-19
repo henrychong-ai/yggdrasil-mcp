@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build:
-    name: Build and Test
+    name: Lint-Format-Typecheck-Test-Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
