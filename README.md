@@ -18,7 +18,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v0.9.3)
+### Current (v1.0.0)
 
 - **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
 - **Session resumption** — Resume planning sessions by ID with JSONL persistence
@@ -272,11 +272,17 @@ We periodically sync relevant changes from upstream while maintaining our string
 
 ## Changelog
 
-### v0.9.3 (2026-02-19)
+### v1.0.0 (2026-02-19)
+
+- **Stable release** — All dependencies updated to latest, production-ready API
+- Resolves Dependabot security alerts (ajv CVE-2025-69873, qs)
+- CI pipeline reordered for fail-fast: lint → format → typecheck → test → build
+
+### v0.9.3–v0.9.4 (2026-02-19)
 
 - **Public release** — Repository made public on GitHub
+- Switch to Node 24 only + ES2024 target
 - CI/CD aligned with skill specs: action upgrades, concurrency, timeouts, permissions
-- Biome VCS integration, lint-staged fixes
 
 ### v0.9.2 (2026-02-13)
 

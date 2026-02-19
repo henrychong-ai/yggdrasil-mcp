@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 0.9.4.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.0.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 0.9.4                                                                            |
+| **Version**   | 1.0.0                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -26,8 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | MCP SDK         | @modelcontextprotocol/sdk 1.26.0                       |
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
-| Linting         | Oxlint 1.47.0 (Rust-based, 668 built-in rules)         |
-| Formatting      | Biome 2.3.15 (linter disabled, Prettier-compatible)     |
+| Linting         | Oxlint 1.48.0 (Rust-based, 668 built-in rules)         |
+| Formatting      | Biome 2.4.2 (linter disabled, Prettier-compatible)      |
 | Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (OIDC npm publish)                      |
@@ -265,7 +265,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 | Job                | Trigger           | Node Versions    |
 | ------------------ | ----------------- | ---------------- |
-| **Build and Test** | All pushes, PRs   | 24.x              |
+| **Lint-Format-Typecheck-Test-Build** | All pushes, PRs | 24.x |
 | **Publish to npm** | Tags matching v\* | 24.x             |
 
 ### npm Publishing
@@ -310,6 +310,25 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v1.0.0 (2026-02-19)
+
+**Stable release — all dependencies updated to latest**
+
+- Bump to v1.0.0 (stable API, production-ready)
+- Update all dependencies to latest versions:
+  - chalk 5.3.0 → 5.6.2
+  - @biomejs/biome 2.3.15 → 2.4.2
+  - oxlint 1.47.0 → 1.48.0
+  - semver 7.7.3 → 7.7.4
+  - shx 0.3.4 → 0.4.0
+- Resolves Dependabot security alerts (ajv CVE-2025-69873, qs)
+- Close Dependabot PR #1 (superseded by full update)
+- Reorder CI steps: lint → format → typecheck → test → build (fail-fast)
+- Rename CI job to "Lint-Format-Typecheck-Test-Build"
+- 154 tests, 97%+ coverage
+
+---
 
 ### v0.9.4 (2026-02-19)
 
