@@ -78,7 +78,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.2",
-    "@types/node": "^24",
+    "@types/node": "^25",
     "@vitest/coverage-v8": "^4.0.18",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
