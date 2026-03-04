@@ -67,7 +67,7 @@
     ]
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "chalk": "^5.6.2",
     "zod": "^4.3.6"
   },
@@ -77,12 +77,12 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.2",
-    "@types/node": "^24",
+    "@biomejs/biome": "^2.4.5",
+    "@types/node": "^24.11.0",
     "@vitest/coverage-v8": "^4.0.18",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "oxlint": "^1.48.0",
+    "oxlint": "^1.51.0",
     "semver": "^7.7.4",
     "shx": "^0.4.0",
     "typescript": "^5.9.3",
