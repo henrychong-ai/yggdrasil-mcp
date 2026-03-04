@@ -284,55 +284,7 @@ We periodically sync relevant changes from upstream while maintaining our string
 
 ## Changelog
 
-### v1.0.3 (2026-03-04)
-
-- **Dependency updates** — @modelcontextprotocol/sdk 1.27.1, Biome 2.4.5, Oxlint 1.51.0, @types/node 24.11.0
-- Add project logo to README
-
-### v1.0.2 (2026-03-04)
-
-- **Security fix** — Resolve rollup CVE-2026-27606 (high severity, arbitrary file write via path traversal)
-
-### v1.0.0 (2026-02-19)
-
-- **Stable release** — All dependencies updated to latest, production-ready API
-- Resolves Dependabot security alerts (ajv CVE-2025-69873, qs)
-- CI pipeline reordered for fail-fast: lint → format → typecheck → test → build
-
-### v0.9.3–v0.9.4 (2026-02-19)
-
-- **Public release** — Repository made public on GitHub
-- Switch to Node 24 only + ES2024 target
-- CI/CD aligned with skill specs: action upgrades, concurrency, timeouts, permissions
-
-### v0.9.2 (2026-02-13)
-
-- **Migrate lint stack** from ESLint+Prettier to Oxlint+Biome (50-100x faster)
-
-### v0.9.1 (2026-02-11)
-
-- **Session resumption** for `deep_planning` — switch between multiple planning sessions by ID
-
-### v0.9.0 (2026-02-07)
-
-- **Hybrid persistence** — JSONL event log + Markdown export for `deep_planning`
-- `list_plans` and `get_plan` MCP tools for plan retrieval
-- 147 tests, 97%+ coverage
-
-### v0.8.0–v0.8.2 (2026-02-06)
-
-- **New tool: `deep_planning`** — Structured multi-phase planning sessions
-- Step field normalization, session restart fixes
-- 108 tests, 97%+ coverage
-
-### v0.7.0–v0.7.5 (2026-01-31 – 2026-02-06)
-
-- Tool rename to `sequential_thinking`, full lint compliance, 90%+ coverage enforcement
-- CI/CD pipeline, LICENSE, community files, security fixes
-
-### v0.6.3 (2026-01-30)
-
-- **Initial fork release** — Critical fix for Claude Code string coercion bug #3084
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## License
 
