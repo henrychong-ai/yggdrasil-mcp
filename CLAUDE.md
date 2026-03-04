@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.1.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.3.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.0.1                                                                            |
+| **Version**   | 1.0.3                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -23,11 +23,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | --------------- | ------------------------------------------------------ |
 | Language        | TypeScript 5.9.3                                       |
 | Runtime         | Node.js 24                                             |
-| MCP SDK         | @modelcontextprotocol/sdk 1.26.0                       |
+| MCP SDK         | @modelcontextprotocol/sdk 1.27.1                       |
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
-| Linting         | Oxlint 1.48.0 (Rust-based, 668 built-in rules)         |
-| Formatting      | Biome 2.4.2 (linter disabled, Prettier-compatible)      |
+| Linting         | Oxlint 1.51.0 (Rust-based, 668 built-in rules)         |
+| Formatting      | Biome 2.4.5 (linter disabled, Prettier-compatible)      |
 | Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
@@ -310,6 +310,31 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 3. `CLAUDE.md` - Version in Project Overview + changelog entry
 
 ## Version History
+
+### v1.0.3 (2026-03-04)
+
+**Dependency updates and README logo**
+
+- Update all dependencies to latest:
+  - @modelcontextprotocol/sdk 1.26.0 → 1.27.1
+  - @biomejs/biome 2.4.2 → 2.4.5
+  - @types/node 24.10.13 → 24.11.0
+  - oxlint 1.48.0 → 1.51.0
+- Add project logo to README (hosted on assets.henrychong.com CDN)
+- Close 4 Dependabot PRs (#5–#8) superseded by direct updates
+- 154 tests, 97%+ coverage
+
+---
+
+### v1.0.2 (2026-03-04)
+
+**Security fix**
+
+- Fix rollup CVE-2026-27606 (high — arbitrary file write via path traversal)
+- Bump transitive rollup dependency 4.57.1 → 4.59.0 via lockfile update
+- Resolve last open Dependabot alert (#9)
+
+---
 
 ### v1.0.1 (2026-02-19)
 

@@ -23,7 +23,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v1.0.0)
+### Current (v1.0.3)
 
 - **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
 - **Session resumption** — Resume planning sessions by ID with JSONL persistence
@@ -283,6 +283,15 @@ This is a fork of [@modelcontextprotocol/server-sequential-thinking](https://git
 We periodically sync relevant changes from upstream while maintaining our string coercion fix and additional features.
 
 ## Changelog
+
+### v1.0.3 (2026-03-04)
+
+- **Dependency updates** — @modelcontextprotocol/sdk 1.27.1, Biome 2.4.5, Oxlint 1.51.0, @types/node 24.11.0
+- Add project logo to README
+
+### v1.0.2 (2026-03-04)
+
+- **Security fix** — Resolve rollup CVE-2026-27606 (high severity, arbitrary file write via path traversal)
 
 ### v1.0.0 (2026-02-19)
 
