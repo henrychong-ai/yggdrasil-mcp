@@ -1,5 +1,9 @@
 # Yggdrasil MCP
 
+<p align="center">
+  <img src="https://assets.henrychong.com/yggdrasil/yggdrasil-mcp-logo-readme.png" alt="Yggdrasil MCP Logo" width="600" />
+</p>
+
 [![npm version](https://img.shields.io/npm/v/yggdrasil-mcp.svg)](https://www.npmjs.com/package/yggdrasil-mcp)
 [![CI](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/henrychong-ai/yggdrasil-mcp/actions/workflows/ci-cd.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
