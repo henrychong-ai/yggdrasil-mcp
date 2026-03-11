@@ -23,7 +23,7 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v1.0.3)
+### Current (v1.0.4)
 
 - **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
 - **Session resumption** — Resume planning sessions by ID with JSONL persistence

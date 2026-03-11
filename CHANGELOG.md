@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.0.4 (2026-03-11)
+
+**Dependency updates — security fixes for hono ecosystem**
+
+- Fix 4 security vulnerabilities in transitive hono dependencies:
+  - Authorization bypass in Serve Static Middleware (GHSA-wc8c-qw6v-h7f6)
+  - SSE Control Field Injection (GHSA-p6xx-57qc-3wxr)
+  - Cookie Attribute Injection in setCookie() (GHSA-5pq2-9x2x-5p6w)
+  - Middleware Bypass in Serve Static (GHSA-q5qw-h33p-qvwr)
+- Update transitive deps: hono 4.11.10 → 4.12.7, @hono/node-server 1.19.9 → 1.19.11
+- Update devDependencies:
+  - @biomejs/biome 2.4.5 → 2.4.6
+  - @types/node 24.11.0 → 25.4.0
+  - lint-staged 16.2.7 → 16.3.3
+- Close 4 Dependabot PRs (#10–#13) superseded by direct updates
+- 154 tests, 97%+ coverage
+
 ## v1.0.3 (2026-03-04)
 
 **Dependency updates and README logo**

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.3.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.4.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.0.3                                                                            |
+| **Version**   | 1.0.4                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tool Name** | `sequential_thinking`                                                            |
 | **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
@@ -27,8 +27,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Validation      | Zod 4.3.6                                              |
 | Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
 | Linting         | Oxlint 1.51.0 (Rust-based, 668 built-in rules)         |
-| Formatting      | Biome 2.4.5 (linter disabled, Prettier-compatible)      |
-| Git Hooks       | Husky 9.1.7 + lint-staged 16.2.7                       |
+| Formatting      | Biome 2.4.6 (linter disabled, Prettier-compatible)      |
+| Git Hooks       | Husky 9.1.7 + lint-staged 16.3.3                       |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
