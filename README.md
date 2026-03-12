@@ -95,6 +95,65 @@ Add to your Claude Desktop config:
 }
 ```
 
+## Recommended: CLAUDE.md Configuration
+
+After installing the MCP server, add the following to your `~/.claude/CLAUDE.md` (global instructions) to unlock quick-access triggerwords and ensure Claude Code can load the tools correctly.
+
+### Why this matters
+
+Yggdrasil tools are **deferred tools** in Claude Code — their full schemas are not loaded until explicitly fetched. Without the configuration below, Claude Code won't know how to invoke the tools or respond to shorthand triggers. Adding this block enables:
+
+- **Shorthand triggers** (`s1`, `s2`, `s3`) for instant reasoning at different depth levels
+- **Automatic ToolSearch** so Claude Code loads the tool schema before first use
+- **Correct thought calibration** based on problem complexity
+
+### Add to `~/.claude/CLAUDE.md`
+
+Copy the following block into your `~/.claude/CLAUDE.md` file:
+
+````markdown
+## Structured Reasoning (Yggdrasil MCP)
+
+### sequential_thinking — Reflective Problem-Solving
+
+**MANDATORY Trigger:** When `s1`, `s2`, or `s3` appears ANYWHERE in user input:
+1. Load via `ToolSearch` query `select:mcp__yggdrasil__sequential_thinking`
+2. Invoke with appropriate `totalThoughts`
+3. Complete the full chain before responding
+
+**This is NOT optional internal reasoning — you MUST call the external MCP tool.**
+
+| Trigger | totalThoughts | Use Case |
+|---------|---------------|----------|
+| **s1** | 3-5 | Quick analysis, simple decisions |
+| **s2** | 6-10 | Detailed analysis, multi-factor problems |
+| **s3** | 12-20 | Comprehensive analysis, complex systems |
+
+### deep_planning — Multi-Phase Planning Sessions
+
+Use for structured planning that needs to track state across phases:
+`init → clarify → explore → evaluate → finalize`
+
+Best for: Architecture decisions, multi-approach evaluation, implementation planning with scored trade-offs.
+
+Both tools are deferred — load via `ToolSearch` before first use.
+````
+
+### ToolSearch (Recommended)
+
+Yggdrasil tools are registered as **deferred tools** in Claude Code. This means their parameter schemas are not available until fetched via `ToolSearch`. The CLAUDE.md configuration above handles this automatically for the `s1`/`s2`/`s3` triggers, but if you want to invoke the tools directly, use:
+
+```
+ToolSearch query: "select:mcp__yggdrasil__sequential_thinking"
+ToolSearch query: "select:mcp__yggdrasil__deep_planning"
+```
+
+This fetches the full schema and makes the tool callable for the rest of the session.
+
+### Verification
+
+After setup, test by typing `s1` followed by a question in Claude Code. You should see Claude Code automatically invoke `ToolSearch` and then call `sequential_thinking` with 3-5 thoughts.
+
 ## Tool: sequential_thinking
 
 Facilitates a detailed, step-by-step thinking process for problem-solving and analysis.
