@@ -5,11 +5,13 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  deriveMarkdownFilename,
   generateId,
   PersistenceManager,
   type PlanIndexEntry,
   type PlansIndex,
   resolvePlansDirectory,
+  toKebabCase,
 } from '../persistence.js';
 import type { PlanningSession } from '../planning.js';
 
@@ -72,6 +74,53 @@ describe('generateId', () => {
   it('should generate unique IDs', () => {
     const ids = new Set(Array.from({ length: 1000 }, () => generateId()));
     expect(ids.size).toBe(1000);
+  });
+});
+
+// ─── toKebabCase ────────────────────────────────────────────────────────────
+
+describe('toKebabCase', () => {
+  it('should convert basic strings to kebab-case', () => {
+    expect(toKebabCase('Auth Refactor')).toBe('auth-refactor');
+  });
+
+  it('should handle special characters', () => {
+    expect(toKebabCase('Hello, World! (2026)')).toBe('hello-world-2026');
+  });
+
+  it('should collapse multiple hyphens', () => {
+    expect(toKebabCase('foo---bar')).toBe('foo-bar');
+  });
+
+  it('should trim leading/trailing hyphens', () => {
+    expect(toKebabCase('--hello--')).toBe('hello');
+  });
+
+  it('should enforce max length', () => {
+    const long = 'a'.repeat(100);
+    expect(toKebabCase(long, 10)).toHaveLength(10);
+  });
+
+  it('should return empty string for non-alphanum input', () => {
+    expect(toKebabCase('!!!')).toBe('');
+  });
+
+  it('should handle already-kebab strings', () => {
+    expect(toKebabCase('auth-refactor-plan')).toBe('auth-refactor-plan');
+  });
+});
+
+// ─── deriveMarkdownFilename ─────────────────────────────────────────────────
+
+describe('deriveMarkdownFilename', () => {
+  it('should strip dp- prefix for descriptive session IDs', () => {
+    expect(deriveMarkdownFilename('dp-20260315-auth-refactor', '20260315')).toBe(
+      '20260315-auth-refactor.md'
+    );
+  });
+
+  it('should keep dp- prefix for random session IDs', () => {
+    expect(deriveMarkdownFilename('dp-kR3xT9vW', '20260315')).toBe('20260315-dp-kR3xT9vW.md');
   });
 });
 
@@ -277,46 +326,316 @@ describe('PersistenceManager', () => {
     });
 
     it('should list all plans sorted by createdAt descending', async () => {
-      const plans = await pm.listPlans();
-      expect(plans).toHaveLength(3);
-      expect(plans[0].sessionId).toBe('dp-session3');
-      expect(plans[1].sessionId).toBe('dp-session2');
-      expect(plans[2].sessionId).toBe('dp-session1');
+      const result = await pm.listPlans();
+      expect(result.total).toBe(3);
+      expect(result.plans).toHaveLength(3);
+      expect(result.plans[0].id).toBe('dp-session3');
+      expect(result.plans[1].id).toBe('dp-session2');
+      expect(result.plans[2].id).toBe('dp-session1');
     });
 
     it('should filter by status: complete', async () => {
-      const plans = await pm.listPlans({ status: 'complete' });
-      expect(plans).toHaveLength(2);
-      expect(plans.every((p) => p.phase === 'done')).toBe(true);
+      const result = await pm.listPlans({ status: 'complete' });
+      expect(result.total).toBe(2);
+      expect(result.plans.every((p) => p.phase === 'done')).toBe(true);
     });
 
     it('should filter by status: in-progress', async () => {
-      const plans = await pm.listPlans({ status: 'in-progress' });
-      expect(plans).toHaveLength(1);
-      expect(plans[0].sessionId).toBe('dp-session2');
+      const result = await pm.listPlans({ status: 'in-progress' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].id).toBe('dp-session2');
     });
 
     it('should filter by keyword', async () => {
-      const plans = await pm.listPlans({ keyword: 'cache' });
-      expect(plans).toHaveLength(1);
-      expect(plans[0].problem).toBe('Cache layer');
+      const result = await pm.listPlans({ keyword: 'cache' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].title).toContain('Cache layer');
     });
 
     it('should be case-insensitive for keyword search', async () => {
-      const plans = await pm.listPlans({ keyword: 'AUTH' });
-      expect(plans).toHaveLength(1);
-      expect(plans[0].problem).toBe('Auth system');
+      const result = await pm.listPlans({ keyword: 'AUTH' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].title).toContain('Auth system');
     });
 
     it('should combine status and keyword filters', async () => {
-      const plans = await pm.listPlans({ status: 'complete', keyword: 'database' });
-      expect(plans).toHaveLength(1);
-      expect(plans[0].problem).toBe('Database migration');
+      const result = await pm.listPlans({ status: 'complete', keyword: 'database' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].title).toContain('Database migration');
     });
 
     it('should return empty array when no plans match', async () => {
-      const plans = await pm.listPlans({ keyword: 'nonexistent' });
-      expect(plans).toHaveLength(0);
+      const result = await pm.listPlans({ keyword: 'nonexistent' });
+      expect(result.total).toBe(0);
+      expect(result.plans).toHaveLength(0);
+    });
+  });
+
+  // ─── sessionExists ─────────────────────────────────────────────────────
+
+  describe('sessionExists', () => {
+    it('should return true when session is in the index', async () => {
+      await pm.updateIndex('dp-existing', makeIndexEntry());
+      expect(pm.sessionExists('dp-existing')).toBe(true);
+    });
+
+    it('should return true when JSONL file exists on disk', async () => {
+      const session = makeSession({ sessionId: 'dp-onDisk' });
+      await pm.appendEvent(session);
+      expect(pm.sessionExists('dp-onDisk')).toBe(true);
+    });
+
+    it('should return false when session does not exist', () => {
+      expect(pm.sessionExists('dp-nonexistent')).toBe(false);
+    });
+  });
+
+  // ─── writeMarkdownPlan (descriptive naming) ───────────────────────────
+
+  describe('writeMarkdownPlan (descriptive naming)', () => {
+    it('should write YYYYMMDD-name.md for descriptive session IDs', async () => {
+      const session = makeSession({ sessionId: 'dp-20260315-auth-refactor' });
+      await pm.writeMarkdownPlan(session, '# Auth Plan');
+      const content = await readFile(path.join(tempDir, '20260315-auth-refactor.md'), 'utf8');
+      expect(content).toBe('# Auth Plan');
+    });
+
+    it('should write YYYYMMDD-dp-random.md for random session IDs', async () => {
+      const session = makeSession({ sessionId: 'dp-kR3xT9vW' });
+      await pm.writeMarkdownPlan(session, '# Random Plan');
+      const content = await readFile(path.join(tempDir, '20260206-dp-kR3xT9vW.md'), 'utf8');
+      expect(content).toBe('# Random Plan');
+    });
+  });
+
+  // ─── listPlans (pagination & CC orphans) ──────────────────────────────
+
+  describe('listPlans (pagination & CC orphans)', () => {
+    beforeEach(async () => {
+      // Add 5 Yggdrasil plans
+      for (let i = 1; i <= 5; i++) {
+        await pm.updateIndex(
+          `dp-session${i}`,
+          makeIndexEntry({
+            problem: `Plan ${i}`,
+            createdAt: `2026-02-0${i}T10:00:00.000Z`,
+            phase: i <= 3 ? 'done' : 'explore',
+            finalizedAt: i <= 3 ? `2026-02-0${i}T11:00:00.000Z` : null,
+          })
+        );
+      }
+      // Add 2 CC orphan .md files
+      await writeFile(path.join(tempDir, 'silly-walking-parrot.md'), '# Parrot Plan\nSome content');
+      await writeFile(path.join(tempDir, 'jazzy-cuddling-cat.md'), '# Cat Plan\nMore content');
+    });
+
+    it('should paginate with limit and offset', async () => {
+      const page1 = await pm.listPlans({ limit: 2, offset: 0 });
+      expect(page1.total).toBe(5);
+      expect(page1.plans).toHaveLength(2);
+      expect(page1.limit).toBe(2);
+      expect(page1.offset).toBe(0);
+
+      const page2 = await pm.listPlans({ limit: 2, offset: 2 });
+      expect(page2.plans).toHaveLength(2);
+      expect(page2.offset).toBe(2);
+    });
+
+    it('should discover CC orphans with source=all', async () => {
+      const result = await pm.listPlans({ source: 'all' });
+      expect(result.total).toBe(7); // 5 Yggdrasil + 2 CC orphans
+      const ccPlans = result.plans.filter((p) => p.source === 'cc');
+      expect(ccPlans.length).toBe(2);
+    });
+
+    it('should only return CC orphans with source=cc', async () => {
+      const result = await pm.listPlans({ source: 'cc' });
+      expect(result.total).toBe(2);
+      expect(result.plans.every((p) => p.source === 'cc')).toBe(true);
+    });
+
+    it('should extract title from CC orphan heading', async () => {
+      const result = await pm.listPlans({ source: 'cc' });
+      const titles = result.plans.map((p) => p.title);
+      expect(titles).toContain('Parrot Plan');
+      expect(titles).toContain('Cat Plan');
+    });
+
+    it('should extract date from mtime for CC orphans without date prefix', async () => {
+      await writeFile(path.join(tempDir, 'no-date-prefix.md'), '# No Date');
+      const result = await pm.listPlans({ source: 'cc', keyword: 'no date' });
+      expect(result.total).toBe(1);
+      // Date should be extracted from mtime (today's date approximately)
+      expect(result.plans[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it('should apply keyword filter to CC orphans', async () => {
+      const result = await pm.listPlans({ source: 'all', keyword: 'parrot' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].title).toBe('Parrot Plan');
+    });
+
+    it('should cap limit at 50', async () => {
+      const result = await pm.listPlans({ limit: 100 });
+      expect(result.limit).toBe(50);
+    });
+  });
+
+  // ─── promotePlan ──────────────────────────────────────────────────────
+
+  describe('promotePlan', () => {
+    it('should rename CC orphan and add to index', async () => {
+      await writeFile(path.join(tempDir, 'silly-walking-parrot.md'), '# Auth Refactor\nContent');
+
+      const result = await pm.promotePlan('silly-walking-parrot.md', 'auth-refactor');
+      expect(result.oldFilename).toBe('silly-walking-parrot.md');
+      expect(result.newFilename).toMatch(/^\d{8}-auth-refactor\.md$/);
+      expect(result.indexed).toBe(true);
+
+      // Verify index entry
+      const index = await pm.readIndex();
+      const entry = Object.values(index).find((e) => e?.phase === 'promoted');
+      expect(entry).toBeDefined();
+      expect(entry?.problem).toBe('Auth Refactor');
+      expect(entry?.name).toBe('auth-refactor');
+    });
+
+    it('should throw if file not found', async () => {
+      await expect(pm.promotePlan('nonexistent.md', 'test')).rejects.toThrow('not found');
+    });
+
+    it('should throw if not a markdown file', async () => {
+      await writeFile(path.join(tempDir, 'test.jsonl'), 'data');
+      await expect(pm.promotePlan('test.jsonl', 'test')).rejects.toThrow('not a Markdown');
+    });
+
+    it('should throw if already tracked in index', async () => {
+      await writeFile(path.join(tempDir, 'tracked.md'), '# Tracked');
+      await pm.updateIndex(
+        'dp-tracked',
+        makeIndexEntry({ filePaths: { jsonl: 'dp-tracked.jsonl', markdown: 'tracked.md' } })
+      );
+      await expect(pm.promotePlan('tracked.md', 'new-name')).rejects.toThrow('already tracked');
+    });
+
+    it('should throw if target filename already exists', async () => {
+      await writeFile(path.join(tempDir, 'orphan.md'), '# Orphan');
+      // Create a file that would collide
+      const stat = await import('node:fs').then((m) => m.statSync(path.join(tempDir, 'orphan.md')));
+      const datePrefix = stat.mtime.toISOString().slice(0, 10).replaceAll('-', '');
+      await writeFile(path.join(tempDir, `${datePrefix}-my-name.md`), '# Existing');
+
+      await expect(pm.promotePlan('orphan.md', 'my-name')).rejects.toThrow('already exists');
+    });
+
+    it('should throw if name sanitizes to empty', async () => {
+      await writeFile(path.join(tempDir, 'orphan2.md'), '# Test');
+      await expect(pm.promotePlan('orphan2.md', '!!!')).rejects.toThrow('empty string');
+    });
+  });
+
+  // ─── archivePlans ─────────────────────────────────────────────────────
+
+  describe('archivePlans', () => {
+    beforeEach(async () => {
+      // Create indexed plans with files
+      const session1 = makeSession({ sessionId: 'dp-old1', createdAt: '2025-06-01T10:00:00.000Z' });
+      await pm.appendEvent(session1);
+      await pm.writeMarkdownPlan(session1, '# Old Plan 1');
+      await pm.updateIndex(
+        'dp-old1',
+        makeIndexEntry({
+          problem: 'Old plan 1',
+          createdAt: '2025-06-01T10:00:00.000Z',
+          phase: 'done',
+          filePaths: { jsonl: 'dp-old1.jsonl', markdown: '20250601-dp-old1.md' },
+        })
+      );
+
+      const session2 = makeSession({ sessionId: 'dp-new1', createdAt: '2026-03-01T10:00:00.000Z' });
+      await pm.appendEvent(session2);
+      await pm.updateIndex(
+        'dp-new1',
+        makeIndexEntry({
+          problem: 'New plan 1',
+          createdAt: '2026-03-01T10:00:00.000Z',
+          phase: 'init',
+          filePaths: { jsonl: 'dp-new1.jsonl', markdown: null },
+        })
+      );
+    });
+
+    it('should dry run by default (preview without moving)', async () => {
+      const result = await pm.archivePlans({ olderThan: 30 });
+      expect(result.dryRun).toBe(true);
+      expect(result.archived.length).toBeGreaterThan(0);
+      // Files should still exist in original location
+      const { existsSync } = await import('node:fs');
+      expect(existsSync(path.join(tempDir, 'dp-old1.jsonl'))).toBe(true);
+    });
+
+    it('should move files to archive/YYYY/ when dryRun=false', async () => {
+      const result = await pm.archivePlans({ olderThan: 30, dryRun: false });
+      expect(result.dryRun).toBe(false);
+      expect(result.archived.length).toBeGreaterThan(0);
+
+      const { existsSync } = await import('node:fs');
+      // Old files moved
+      expect(existsSync(path.join(tempDir, 'dp-old1.jsonl'))).toBe(false);
+      expect(existsSync(path.join(tempDir, 'archive', '2025', 'dp-old1.jsonl'))).toBe(true);
+      // New files not moved
+      expect(existsSync(path.join(tempDir, 'dp-new1.jsonl'))).toBe(true);
+    });
+
+    it('should remove archived entries from index', async () => {
+      await pm.archivePlans({ olderThan: 30, dryRun: false });
+      const index = await pm.readIndex();
+      expect(index['dp-old1']).toBeUndefined();
+      expect(index['dp-new1']).toBeDefined();
+    });
+
+    it('should archive specific sessions by ID', async () => {
+      const result = await pm.archivePlans({ sessionIds: ['dp-new1'], dryRun: false });
+      expect(result.archived).toHaveLength(1);
+      expect(result.archived[0].sessionId).toBe('dp-new1');
+    });
+
+    it('should skip sessions not found in index', async () => {
+      const result = await pm.archivePlans({ sessionIds: ['dp-nonexistent'] });
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0]).toContain('not found');
+    });
+
+    it('should filter by source when archiving', async () => {
+      // Add a promoted plan
+      await pm.updateIndex(
+        'promoted-20250601-old-promo',
+        makeIndexEntry({
+          problem: 'Promoted plan',
+          createdAt: '2025-06-01T10:00:00.000Z',
+          phase: 'promoted',
+          filePaths: { jsonl: '', markdown: '20250601-old-promo.md' },
+        })
+      );
+      await writeFile(path.join(tempDir, '20250601-old-promo.md'), '# Promoted');
+
+      // Archive only promoted plans
+      const result = await pm.archivePlans({ source: 'promoted', dryRun: true });
+      expect(result.archived.every((a) => a.sessionId.startsWith('promoted-'))).toBe(true);
+    });
+
+    it('should skip sessions with no files on disk', async () => {
+      await pm.updateIndex(
+        'dp-ghost',
+        makeIndexEntry({
+          problem: 'Ghost',
+          createdAt: '2025-01-01T10:00:00.000Z',
+          filePaths: { jsonl: 'dp-ghost.jsonl', markdown: null },
+        })
+      );
+      const result = await pm.archivePlans({ sessionIds: ['dp-ghost'] });
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0]).toContain('no files');
     });
   });
 
@@ -590,9 +909,9 @@ describe('PersistenceManager', () => {
       expect(jsonlResult.content).toContain('"phase":"init"');
 
       // Verify listing
-      const plans = await pm.listPlans({ status: 'complete' });
-      expect(plans).toHaveLength(1);
-      expect(plans[0].problem).toBe('Lifecycle test');
+      const result = await pm.listPlans({ status: 'complete' });
+      expect(result.total).toBe(1);
+      expect(result.plans[0].title).toContain('Lifecycle test');
     });
   });
 });

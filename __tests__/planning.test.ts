@@ -532,6 +532,79 @@ describe('DeepPlanningServer', () => {
     });
   });
 
+  // ─── Descriptive Naming ────────────────────────────────────────────────
+
+  describe('descriptive naming', () => {
+    it('should generate dp-YYYYMMDD-{name} sessionId when planName provided', async () => {
+      const output = await initSession(server, { planName: 'Auth Refactor' });
+
+      expect(output.status).toBe('ok');
+      expect(output.sessionId).toMatch(/^dp-\d{8}-auth-refactor$/);
+    });
+
+    it('should fall back to random ID when no planName provided', async () => {
+      const output = await initSession(server);
+
+      expect(output.sessionId).toMatch(/^dp-[A-Za-z0-9]{8}$/);
+    });
+
+    it('should reject duplicate plan names for the same day', async () => {
+      // Use a temp dir for isolation
+      const td = await mkdtemp(path.join(tmpdir(), 'ygg-dup-'));
+      vi.stubEnv('YGGDRASIL_PLANS_DIR', td);
+
+      const srv1 = new DeepPlanningServer();
+      await initSession(srv1, { planName: 'duplicate-test' });
+      await srv1.getPersistence().flush();
+
+      // Second server shares same plans dir
+      const srv2 = new DeepPlanningServer();
+      const result = await srv2.processPlanningStep({
+        phase: 'init',
+        problem: 'Another problem',
+        planName: 'duplicate-test',
+      });
+      const output = parseOutput(result);
+
+      expect(result.isError).toBe(true);
+      expect(output.message).toContain('already exists');
+
+      await rm(td, { recursive: true });
+    });
+
+    it('should reject planName that sanitizes to empty', async () => {
+      const result = await server.processPlanningStep({
+        phase: 'init',
+        problem: 'Test',
+        planName: '!!!',
+      });
+      const output = parseOutput(result);
+
+      expect(result.isError).toBe(true);
+      expect(output.message).toContain('empty after sanitization');
+    });
+
+    it('should include name in index entry', async () => {
+      // Use a temp dir to avoid polluting real plans directory
+      const { mkdtemp, rm } = await import('node:fs/promises');
+      const { tmpdir } = await import('node:os');
+      const td = await mkdtemp(path.join(tmpdir(), 'ygg-name-'));
+      vi.stubEnv('YGGDRASIL_PLANS_DIR', td);
+
+      const srv = new DeepPlanningServer();
+      const output = await initSession(srv, { planName: 'indexed-name' });
+
+      const persistence = srv.getPersistence();
+      await persistence.flush();
+      const index = await persistence.readIndex();
+      const entry = index[output.sessionId];
+
+      expect(entry?.name).toBe('indexed-name');
+
+      await rm(td, { recursive: true });
+    });
+  });
+
   // ─── Clarify Phase ──────────────────────────────────────────────────────
 
   describe('clarify phase', () => {

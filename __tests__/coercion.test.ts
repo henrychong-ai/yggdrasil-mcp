@@ -6,6 +6,7 @@ import {
   coerceNumber,
   numberSchema,
   optionalBooleanSchema,
+  optionalNonNegativeNumberSchema,
   optionalNumberSchema,
   optionalScoreSchema,
 } from '../coercion.js';
@@ -153,6 +154,27 @@ describe('optionalNumberSchema', () => {
   it('should reject invalid values', () => {
     expect(() => optionalNumberSchema.parse(0)).toThrow();
     expect(() => optionalNumberSchema.parse(-1)).toThrow();
+  });
+});
+
+describe('optionalNonNegativeNumberSchema', () => {
+  it('should return undefined for undefined/null', () => {
+    expect(optionalNonNegativeNumberSchema.parse()).toBeUndefined();
+    expect(optionalNonNegativeNumberSchema.parse(null)).toBeUndefined();
+  });
+
+  it('should accept zero', () => {
+    expect(optionalNonNegativeNumberSchema.parse(0)).toBe(0);
+    expect(optionalNonNegativeNumberSchema.parse('0')).toBe(0);
+  });
+
+  it('should accept positive integers', () => {
+    expect(optionalNonNegativeNumberSchema.parse(5)).toBe(5);
+    expect(optionalNonNegativeNumberSchema.parse('20')).toBe(20);
+  });
+
+  it('should reject negative numbers', () => {
+    expect(() => optionalNonNegativeNumberSchema.parse(-1)).toThrow();
   });
 });
 

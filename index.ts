@@ -8,6 +8,7 @@ import {
   booleanSchema,
   numberSchema,
   optionalBooleanSchema,
+  optionalNonNegativeNumberSchema,
   optionalNumberSchema,
   optionalScoreSchema,
 } from './coercion.js';
@@ -16,7 +17,7 @@ import { DeepPlanningServer } from './planning.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '1.0.5',
+  version: '1.1.0',
 });
 
 const thinkingServer = new SequentialThinkingServer();
@@ -150,6 +151,12 @@ Use deep_planning to record conclusions and track planning state.`,
         ),
       // Init fields
       problem: z.string().optional().describe('Problem statement (required for init)'),
+      planName: z
+        .string()
+        .optional()
+        .describe(
+          'Descriptive plan name (init phase only). Sanitized to kebab-case. Generates dp-YYYYMMDD-{name} session ID.'
+        ),
       context: z.string().optional().describe('Additional background context'),
       constraints: z.string().optional().describe('JSON array of constraint strings'),
       // Clarify fields
@@ -195,39 +202,44 @@ server.registerTool(
   'list_plans',
   {
     title: 'List Plans',
-    description: `List saved deep_planning sessions from the plans index.
+    description: `List saved planning sessions and discovered plan files.
 Supports optional filters:
-- status: "complete" (finalized plans) or "in-progress" (active sessions)
-- keyword: Search in problem text (case-insensitive)
+- status: "complete" (finalized plans) or "in-progress" (active sessions) — Yggdrasil only
+- keyword: Search in problem/title text (case-insensitive)
+- source: "yggdrasil" (default), "cc" (Claude Code orphans), or "all"
+- limit: Maximum results (default 20, max 50)
+- offset: Skip first N results (default 0)
 
-Returns a JSON array of plan summaries sorted by creation date (newest first).`,
+Returns paginated results sorted by date (newest first).`,
     inputSchema: {
       status: z
         .enum(['complete', 'in-progress'])
         .optional()
         .describe('Filter by status: "complete" or "in-progress"'),
-      keyword: z.string().optional().describe('Search keyword in problem text'),
+      keyword: z.string().optional().describe('Search keyword in problem/title text'),
+      source: z
+        .enum(['yggdrasil', 'cc', 'all'])
+        .optional()
+        .describe('Filter by source (default: yggdrasil)'),
+      limit: optionalNonNegativeNumberSchema.describe('Max results to return (default 20, max 50)'),
+      offset: optionalNonNegativeNumberSchema.describe('Skip first N results (default 0)'),
     },
   },
   async (args) => {
     const persistence = planningServer.getPersistence();
-    const plans = await persistence.listPlans({
+    const result = await persistence.listPlans({
       status: args.status,
       keyword: args.keyword,
+      source: args.source,
+      limit: args.limit,
+      offset: args.offset,
     });
 
     return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify(
-            {
-              count: plans.length,
-              plans,
-            },
-            null,
-            2
-          ),
+          text: JSON.stringify(result, null, 2),
         },
       ],
     };
@@ -268,6 +280,87 @@ Returns the plan in the requested format:
     };
   }
 );
+
+// ─── promote_plan tool ─────────────────────────────────────────────────────
+
+server.registerTool(
+  'promote_plan',
+  {
+    title: 'Promote Plan',
+    description: `Promote a Claude Code plan file to the Yggdrasil plans index.
+Renames the file to YYYYMMDD-{name}.md format and adds it to the index for unified discovery.
+Only works on .md files not already tracked in the index.`,
+    inputSchema: {
+      filename: z
+        .string()
+        .describe('Current filename of the plan (e.g., "silly-walking-parrot.md")'),
+      name: z.string().describe('Descriptive name for the plan (sanitized to kebab-case)'),
+    },
+  },
+  async (args) => {
+    const persistence = planningServer.getPersistence();
+    try {
+      const result = await persistence.promotePlan(args.filename, args.name);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [
+          { type: 'text' as const, text: error instanceof Error ? error.message : String(error) },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ─── archive_plans tool ────────────────────────────────────────────────────
+
+server.registerTool(
+  'archive_plans',
+  {
+    title: 'Archive Plans',
+    description: `Archive old planning sessions by moving files to archive/YYYY/ subdirectory.
+Default mode is dry run (preview only). Set dryRun to false to execute.
+Removes archived entries from the Yggdrasil index.`,
+    inputSchema: {
+      olderThan: optionalNumberSchema.describe('Archive plans older than N days'),
+      sessionIds: z.string().optional().describe('JSON array of specific session IDs to archive'),
+      source: z
+        .enum(['yggdrasil', 'cc', 'promoted', 'all'])
+        .optional()
+        .describe('Filter by source'),
+      dryRun: optionalBooleanSchema.describe(
+        'Preview mode (default: true). Set to false to execute.'
+      ),
+    },
+  },
+  async (args) => {
+    const persistence = planningServer.getPersistence();
+    try {
+      const sessionIds = args.sessionIds ? (JSON.parse(args.sessionIds) as string[]) : undefined;
+      const result = await persistence.archivePlans({
+        olderThan: args.olderThan,
+        sessionIds,
+        source: args.source,
+        dryRun: args.dryRun,
+      });
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [
+          { type: 'text' as const, text: error instanceof Error ? error.message : String(error) },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ─── Server Bootstrap ──────────────────────────────────────────────────────
 
 async function runServer() {
   const transport = new StdioServerTransport();
