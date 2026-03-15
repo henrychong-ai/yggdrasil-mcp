@@ -174,7 +174,8 @@ export class PersistenceManager {
   }
 
   /**
-   * Check if a session ID already exists (in index or on disk as JSONL).
+   * Check if a session ID already exists (in index, on disk as JSONL, or would
+   * collide with an existing markdown filename from a promoted plan).
    * Synchronous to avoid converting handleInit to async.
    */
   public sessionExists(sessionId: string): boolean {
@@ -183,9 +184,18 @@ export class PersistenceManager {
       const index = JSON.parse(content) as PlansIndex;
       if (index[sessionId]) return true;
     } catch {
-      /* index missing/corrupt — fall through to file check */
+      /* index missing/corrupt — fall through to file checks */
     }
-    return existsSync(path.join(this.plansDir, `${sessionId}.jsonl`));
+    if (existsSync(path.join(this.plansDir, `${sessionId}.jsonl`))) return true;
+
+    // Check if the derived markdown filename would collide with any existing file
+    // (e.g., a promoted plan with the same YYYYMMDD-name.md)
+    if (DESCRIPTIVE_SESSION_RE.test(sessionId)) {
+      const datePrefix = sessionId.slice(3, 11); // extract YYYYMMDD from dp-YYYYMMDD-name
+      const mdFilename = deriveMarkdownFilename(sessionId, datePrefix);
+      if (existsSync(path.join(this.plansDir, mdFilename))) return true;
+    }
+    return false;
   }
 
   /**
@@ -282,6 +292,17 @@ export class PersistenceManager {
         `[yggdrasil] Failed to write plans index: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * Write the plans index atomically, throwing on failure.
+   * Used by promotePlan/archivePlans where persistence must be guaranteed.
+   */
+  private async writeIndexStrict(index: PlansIndex): Promise<void> {
+    await this.ensureDir();
+    const tmpPath = `${this.indexPath}.tmp`;
+    await writeFile(tmpPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
+    await rename(tmpPath, this.indexPath);
   }
 
   /**
@@ -578,17 +599,32 @@ export class PersistenceManager {
     }
   }
 
+  // ─── Path Safety ────────────────────────────────────────────────────────
+
+  /**
+   * Assert that a resolved file path is contained within the plans directory.
+   * Prevents path traversal attacks (e.g., ../outside.md).
+   */
+  private assertContained(filePath: string): void {
+    const resolved = path.resolve(filePath);
+    const plansRoot = path.resolve(this.plansDir);
+    if (!resolved.startsWith(plansRoot + path.sep) && resolved !== plansRoot) {
+      throw new Error('Path traversal detected: filename must not escape the plans directory.');
+    }
+  }
+
   // ─── Plan Promotion ──────────────────────────────────────────────────────
 
   /**
    * Promote a CC-generated .md plan file: rename to YYYYMMDD-{name}.md and add to index.
-   * Throws on validation errors (file not found, already tracked, collision).
+   * Throws on validation errors (file not found, already tracked, collision, path traversal).
    */
   public async promotePlan(
     filename: string,
     name: string
   ): Promise<{ oldFilename: string; newFilename: string; indexed: boolean }> {
     const filePath = path.join(this.plansDir, filename);
+    this.assertContained(filePath);
 
     if (!existsSync(filePath)) {
       throw new Error(`File "${filename}" not found in plans directory.`);
@@ -644,7 +680,7 @@ export class PersistenceManager {
         markdown: newFilename,
       },
     };
-    await this.writeIndex(index);
+    await this.writeIndexStrict(index);
 
     return { oldFilename: filename, newFilename, indexed: true };
   }
@@ -738,8 +774,31 @@ export class PersistenceManager {
       archived.push({ sessionId, files, year });
     }
 
+    // Archive CC orphans when source is 'cc' or 'all' (not tracked in index)
+    if (!options.sessionIds && (options.source === 'cc' || options.source === 'all')) {
+      const orphans = this.scanCCOrphans(index);
+      for (const orphan of orphans) {
+        // Age filter on orphan date
+        if (cutoffDate && new Date(orphan.date) >= cutoffDate) continue;
+
+        const year = orphan.date.slice(0, 4);
+        const archiveDir = path.join(this.plansDir, 'archive', year);
+
+        if (!dryRun) {
+          await mkdir(archiveDir, { recursive: true });
+          await rename(
+            path.join(this.plansDir, orphan.filename),
+            path.join(archiveDir, orphan.filename)
+          );
+        }
+
+        totalFiles += 1;
+        archived.push({ sessionId: `cc:${orphan.filename}`, files: [orphan.filename], year });
+      }
+    }
+
     if (!dryRun && archived.length > 0) {
-      await this.writeIndex(index);
+      await this.writeIndexStrict(index);
     }
 
     return { dryRun, archived, skipped, totalFiles };

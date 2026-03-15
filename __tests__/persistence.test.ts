@@ -424,6 +424,13 @@ describe('PersistenceManager', () => {
     it('should return false when session does not exist', () => {
       expect(pm.sessionExists('dp-nonexistent')).toBe(false);
     });
+
+    it('should detect markdown filename collision with promoted plan', async () => {
+      // Simulate a promoted plan that wrote YYYYMMDD-auth-refactor.md
+      await writeFile(path.join(tempDir, '20260315-auth-refactor.md'), '# Promoted');
+      // A descriptive session with the same name should be detected as existing
+      expect(pm.sessionExists('dp-20260315-auth-refactor')).toBe(true);
+    });
   });
 
   // ─── writeMarkdownPlan (descriptive naming) ───────────────────────────
@@ -568,6 +575,10 @@ describe('PersistenceManager', () => {
       await writeFile(path.join(tempDir, 'orphan2.md'), '# Test');
       await expect(pm.promotePlan('orphan2.md', '!!!')).rejects.toThrow('empty string');
     });
+
+    it('should reject path traversal attempts', async () => {
+      await expect(pm.promotePlan('../outside.md', 'test')).rejects.toThrow('Path traversal');
+    });
   });
 
   // ─── archivePlans ─────────────────────────────────────────────────────
@@ -672,6 +683,30 @@ describe('PersistenceManager', () => {
       const result = await pm.archivePlans({ sessionIds: ['dp-ghost'] });
       expect(result.skipped).toHaveLength(1);
       expect(result.skipped[0]).toContain('no files');
+    });
+
+    it('should archive CC orphan files with source=cc', async () => {
+      // Create a CC orphan .md file (no age filter — archives all CC orphans)
+      await writeFile(path.join(tempDir, 'silly-walking-parrot.md'), '# Old CC Plan');
+      const result = await pm.archivePlans({ source: 'cc', dryRun: false });
+      expect(result.archived.length).toBeGreaterThan(0);
+      const ccEntry = result.archived.find((a) => a.sessionId.startsWith('cc:'));
+      expect(ccEntry).toBeDefined();
+      expect(ccEntry?.files).toContain('silly-walking-parrot.md');
+
+      // Verify file moved
+      const { existsSync: exists } = await import('node:fs');
+      expect(exists(path.join(tempDir, 'silly-walking-parrot.md'))).toBe(false);
+    });
+
+    it('should include CC orphans in dry run with source=all', async () => {
+      await writeFile(path.join(tempDir, 'orphan-for-all.md'), '# Orphan');
+      const result = await pm.archivePlans({ source: 'all', dryRun: true });
+      // Should include both index entries and CC orphans
+      const ccEntries = result.archived.filter((a) => a.sessionId.startsWith('cc:'));
+      const indexEntries = result.archived.filter((a) => !a.sessionId.startsWith('cc:'));
+      expect(ccEntries.length).toBeGreaterThan(0);
+      expect(indexEntries.length).toBeGreaterThan(0);
     });
   });
 
