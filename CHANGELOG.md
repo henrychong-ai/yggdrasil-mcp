@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.0.5 (2026-03-15)
+
+**Dependency updates**
+
+- Update devDependencies:
+  - @biomejs/biome 2.4.6 → 2.4.7
+  - vitest 4.0.18 → 4.1.0
+  - @vitest/coverage-v8 4.0.18 → 4.1.0
+  - lint-staged 16.3.3 → 16.4.0
+  - oxlint 1.51.0 → 1.55.0 (via Dependabot #14)
+  - @types/node 25.4.0 → 25.5.0 (via Dependabot #15)
+  - pnpm 10.30.0 → 10.32.1
+- Close Dependabot PRs #14, #15
+- 154 tests, 97%+ coverage
+
 ## v1.0.4 (2026-03-11)
 
 **Dependency updates — security fixes for hono ecosystem**
