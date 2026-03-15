@@ -52,6 +52,16 @@ export function toKebabCase(input: string, maxLength = 60): string {
 export const DESCRIPTIVE_SESSION_RE = /^dp-\d{8}-/;
 
 /**
+ * Extract the human-readable name from a descriptive session ID.
+ * Returns undefined for random session IDs.
+ * dp-20260315-auth-refactor → 'auth-refactor'
+ * dp-kR3xT9vW → undefined
+ */
+export function extractPlanName(sessionId: string): string | undefined {
+  return sessionId.match(/^dp-\d{8}-(.+)$/)?.[1];
+}
+
+/**
  * Derive the Markdown export filename from a session ID.
  * Descriptive: dp-YYYYMMDD-name → YYYYMMDD-name.md (strip dp- prefix)
  * Random:      dp-kR3xT9vW     → YYYYMMDD-dp-kR3xT9vW.md (legacy behavior)
@@ -60,6 +70,22 @@ export function deriveMarkdownFilename(sessionId: string, datePrefix: string): s
   return DESCRIPTIVE_SESSION_RE.test(sessionId)
     ? `${sessionId.slice(3)}.md`
     : `${datePrefix}-${sessionId}.md`;
+}
+
+/**
+ * Extract a title from a markdown file's first 1KB.
+ * Returns the first # heading, or the first non-empty line, or the fallback.
+ */
+export function extractMarkdownTitle(filePath: string, fallback: string): string {
+  try {
+    const content = readFileSync(filePath, 'utf8').slice(0, 1024);
+    const headingMatch = content.match(/^#\s+(.+)$/m);
+    return headingMatch
+      ? headingMatch[1].trim()
+      : (content.split('\n').find((l) => l.trim()) ?? fallback);
+  } catch {
+    return fallback;
+  }
 }
 
 // ─── Plans Index ─────────────────────────────────────────────────────────────
@@ -294,9 +320,6 @@ export class PersistenceManager {
 
   // ─── Query Tools ──────────────────────────────────────────────────────────
 
-  /** Unified plan entry returned by listPlans. */
-  public static readonly PLAN_SOURCES = ['yggdrasil', 'cc', 'promoted'] as const;
-
   /**
    * Scan for .md files in the plans directory not tracked in the Yggdrasil index (CC orphans).
    * Reads first 1KB of each file to extract a title from the first heading.
@@ -324,15 +347,7 @@ export class PersistenceManager {
         if (!file.endsWith('.md') || trackedMd.has(file)) continue;
 
         try {
-          const content = readFileSync(path.join(this.plansDir, file), {
-            encoding: 'utf8',
-          }).slice(0, 1024);
-
-          // Extract title: first # heading or first non-empty line
-          const headingMatch = content.match(/^#\s+(.+)$/m);
-          const title = headingMatch
-            ? headingMatch[1].trim()
-            : (content.split('\n').find((l) => l.trim()) ?? file);
+          const title = extractMarkdownTitle(path.join(this.plansDir, file), file);
 
           // Extract date from YYYYMMDD- filename prefix or file mtime
           const dateMatch = file.match(/^(\d{8})-/);
@@ -535,12 +550,9 @@ export class PersistenceManager {
           const mdFilename = deriveMarkdownFilename(sessionId, datePrefix);
           const mdExists = existsSync(path.join(this.plansDir, mdFilename));
 
-          // Extract name from descriptive sessionId (dp-YYYYMMDD-{name})
-          const nameMatch = sessionId.match(/^dp-\d{8}-(.+)$/);
-
           index[sessionId] = {
             problem: firstEvent.session.problem,
-            name: nameMatch ? nameMatch[1] : undefined,
+            name: extractPlanName(sessionId),
             createdAt: firstEvent.session.createdAt,
             finalizedAt: lastEvent.session.phase === 'done' ? lastEvent.session.updatedAt : null,
             selectedBranch: lastEvent.session.selectedApproach ?? null,
@@ -611,19 +623,16 @@ export class PersistenceManager {
       throw new Error(`Target filename "${newFilename}" already exists. Choose a different name.`);
     }
 
-    // Extract title from first heading
-    const content = readFileSync(filePath, 'utf8').slice(0, 1024);
-    const headingMatch = content.match(/^#\s+(.+)$/m);
-    const problem = headingMatch ? headingMatch[1].trim() : kebabName;
+    const problem = extractMarkdownTitle(filePath, kebabName);
 
     // Rename file
     if (newFilename !== filename) {
       await rename(filePath, newFilePath);
     }
 
-    // Add to index
+    // Add to index (reuse already-loaded index to avoid double read)
     const sessionId = `promoted-${datePrefix}-${kebabName}`;
-    await this.updateIndex(sessionId, {
+    index[sessionId] = {
       problem,
       name: kebabName,
       createdAt: stat.mtime.toISOString(),
@@ -634,7 +643,8 @@ export class PersistenceManager {
         jsonl: '',
         markdown: newFilename,
       },
-    });
+    };
+    await this.writeIndex(index);
 
     return { oldFilename: filename, newFilename, indexed: true };
   }

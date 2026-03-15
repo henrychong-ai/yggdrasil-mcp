@@ -10,6 +10,7 @@ import chalk from 'chalk';
 
 import {
   deriveMarkdownFilename,
+  extractPlanName,
   generateId,
   PersistenceManager,
   toKebabCase,
@@ -621,13 +622,10 @@ export class DeepPlanningServer {
     const mdFilename =
       format === 'json' ? null : deriveMarkdownFilename(session.sessionId, datePrefix);
 
-    // Extract name from descriptive sessionId (dp-YYYYMMDD-{name})
-    const nameMatch = session.sessionId.match(/^dp-\d{8}-(.+)$/);
-
     this.persistence.track(
       this.persistence.updateIndex(session.sessionId, {
         problem: session.problem,
-        name: nameMatch ? nameMatch[1] : undefined,
+        name: extractPlanName(session.sessionId),
         createdAt: session.createdAt,
         finalizedAt: session.updatedAt,
         selectedBranch: session.selectedApproach ?? null,

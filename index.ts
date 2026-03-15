@@ -339,7 +339,12 @@ Removes archived entries from the Yggdrasil index.`,
   async (args) => {
     const persistence = planningServer.getPersistence();
     try {
-      const sessionIds = args.sessionIds ? (JSON.parse(args.sessionIds) as string[]) : undefined;
+      let sessionIds: string[] | undefined;
+      if (args.sessionIds) {
+        const parsed: unknown = JSON.parse(args.sessionIds);
+        if (!Array.isArray(parsed)) throw new Error('sessionIds must be a JSON array of strings');
+        sessionIds = parsed as string[];
+      }
       const result = await persistence.archivePlans({
         olderThan: args.olderThan,
         sessionIds,

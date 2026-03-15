@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   deriveMarkdownFilename,
+  extractMarkdownTitle,
+  extractPlanName,
   generateId,
   PersistenceManager,
   type PlanIndexEntry,
@@ -121,6 +123,40 @@ describe('deriveMarkdownFilename', () => {
 
   it('should keep dp- prefix for random session IDs', () => {
     expect(deriveMarkdownFilename('dp-kR3xT9vW', '20260315')).toBe('20260315-dp-kR3xT9vW.md');
+  });
+});
+
+// ─── extractPlanName ────────────────────────────────────────────────────────
+
+describe('extractPlanName', () => {
+  it('should extract name from descriptive session ID', () => {
+    expect(extractPlanName('dp-20260315-auth-refactor')).toBe('auth-refactor');
+  });
+
+  it('should return undefined for random session ID', () => {
+    expect(extractPlanName('dp-kR3xT9vW')).toBeUndefined();
+  });
+});
+
+// ─── extractMarkdownTitle ───────────────────────────────────────────────────
+
+describe('extractMarkdownTitle', () => {
+  it('should extract first heading from markdown file', async () => {
+    const td = await mkdtemp(path.join(tmpdir(), 'ygg-title-'));
+    await writeFile(path.join(td, 'test.md'), '# My Title\nContent');
+    expect(extractMarkdownTitle(path.join(td, 'test.md'), 'fallback')).toBe('My Title');
+    await rm(td, { recursive: true });
+  });
+
+  it('should fall back to first non-empty line when no heading', async () => {
+    const td = await mkdtemp(path.join(tmpdir(), 'ygg-title-'));
+    await writeFile(path.join(td, 'test.md'), 'No heading here\nJust text');
+    expect(extractMarkdownTitle(path.join(td, 'test.md'), 'fallback')).toBe('No heading here');
+    await rm(td, { recursive: true });
+  });
+
+  it('should return fallback for nonexistent file', () => {
+    expect(extractMarkdownTitle('/nonexistent/path.md', 'fallback')).toBe('fallback');
   });
 });
 
