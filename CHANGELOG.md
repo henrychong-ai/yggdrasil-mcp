@@ -16,8 +16,10 @@ All notable changes to this project are documented in this file.
 - Add `sessionExists()` for sync duplicate detection
 - Add `name` field to `PlanIndexEntry` for display
 - Add `optionalNonNegativeNumberSchema` to coercion module
+- Path traversal protection for `promote_plan` input validation
+- Guaranteed index persistence via `writeIndexStrict()` for `promote_plan`/`archive_plans`
 - Backward compatible: existing sessions and random ID format unchanged
-- 197 tests (43 new), 97%+ coverage maintained
+- 206 tests (52 new), 97%+ coverage maintained
 
 ## v1.0.5 (2026-03-15)
 

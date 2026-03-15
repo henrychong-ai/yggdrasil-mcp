@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.0.4.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.1.0.
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,10 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.0.4                                                                            |
+| **Version**   | 1.1.0                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
-| **Tool Name** | `sequential_thinking`                                                            |
-| **MCP Tool**  | `mcp__yggdrasil__sequential_thinking`                                            |
+| **Tools**     | `sequential_thinking`, `deep_planning`, `list_plans`, `get_plan`, `promote_plan`, `archive_plans` |
 
 ## Tech Stack
 
@@ -25,10 +24,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Runtime         | Node.js 24                                             |
 | MCP SDK         | @modelcontextprotocol/sdk 1.27.1                       |
 | Validation      | Zod 4.3.6                                              |
-| Testing         | Vitest 4.0.18 + @vitest/coverage-v8                    |
-| Linting         | Oxlint 1.51.0 (Rust-based, 668 built-in rules)         |
-| Formatting      | Biome 2.4.6 (linter disabled, Prettier-compatible)      |
-| Git Hooks       | Husky 9.1.7 + lint-staged 16.3.3                       |
+| Testing         | Vitest 4.1.0 + @vitest/coverage-v8                     |
+| Linting         | Oxlint 1.55.0 (Rust-based, 668 built-in rules)         |
+| Formatting      | Biome 2.4.7 (linter disabled, Prettier-compatible)      |
+| Git Hooks       | Husky 9.1.7 + lint-staged 16.4.0                       |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
@@ -93,9 +92,9 @@ yggdrasil-mcp/
 ├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
 │   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
-│   ├── planning.test.ts     # Deep planning test suite (75 tests)
-│   ├── persistence.test.ts  # Persistence layer test suite (37 tests)
-│   └── coercion.test.ts     # Coercion test suite (28 tests)
+│   ├── planning.test.ts     # Deep planning test suite (80 tests)
+│   ├── persistence.test.ts  # Persistence layer test suite (80 tests)
+│   └── coercion.test.ts     # Coercion test suite (32 tests)
 ├── dist/                    # Compiled output (npm package)
 ├── plans/                   # Implementation plans (gitignored)
 ├── .claude/
@@ -209,7 +208,7 @@ init → clarify* → explore+ → evaluate+ → finalize → done
 
 | Phase        | Required Fields    | Optional Fields                                                                          |
 | ------------ | ------------------ | ---------------------------------------------------------------------------------------- |
-| **init**     | `problem`          | `context`, `constraints` (JSON array string)                                             |
+| **init**     | `problem`          | `planName`, `context`, `constraints` (JSON array string)                                 |
 | **clarify**  | `question`         | `answer`                                                                                 |
 | **explore**  | `branchId`, `name` | `description`, `pros`, `cons` (JSON array strings)                                       |
 | **evaluate** | `branchId`         | `feasibility`, `completeness`, `coherence`, `risk` (0-10), `rationale`, `recommendation` |
@@ -222,6 +221,53 @@ Weighted score calculation: `feasibility*0.3 + completeness*0.25 + coherence*0.2
 ### Output
 
 Each call returns: `sessionId`, `phase`, `status`, `approachCount`, `evaluationCount`, `validNextPhases`, `message`, and optionally `plan` (in finalize phase).
+
+### Descriptive Naming (v1.1.0)
+
+Pass `planName` during init to generate human-readable session IDs:
+
+- `planName: "auth-refactor"` → session ID `dp-20260315-auth-refactor`, markdown file `20260315-auth-refactor.md`
+- No `planName` → random ID `dp-kR3xT9vW`, markdown file `20260315-dp-kR3xT9vW.md`
+
+Duplicate names on the same day are rejected. Names are sanitized to kebab-case (max 60 chars).
+
+## Plan Management Tools (v1.1.0)
+
+### list_plans
+
+List saved plans with unified view of Yggdrasil plans and Claude Code orphans.
+
+| Parameter | Type   | Description                                              |
+| --------- | ------ | -------------------------------------------------------- |
+| `status`  | enum   | `complete` or `in-progress` (Yggdrasil only)             |
+| `keyword` | string | Case-insensitive search in title/problem text            |
+| `source`  | enum   | `yggdrasil` (default), `cc` (Claude Code orphans), `all` |
+| `limit`   | number | Max results (default 20, max 50)                         |
+| `offset`  | number | Skip first N results (default 0)                         |
+
+### get_plan
+
+Retrieve a saved session by ID. Formats: `markdown` (default) or `jsonl` (full event log).
+
+### promote_plan
+
+Promote a Claude Code plan file to the Yggdrasil index. Renames to `YYYYMMDD-{name}.md` format.
+
+| Parameter  | Type   | Description                                           |
+| ---------- | ------ | ----------------------------------------------------- |
+| `filename` | string | Current CC plan filename (e.g., `silly-parrot.md`)    |
+| `name`     | string | Descriptive name (sanitized to kebab-case)            |
+
+### archive_plans
+
+Move old plans to `archive/YYYY/` subdirectory. Default mode is dry run (preview only).
+
+| Parameter    | Type    | Description                                            |
+| ------------ | ------- | ------------------------------------------------------ |
+| `olderThan`  | number  | Archive plans older than N days                        |
+| `sessionIds` | string  | JSON array of specific session IDs                     |
+| `source`     | enum    | `yggdrasil`, `cc`, `promoted`, `all`                   |
+| `dryRun`     | boolean | Preview mode (default: true)                           |
 
 ## Upstream Monitoring Protocol
 
@@ -319,8 +365,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 See `plans/20260130-yggdrasil-roadmap.md` for the 5-phase roadmap:
 
 1. ~~**v1.0** - Core enhancements~~ (complete)
-2. **v1.1** - Differentiation (Mermaid export, thought history retrieval)
-3. **v1.2** - Self-evaluation tools
+2. ~~**v1.1** - Symbiotic plans integration, descriptive naming, plan lifecycle tools~~ (complete)
+3. **v1.2** - Differentiation (Mermaid export, thought history retrieval, self-evaluation)
 4. **v2.0** - Multi-agent evaluation (cross-model verification)
 5. **v2.5** - Advanced orchestration (n8n, MCTS)
 
