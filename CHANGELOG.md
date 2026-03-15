@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.0 (2026-03-15)
+
+**Feature: Symbiotic Plans Integration**
+
+- Add descriptive naming for `deep_planning` sessions: optional `planName` parameter generates `dp-YYYYMMDD-{name}` session IDs
+- Clean markdown filenames: `YYYYMMDD-{name}.md` for descriptive plans (strips `dp-` prefix)
+- Duplicate name detection: reject collisions on init with clear error message
+- Enhanced `list_plans`: pagination (`limit`/`offset`), source filter (`yggdrasil`/`cc`/`all`), Claude Code orphan discovery with title extraction
+- New `promote_plan` tool: rename CC plan files to `YYYYMMDD-{name}.md` and add to Yggdrasil index
+- New `archive_plans` tool: move old plans to `archive/YYYY/` subdirectory with dry-run support
+- Add `toKebabCase()` and `deriveMarkdownFilename()` utilities for filename sanitization
+- Add `sessionExists()` for sync duplicate detection
+- Add `name` field to `PlanIndexEntry` for display
+- Add `optionalNonNegativeNumberSchema` to coercion module
+- Path traversal protection for `promote_plan` input validation
+- Guaranteed index persistence via `writeIndexStrict()` for `promote_plan`/`archive_plans`
+- Backward compatible: existing sessions and random ID format unchanged
+- 206 tests (52 new), 97%+ coverage maintained
+
 ## v1.0.5 (2026-03-15)
 
 **Dependency updates**

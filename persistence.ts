@@ -12,7 +12,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { appendFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -32,10 +32,67 @@ export function generateId(size = 8): string {
   return Array.from(randomBytes(size), (b) => BASE62[b % 62]).join('');
 }
 
+// ─── Kebab-Case Sanitization ────────────────────────────────────────────────
+
+/**
+ * Sanitize a string to kebab-case for use in filenames.
+ * Lowercase, strip non-alphanum except hyphens, collapse multiples, trim, max 60 chars.
+ */
+export function toKebabCase(input: string, maxLength = 60): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9-\s]/g, '')
+    .replace(/[\s]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, maxLength);
+}
+
+/** Regex to detect descriptive session IDs: dp-YYYYMMDD-{name} */
+export const DESCRIPTIVE_SESSION_RE = /^dp-\d{8}-/;
+
+/**
+ * Extract the human-readable name from a descriptive session ID.
+ * Returns undefined for random session IDs.
+ * dp-20260315-auth-refactor → 'auth-refactor'
+ * dp-kR3xT9vW → undefined
+ */
+export function extractPlanName(sessionId: string): string | undefined {
+  return sessionId.match(/^dp-\d{8}-(.+)$/)?.[1];
+}
+
+/**
+ * Derive the Markdown export filename from a session ID.
+ * Descriptive: dp-YYYYMMDD-name → YYYYMMDD-name.md (strip dp- prefix)
+ * Random:      dp-kR3xT9vW     → YYYYMMDD-dp-kR3xT9vW.md (legacy behavior)
+ */
+export function deriveMarkdownFilename(sessionId: string, datePrefix: string): string {
+  return DESCRIPTIVE_SESSION_RE.test(sessionId)
+    ? `${sessionId.slice(3)}.md`
+    : `${datePrefix}-${sessionId}.md`;
+}
+
+/**
+ * Extract a title from a markdown file's first 1KB.
+ * Returns the first # heading, or the first non-empty line, or the fallback.
+ */
+export function extractMarkdownTitle(filePath: string, fallback: string): string {
+  try {
+    const content = readFileSync(filePath, 'utf8').slice(0, 1024);
+    const headingMatch = content.match(/^#\s+(.+)$/m);
+    return headingMatch
+      ? headingMatch[1].trim()
+      : (content.split('\n').find((l) => l.trim()) ?? fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 // ─── Plans Index ─────────────────────────────────────────────────────────────
 
 export interface PlanIndexEntry {
   problem: string;
+  name?: string;
   createdAt: string;
   finalizedAt: string | null;
   selectedBranch: string | null;
@@ -117,6 +174,31 @@ export class PersistenceManager {
   }
 
   /**
+   * Check if a session ID already exists (in index, on disk as JSONL, or would
+   * collide with an existing markdown filename from a promoted plan).
+   * Synchronous to avoid converting handleInit to async.
+   */
+  public sessionExists(sessionId: string): boolean {
+    try {
+      const content = readFileSync(path.join(this.plansDir, INDEX_FILENAME), 'utf8');
+      const index = JSON.parse(content) as PlansIndex;
+      if (index[sessionId]) return true;
+    } catch {
+      /* index missing/corrupt — fall through to file checks */
+    }
+    if (existsSync(path.join(this.plansDir, `${sessionId}.jsonl`))) return true;
+
+    // Check if the derived markdown filename would collide with any existing file
+    // (e.g., a promoted plan with the same YYYYMMDD-name.md)
+    if (DESCRIPTIVE_SESSION_RE.test(sessionId)) {
+      const datePrefix = sessionId.slice(3, 11); // extract YYYYMMDD from dp-YYYYMMDD-name
+      const mdFilename = deriveMarkdownFilename(sessionId, datePrefix);
+      if (existsSync(path.join(this.plansDir, mdFilename))) return true;
+    }
+    return false;
+  }
+
+  /**
    * Track a fire-and-forget write promise.
    * Tracked writes are awaited by flush() before session loads.
    */
@@ -162,14 +244,15 @@ export class PersistenceManager {
 
   /**
    * Write the rendered Markdown plan to disk.
-   * Filename: YYYYMMDD-{sessionId}.md (date prefix for chronological sorting).
+   * Descriptive sessions: YYYYMMDD-{name}.md (clean, no dp- prefix).
+   * Random sessions: YYYYMMDD-dp-{random}.md (legacy behavior).
    * Fire-and-forget: errors are logged to stderr, never thrown.
    */
   public async writeMarkdownPlan(session: PlanningSession, markdownContent: string): Promise<void> {
     try {
       await this.ensureDir();
       const datePrefix = session.createdAt.slice(0, 10).replaceAll('-', '');
-      const filename = `${datePrefix}-${session.sessionId}.md`;
+      const filename = deriveMarkdownFilename(session.sessionId, datePrefix);
       await writeFile(path.join(this.plansDir, filename), markdownContent, 'utf8');
     } catch (error) {
       console.error(
@@ -212,6 +295,17 @@ export class PersistenceManager {
   }
 
   /**
+   * Write the plans index atomically, throwing on failure.
+   * Used by promotePlan/archivePlans where persistence must be guaranteed.
+   */
+  private async writeIndexStrict(index: PlansIndex): Promise<void> {
+    await this.ensureDir();
+    const tmpPath = `${this.indexPath}.tmp`;
+    await writeFile(tmpPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
+    await rename(tmpPath, this.indexPath);
+  }
+
+  /**
    * Add or update an entry in the plans index.
    * Called on init (create entry) and finalize (mark complete).
    */
@@ -248,37 +342,164 @@ export class PersistenceManager {
   // ─── Query Tools ──────────────────────────────────────────────────────────
 
   /**
-   * List saved plans from the index.
-   * Supports optional filters: status, keyword in problem text.
+   * Scan for .md files in the plans directory not tracked in the Yggdrasil index (CC orphans).
+   * Reads first 1KB of each file to extract a title from the first heading.
+   */
+  private scanCCOrphans(index: PlansIndex): Array<{
+    filename: string;
+    title: string;
+    date: string;
+    source: 'cc';
+  }> {
+    try {
+      const files = readdirSync(this.plansDir);
+
+      // Build set of all tracked markdown filenames
+      const trackedMd = new Set<string>();
+      for (const entry of Object.values(index)) {
+        if (entry?.filePaths.markdown) {
+          trackedMd.add(entry.filePaths.markdown);
+        }
+      }
+
+      const orphans: Array<{ filename: string; title: string; date: string; source: 'cc' }> = [];
+
+      for (const file of files) {
+        if (!file.endsWith('.md') || trackedMd.has(file)) continue;
+
+        try {
+          const title = extractMarkdownTitle(path.join(this.plansDir, file), file);
+
+          // Extract date from YYYYMMDD- filename prefix or file mtime
+          const dateMatch = file.match(/^(\d{8})-/);
+          let date: string;
+          if (dateMatch) {
+            date = `${dateMatch[1].slice(0, 4)}-${dateMatch[1].slice(4, 6)}-${dateMatch[1].slice(6, 8)}`;
+          } else {
+            try {
+              date = statSync(path.join(this.plansDir, file)).mtime.toISOString().slice(0, 10);
+            } catch {
+              date = new Date().toISOString().slice(0, 10);
+            }
+          }
+
+          orphans.push({ filename: file, title, date, source: 'cc' });
+        } catch {
+          // Skip unreadable files
+        }
+      }
+
+      return orphans.sort((a, b) => b.date.localeCompare(a.date));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * List saved plans with unified view of Yggdrasil plans and CC orphans.
+   * Supports filters: status, keyword, source, and pagination via limit/offset.
    */
   public async listPlans(filters?: {
     status?: 'complete' | 'in-progress';
     keyword?: string;
-  }): Promise<({ sessionId: string } & PlanIndexEntry)[]> {
+    source?: 'yggdrasil' | 'cc' | 'all';
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    total: number;
+    offset: number;
+    limit: number;
+    plans: Array<{
+      id: string;
+      source: 'yggdrasil' | 'cc' | 'promoted';
+      title: string;
+      date: string;
+      phase?: string;
+      name?: string;
+      filePaths?: { jsonl: string; markdown: string | null };
+    }>;
+  }> {
+    const source = filters?.source ?? 'yggdrasil';
+    const limit = Math.min(Math.max(filters?.limit ?? 20, 1), 50);
+    const offset = Math.max(filters?.offset ?? 0, 0);
     const index = await this.readIndex();
-    let entries = Object.entries(index)
-      .filter((pair): pair is [string, PlanIndexEntry] => pair[1] !== undefined)
-      .map(([sessionId, entry]) => ({
-        sessionId,
-        ...entry,
-      }));
 
-    if (filters?.status) {
-      entries =
-        filters.status === 'complete'
-          ? entries.filter((e) => e.phase === 'done')
-          : entries.filter((e) => e.phase !== 'done');
+    type PlanEntry = {
+      id: string;
+      source: 'yggdrasil' | 'cc' | 'promoted';
+      title: string;
+      date: string;
+      phase?: string;
+      name?: string;
+      filePaths?: { jsonl: string; markdown: string | null };
+      /** Full ISO timestamp for stable sorting. Not included in output. */
+      _sortKey: string;
+    };
+
+    let allPlans: PlanEntry[] = [];
+
+    // Yggdrasil plans from index
+    if (source === 'yggdrasil' || source === 'all') {
+      const yggEntries = Object.entries(index)
+        .filter((pair): pair is [string, PlanIndexEntry] => pair[1] !== undefined)
+        .map(([sessionId, entry]) => ({
+          id: sessionId,
+          source: (entry.phase === 'promoted' ? 'promoted' : 'yggdrasil') as
+            | 'yggdrasil'
+            | 'promoted',
+          title: entry.name ?? entry.problem,
+          date: entry.createdAt.slice(0, 10),
+          phase: entry.phase,
+          name: entry.name,
+          filePaths: entry.filePaths,
+          _sortKey: entry.createdAt,
+        }));
+
+      // Apply status filter (Yggdrasil only)
+      if (filters?.status) {
+        const filtered =
+          filters.status === 'complete'
+            ? yggEntries.filter((e) => e.phase === 'done')
+            : yggEntries.filter((e) => e.phase !== 'done');
+        allPlans.push(...filtered);
+      } else {
+        allPlans.push(...yggEntries);
+      }
     }
 
+    // CC orphans
+    if (source === 'cc' || source === 'all') {
+      const orphans = this.scanCCOrphans(index);
+      allPlans.push(
+        ...orphans.map((o) => ({
+          id: o.filename,
+          source: 'cc' as const,
+          title: o.title,
+          date: o.date,
+          _sortKey: `${o.date}T00:00:00.000Z`,
+        }))
+      );
+    }
+
+    // Keyword filter
     if (filters?.keyword) {
       const lower = filters.keyword.toLowerCase();
-      entries = entries.filter((e) => e.problem.toLowerCase().includes(lower));
+      allPlans = allPlans.filter((e) => e.title.toLowerCase().includes(lower));
     }
 
-    // Sort by createdAt descending (newest first)
-    entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    // Sort by full timestamp descending (newest first)
+    allPlans.sort((a, b) => b._sortKey.localeCompare(a._sortKey));
 
-    return entries;
+    const total = allPlans.length;
+    const paginated = allPlans.slice(offset, offset + limit);
+
+    // Strip internal _sortKey from output
+    return {
+      total,
+      offset,
+      limit,
+      plans: paginated.map(({ _sortKey: _, ...rest }) => rest),
+    };
   }
 
   /**
@@ -347,11 +568,12 @@ export class PersistenceManager {
 
           const sessionId = firstEvent.session.sessionId;
           const datePrefix = firstEvent.session.createdAt.slice(0, 10).replaceAll('-', '');
-          const mdFilename = `${datePrefix}-${sessionId}.md`;
+          const mdFilename = deriveMarkdownFilename(sessionId, datePrefix);
           const mdExists = existsSync(path.join(this.plansDir, mdFilename));
 
           index[sessionId] = {
             problem: firstEvent.session.problem,
+            name: extractPlanName(sessionId),
             createdAt: firstEvent.session.createdAt,
             finalizedAt: lastEvent.session.phase === 'done' ? lastEvent.session.updatedAt : null,
             selectedBranch: lastEvent.session.selectedApproach ?? null,
@@ -375,5 +597,210 @@ export class PersistenceManager {
       );
       return {};
     }
+  }
+
+  // ─── Path Safety ────────────────────────────────────────────────────────
+
+  /**
+   * Assert that a resolved file path is contained within the plans directory.
+   * Prevents path traversal attacks (e.g., ../outside.md).
+   */
+  private assertContained(filePath: string): void {
+    const resolved = path.resolve(filePath);
+    const plansRoot = path.resolve(this.plansDir);
+    if (!resolved.startsWith(plansRoot + path.sep) && resolved !== plansRoot) {
+      throw new Error('Path traversal detected: filename must not escape the plans directory.');
+    }
+  }
+
+  // ─── Plan Promotion ──────────────────────────────────────────────────────
+
+  /**
+   * Promote a CC-generated .md plan file: rename to YYYYMMDD-{name}.md and add to index.
+   * Throws on validation errors (file not found, already tracked, collision, path traversal).
+   */
+  public async promotePlan(
+    filename: string,
+    name: string
+  ): Promise<{ oldFilename: string; newFilename: string; indexed: boolean }> {
+    const filePath = path.join(this.plansDir, filename);
+    this.assertContained(filePath);
+
+    if (!existsSync(filePath)) {
+      throw new Error(`File "${filename}" not found in plans directory.`);
+    }
+
+    if (!filename.endsWith('.md')) {
+      throw new Error(`File "${filename}" is not a Markdown file.`);
+    }
+
+    // Check not already in index
+    const index = await this.readIndex();
+    for (const entry of Object.values(index)) {
+      if (entry?.filePaths.markdown === filename) {
+        throw new Error(`File "${filename}" is already tracked in the Yggdrasil index.`);
+      }
+    }
+
+    const kebabName = toKebabCase(name);
+    if (!kebabName) {
+      throw new Error('Name results in empty string after sanitization.');
+    }
+
+    // Get date from file mtime
+    const stat = statSync(filePath);
+    const datePrefix = stat.mtime.toISOString().slice(0, 10).replaceAll('-', '');
+
+    const newFilename = `${datePrefix}-${kebabName}.md`;
+    const newFilePath = path.join(this.plansDir, newFilename);
+
+    // Collision check
+    if (newFilename !== filename && existsSync(newFilePath)) {
+      throw new Error(`Target filename "${newFilename}" already exists. Choose a different name.`);
+    }
+
+    const problem = extractMarkdownTitle(filePath, kebabName);
+
+    // Rename file
+    if (newFilename !== filename) {
+      await rename(filePath, newFilePath);
+    }
+
+    // Add to index (reuse already-loaded index to avoid double read)
+    const sessionId = `promoted-${datePrefix}-${kebabName}`;
+    index[sessionId] = {
+      problem,
+      name: kebabName,
+      createdAt: stat.mtime.toISOString(),
+      finalizedAt: stat.mtime.toISOString(),
+      selectedBranch: null,
+      phase: 'promoted',
+      filePaths: {
+        jsonl: '',
+        markdown: newFilename,
+      },
+    };
+    await this.writeIndexStrict(index);
+
+    return { oldFilename: filename, newFilename, indexed: true };
+  }
+
+  // ─── Plan Archiving ──────────────────────────────────────────────────────
+
+  /**
+   * Archive old plan files by moving them to archive/YYYY/ subdirectory.
+   * Removes archived entries from the index. Default mode is dry run (preview only).
+   */
+  public async archivePlans(options: {
+    olderThan?: number;
+    sessionIds?: string[];
+    source?: 'yggdrasil' | 'cc' | 'promoted' | 'all';
+    dryRun?: boolean;
+  }): Promise<{
+    dryRun: boolean;
+    archived: Array<{ sessionId: string; files: string[]; year: string }>;
+    skipped: string[];
+    totalFiles: number;
+  }> {
+    const dryRun = options.dryRun ?? true;
+    const archived: Array<{ sessionId: string; files: string[]; year: string }> = [];
+    const skipped: string[] = [];
+
+    const index = await this.readIndex();
+    const cutoffDate = options.olderThan
+      ? new Date(Date.now() - options.olderThan * 86_400_000)
+      : null;
+
+    // Determine which entries to archive
+    const candidates: Array<{ sessionId: string; entry: PlanIndexEntry }> = [];
+
+    if (options.sessionIds) {
+      for (const sid of options.sessionIds) {
+        const entry = index[sid];
+        if (entry) {
+          candidates.push({ sessionId: sid, entry });
+        } else {
+          skipped.push(`${sid}: not found in index`);
+        }
+      }
+    } else {
+      for (const [sessionId, entry] of Object.entries(index)) {
+        if (!entry) continue;
+
+        // Source filter
+        if (options.source && options.source !== 'all') {
+          const entrySource = entry.phase === 'promoted' ? 'promoted' : 'yggdrasil';
+          if (options.source !== entrySource) continue;
+        }
+
+        // Age filter
+        if (cutoffDate && new Date(entry.createdAt) >= cutoffDate) continue;
+
+        candidates.push({ sessionId, entry });
+      }
+    }
+
+    let totalFiles = 0;
+
+    for (const { sessionId, entry } of candidates) {
+      const year = entry.createdAt.slice(0, 4);
+      const archiveDir = path.join(this.plansDir, 'archive', year);
+      const files: string[] = [];
+
+      // Collect files to move
+      if (entry.filePaths.jsonl) {
+        const src = path.join(this.plansDir, entry.filePaths.jsonl);
+        if (existsSync(src)) files.push(entry.filePaths.jsonl);
+      }
+      if (entry.filePaths.markdown) {
+        const src = path.join(this.plansDir, entry.filePaths.markdown);
+        if (existsSync(src)) files.push(entry.filePaths.markdown);
+      }
+
+      if (files.length === 0) {
+        skipped.push(`${sessionId}: no files found on disk`);
+        continue;
+      }
+
+      if (!dryRun) {
+        await mkdir(archiveDir, { recursive: true });
+        for (const file of files) {
+          await rename(path.join(this.plansDir, file), path.join(archiveDir, file));
+        }
+        delete index[sessionId];
+      }
+
+      totalFiles += files.length;
+      archived.push({ sessionId, files, year });
+    }
+
+    // Archive CC orphans when source is 'cc' or 'all' (not tracked in index)
+    if (!options.sessionIds && (options.source === 'cc' || options.source === 'all')) {
+      const orphans = this.scanCCOrphans(index);
+      for (const orphan of orphans) {
+        // Age filter on orphan date
+        if (cutoffDate && new Date(orphan.date) >= cutoffDate) continue;
+
+        const year = orphan.date.slice(0, 4);
+        const archiveDir = path.join(this.plansDir, 'archive', year);
+
+        if (!dryRun) {
+          await mkdir(archiveDir, { recursive: true });
+          await rename(
+            path.join(this.plansDir, orphan.filename),
+            path.join(archiveDir, orphan.filename)
+          );
+        }
+
+        totalFiles += 1;
+        archived.push({ sessionId: `cc:${orphan.filename}`, files: [orphan.filename], year });
+      }
+    }
+
+    if (!dryRun && archived.length > 0) {
+      await this.writeIndexStrict(index);
+    }
+
+    return { dryRun, archived, skipped, totalFiles };
   }
 }

@@ -8,7 +8,13 @@
 
 import chalk from 'chalk';
 
-import { generateId, PersistenceManager } from './persistence.js';
+import {
+  deriveMarkdownFilename,
+  extractPlanName,
+  generateId,
+  PersistenceManager,
+  toKebabCase,
+} from './persistence.js';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -79,6 +85,7 @@ export interface DeepPlanningInput {
   sessionId?: string;
   // Init fields
   problem?: string;
+  planName?: string;
   context?: string;
   constraints?: string;
   // Clarify fields
@@ -391,7 +398,26 @@ export class DeepPlanningServer {
       return this.makeOutput('error', 'Phase "init" requires a "problem" field.');
     }
 
-    const sessionId = `dp-${generateId(8)}`;
+    let sessionId: string;
+    let planName: string | undefined;
+
+    if (input.planName) {
+      planName = toKebabCase(input.planName);
+      if (!planName) {
+        return this.makeOutput('error', 'Plan name is empty after sanitization.');
+      }
+      const datePrefix = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+      sessionId = `dp-${datePrefix}-${planName}`;
+      if (this.persistence.sessionExists(sessionId)) {
+        return this.makeOutput(
+          'error',
+          `Plan "${planName}" already exists for today as "${sessionId}". Choose a different name.`
+        );
+      }
+    } else {
+      sessionId = `dp-${generateId(8)}`;
+    }
+
     const now = new Date().toISOString();
 
     this.session = {
@@ -419,6 +445,7 @@ export class DeepPlanningServer {
     this.persistence.track(
       this.persistence.updateIndex(sessionId, {
         problem: input.problem,
+        name: planName,
         createdAt: now,
         finalizedAt: null,
         selectedBranch: null,
@@ -592,16 +619,20 @@ export class DeepPlanningServer {
       this.persistence.track(this.persistence.writeMarkdownPlan(session, plan));
     }
     const datePrefix = session.createdAt.slice(0, 10).replaceAll('-', '');
+    const mdFilename =
+      format === 'json' ? null : deriveMarkdownFilename(session.sessionId, datePrefix);
+
     this.persistence.track(
       this.persistence.updateIndex(session.sessionId, {
         problem: session.problem,
+        name: extractPlanName(session.sessionId),
         createdAt: session.createdAt,
         finalizedAt: session.updatedAt,
         selectedBranch: session.selectedApproach ?? null,
         phase: 'done',
         filePaths: {
           jsonl: `${session.sessionId}.jsonl`,
-          markdown: format === 'json' ? null : `${datePrefix}-${session.sessionId}.md`,
+          markdown: mdFilename,
         },
       })
     );

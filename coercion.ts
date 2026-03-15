@@ -76,6 +76,17 @@ export const optionalNumberSchema = z
   .optional();
 
 /**
+ * Zod schema for optional non-negative integer with safe coercion.
+ * Used for offset/limit parameters where 0 is valid.
+ */
+export const optionalNonNegativeNumberSchema = z
+  .preprocess(
+    (val) => (val === undefined || val === null ? undefined : coerceNumber(val)),
+    z.number().int().min(0).optional()
+  )
+  .optional();
+
+/**
  * Zod schema for optional score (0-10 float) with safe coercion.
  * Used for evaluation scores in deep_planning tool.
  */

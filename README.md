@@ -23,11 +23,14 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ## Key Features
 
-### Current (v1.0.4)
+### Current (v1.1.0)
 
+- **6 MCP tools** — `sequential_thinking`, `deep_planning`, `list_plans`, `get_plan`, `promote_plan`, `archive_plans`
+- **Descriptive plan naming** — Optional `planName` parameter generates `dp-YYYYMMDD-{name}` session IDs with duplicate detection
+- **Plan lifecycle management** — Promote Claude Code orphan plans, archive old plans, unified discovery across both systems
 - **deep_planning tool** — Structured multi-phase planning sessions (init → clarify → explore → evaluate → finalize)
 - **Session resumption** — Resume planning sessions by ID with JSONL persistence
-- **Hybrid persistence** — JSONL event log + Markdown plan export for deep_planning
+- **Hybrid persistence** — JSONL event log + Markdown plan export with JSON index
 - **String coercion fix** — Fixes Claude Code bug #3084 where MCP parameters are incorrectly serialized as strings
 - **Oxlint + Biome** — 50-100x faster linting, zero-config formatting
 - Break down complex problems into manageable steps
@@ -38,12 +41,12 @@ In Norse mythology, Yggdrasil is the World Tree connecting all realms. This MCP 
 
 ### Roadmap
 
-See the [CLAUDE.md](CLAUDE.md) version history for details. The 5-phase roadmap includes:
+See the [CLAUDE.md](CLAUDE.md) for details:
 
-- Thought history retrieval and persistence (JSONL)
 - Mermaid diagram export
-- Branch evaluation with multi-agent support
-- Cross-model verification
+- Thought history retrieval
+- Self-evaluation tools
+- Multi-agent evaluation (cross-model verification)
 - n8n workflow integration
 
 ## Installation
@@ -207,6 +210,7 @@ init → clarify* → explore+ → evaluate+ → finalize → done
 | ----------------- | ------ | ---------------- | ---------------------------------------------------- |
 | `phase`           | enum   | All              | `init`, `clarify`, `explore`, `evaluate`, `finalize` |
 | `problem`         | string | init             | Problem statement                                    |
+| `planName`        | string | init             | Descriptive name → `dp-YYYYMMDD-{name}` session ID  |
 | `context`         | string | init             | Additional background                                |
 | `constraints`     | string | init             | JSON array of constraint strings                     |
 | `question`        | string | clarify          | Clarifying question                                  |
@@ -242,12 +246,43 @@ init → clarify* → explore+ → evaluate+ → finalize → done
 }
 ```
 
-## Tools: list_plans & get_plan
+## Plan Management Tools
 
-Retrieve saved `deep_planning` sessions.
+### list_plans
 
-- **`list_plans`** — List all saved sessions. Optional filters: `status` (`complete` or `in-progress`), `keyword` (search in problem text).
-- **`get_plan`** — Retrieve a session by ID. Formats: `markdown` (default, finalized plans) or `jsonl` (full event log).
+List saved plans with unified view of Yggdrasil plans and Claude Code orphans. Supports pagination, source filtering, and keyword search.
+
+| Parameter | Type   | Description                                              |
+| --------- | ------ | -------------------------------------------------------- |
+| `status`  | enum   | `complete` or `in-progress` (Yggdrasil only)             |
+| `keyword` | string | Case-insensitive search in title/problem text            |
+| `source`  | enum   | `yggdrasil` (default), `cc` (Claude Code orphans), `all` |
+| `limit`   | number | Max results (default 20, max 50)                         |
+| `offset`  | number | Skip first N results (default 0)                         |
+
+### get_plan
+
+Retrieve a saved session by ID. Formats: `markdown` (default, finalized plans) or `jsonl` (full event log).
+
+### promote_plan
+
+Promote a Claude Code plan file to the Yggdrasil index. Renames the file to `YYYYMMDD-{name}.md` format and adds it to the index for unified discovery. Includes path traversal protection.
+
+| Parameter  | Type   | Description                                           |
+| ---------- | ------ | ----------------------------------------------------- |
+| `filename` | string | Current CC plan filename (e.g., `silly-parrot.md`)    |
+| `name`     | string | Descriptive name (sanitized to kebab-case)            |
+
+### archive_plans
+
+Archive old plans by moving files to `archive/YYYY/` subdirectory. Supports archiving both Yggdrasil index entries and Claude Code orphan files. Default mode is dry run (preview only).
+
+| Parameter    | Type    | Description                                            |
+| ------------ | ------- | ------------------------------------------------------ |
+| `olderThan`  | number  | Archive plans older than N days                        |
+| `sessionIds` | string  | JSON array of specific session IDs                     |
+| `source`     | enum    | `yggdrasil`, `cc`, `promoted`, `all`                   |
+| `dryRun`     | boolean | Preview mode (default: true)                           |
 
 ## Use Cases
 
