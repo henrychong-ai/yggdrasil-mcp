@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.1 (2026-04-11)
+
+**Security patches — dependabot advisories resolved**
+
+### Security
+
+All patches applied via `pnpm.overrides` (vulnerable packages are transitive-only).
+
+- **hono 4.12.7 → 4.12.12** (via `@hono/node-server` → `@modelcontextprotocol/sdk`) — 5 advisories: cookie prefix bypass (GHSA-r5rp-j6wh-rvv4), cookie name validation in `setCookie()`, IPv4-mapped IPv6 `ipRestriction()` bypass, `serveStatic` repeated-slash middleware bypass, `toSSG()` path traversal
+- **@hono/node-server 1.19.11 → 1.19.13** — `serveStatic` middleware bypass
+- **vite 7.3.1 → 7.3.2** (via `vitest`) — WebSocket arbitrary file read, `server.fs.deny` query bypass, optimized deps `.map` path traversal
+- **picomatch 2.3.1 → 2.3.2 and 4.0.3 → 4.0.4** — ReDoS via extglob quantifiers and method injection in POSIX character classes
+- **path-to-regexp 8.3.0 → 8.4.2** (via `express` → `@modelcontextprotocol/sdk`) — DoS via sequential optional groups and multiple wildcards
+- **yaml 2.8.2 → 2.8.3** — stack overflow via deeply nested YAML collections
+
+### Dependencies
+
+- Added `pnpm.overrides` entries for `hono`, `@hono/node-server`, `vite`, `picomatch` (with nested `micromatch>picomatch ^2.3.2` for shelljs/fast-glob compat), `path-to-regexp`, and `yaml` to force patched versions across the dependency tree
+
+---
+
 ## v1.1.0 (2026-03-15)
 
 **Feature: Symbiotic Plans Integration**
