@@ -20,14 +20,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Layer           | Technology                                             |
 | --------------- | ------------------------------------------------------ |
-| Language        | TypeScript 5.9.3                                       |
+| Language        | TypeScript                                             |
 | Runtime         | Node.js 24                                             |
-| MCP SDK         | @modelcontextprotocol/sdk 1.27.1                       |
-| Validation      | Zod 4.3.6                                              |
-| Testing         | Vitest 4.1.0 + @vitest/coverage-v8                     |
-| Linting         | Oxlint 1.55.0 (Rust-based, 668 built-in rules)         |
-| Formatting      | Biome 2.4.7 (linter disabled, Prettier-compatible)      |
-| Git Hooks       | Husky 9.1.7 + lint-staged 16.4.0                       |
+| MCP SDK         | @modelcontextprotocol/sdk                              |
+| Validation      | Zod                                                    |
+| Testing         | Vitest + @vitest/coverage-v8                           |
+| Linting         | Oxlint (Rust-based, 668 built-in rules)                |
+| Formatting      | Biome (linter disabled, Prettier-compatible)            |
+| Git Hooks       | Husky + lint-staged                                    |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
