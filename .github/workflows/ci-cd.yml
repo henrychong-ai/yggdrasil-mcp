@@ -20,13 +20,20 @@ permissions:
 
 jobs:
   build:
-    name: Lint-Format-Typecheck-Test-Build
+    name: Gitleaks & Lint-Format-Typecheck-Test-Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
