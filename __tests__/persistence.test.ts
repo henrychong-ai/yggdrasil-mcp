@@ -584,28 +584,41 @@ describe('PersistenceManager', () => {
   // ─── archivePlans ─────────────────────────────────────────────────────
 
   describe('archivePlans', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    // Use Date.now() offsets so tests never become stale as calendar time advances
+    let oldDate: string; // 400 days ago — always well past olderThan: 30
+    let newDate: string; // 10 days ago — always within olderThan: 30
+    let oldDatePrefix: string; // YYYYMMDD for filePaths
+    let oldYear: string; // YYYY for archive path assertions
+
     beforeEach(async () => {
+      const now = Date.now();
+      oldDate = new Date(now - 400 * DAY).toISOString();
+      newDate = new Date(now - 10 * DAY).toISOString();
+      oldDatePrefix = oldDate.slice(0, 10).replaceAll('-', '');
+      oldYear = oldDate.slice(0, 4);
+
       // Create indexed plans with files
-      const session1 = makeSession({ sessionId: 'dp-old1', createdAt: '2025-06-01T10:00:00.000Z' });
+      const session1 = makeSession({ sessionId: 'dp-old1', createdAt: oldDate });
       await pm.appendEvent(session1);
       await pm.writeMarkdownPlan(session1, '# Old Plan 1');
       await pm.updateIndex(
         'dp-old1',
         makeIndexEntry({
           problem: 'Old plan 1',
-          createdAt: '2025-06-01T10:00:00.000Z',
+          createdAt: oldDate,
           phase: 'done',
-          filePaths: { jsonl: 'dp-old1.jsonl', markdown: '20250601-dp-old1.md' },
+          filePaths: { jsonl: 'dp-old1.jsonl', markdown: `${oldDatePrefix}-dp-old1.md` },
         })
       );
 
-      const session2 = makeSession({ sessionId: 'dp-new1', createdAt: '2026-03-01T10:00:00.000Z' });
+      const session2 = makeSession({ sessionId: 'dp-new1', createdAt: newDate });
       await pm.appendEvent(session2);
       await pm.updateIndex(
         'dp-new1',
         makeIndexEntry({
           problem: 'New plan 1',
-          createdAt: '2026-03-01T10:00:00.000Z',
+          createdAt: newDate,
           phase: 'init',
           filePaths: { jsonl: 'dp-new1.jsonl', markdown: null },
         })
@@ -629,7 +642,7 @@ describe('PersistenceManager', () => {
       const { existsSync } = await import('node:fs');
       // Old files moved
       expect(existsSync(path.join(tempDir, 'dp-old1.jsonl'))).toBe(false);
-      expect(existsSync(path.join(tempDir, 'archive', '2025', 'dp-old1.jsonl'))).toBe(true);
+      expect(existsSync(path.join(tempDir, 'archive', oldYear, 'dp-old1.jsonl'))).toBe(true);
       // New files not moved
       expect(existsSync(path.join(tempDir, 'dp-new1.jsonl'))).toBe(true);
     });

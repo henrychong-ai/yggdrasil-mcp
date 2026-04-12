@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.2 (2026-04-12)
+
+### Fixed
+- Fix time-bomb test failures in `archivePlans` — replace hardcoded fixture dates with `Date.now()` offsets so tests don't fail as calendar time advances
+
+### CI
+- Add gitleaks secret scanning to CI pipeline (fail-fast before install)
+
+---
+
 ## v1.1.1 (2026-04-11)
 
 **Security patches — dependabot advisories resolved**
