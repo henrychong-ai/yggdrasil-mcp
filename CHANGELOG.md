@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.3 (2026-04-15)
+
+### Dependencies
+
+Routine minor/patch dependency bumps. No vulnerabilities reported by `pnpm audit`.
+
+- `@modelcontextprotocol/sdk` 1.28.0 → 1.29.0
+- `@biomejs/biome` 2.4.9 → 2.4.12
+- `@types/node` 25.5.0 → 25.6.0
+- `@vitest/coverage-v8` 4.1.2 → 4.1.4
+- `oxlint` 1.57.0 → 1.60.0
+- `vitest` 4.1.2 → 4.1.4
+
+Deferred (major version, requires separate review):
+
+- `typescript` 5.9.3 → 6.0.2
+
+---
+
 ## v1.1.2 (2026-04-12)
 
 ### Fixed
