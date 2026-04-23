@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.4 (2026-04-23)
+
+### Dependencies
+
+Routine minor/patch dependency bumps.
+
+- `@biomejs/biome` 2.4.12 → 2.4.13
+- `@vitest/coverage-v8` 4.1.4 → 4.1.5
+- `oxlint` 1.60.0 → 1.61.0
+- `vitest` 4.1.4 → 4.1.5
+
+### Security
+
+- `hono` override bumped 4.12.12 → 4.12.14 (GHSA-458j-xx4x-4375 — improper handling of JSX attribute names in hono/jsx SSR). Adopted from Dependabot PR #28. `hono` is transitive-only via `@modelcontextprotocol/sdk`.
+
+Deferred (major version, requires separate review):
+
+- `typescript` 5.9.3 → 6.0.3 (Dependabot PR #29)
+
+---
+
 ## v1.1.3 (2026-04-15)
 
 ### Dependencies
