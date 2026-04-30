@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.4 (2026-04-30)
+
+### Dependencies
+
+Routine minor/patch dependency bumps. No vulnerabilities reported by `pnpm audit`. Addresses open Dependabot PRs #28, #31, #32.
+
+- `zod` 4.3.6 → 4.4.1
+- `@biomejs/biome` 2.4.12 → 2.4.13 (Dependabot #32)
+- `@vitest/coverage-v8` 4.1.4 → 4.1.5
+- `oxlint` 1.60.0 → 1.62.0 (supersedes Dependabot #31 → 1.61.0)
+- `vitest` 4.1.4 → 4.1.5
+- `hono` override `>=4.12.12` → `>=4.12.14` (Dependabot #28 — bumps transitive `hono` and `postcss` 8.5.9 → 8.5.10 in lockfile)
+
+Deferred (major version, requires separate review):
+
+- `typescript` 5.9.3 → 6.0.3 (Dependabot #29) — TypeScript 6.x is a major release; defer pending compat review
+
+---
+
 ## v1.1.3 (2026-04-15)
 
 ### Dependencies
