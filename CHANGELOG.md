@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.4 (2026-05-07)
+
+### Dependencies
+
+Routine minor/patch dependency bumps. Supersedes open Dependabot PRs #28, #32, #34, #35.
+
+- `zod` 4.3.6 → 4.4.3 (supersedes Dependabot PR #35)
+- `@biomejs/biome` 2.4.12 → 2.4.14 (supersedes Dependabot PR #32)
+- `@types/node` 25.6.0 → 25.6.1
+- `@vitest/coverage-v8` 4.1.4 → 4.1.5
+- `vitest` 4.1.4 → 4.1.5
+- `oxlint` 1.60.0 → 1.63.0 (supersedes Dependabot PR #34)
+- `hono` override `>=4.12.12` → `>=4.12.14` — security fix for JSX SSR attribute name handling (GHSA-458j-xx4x-4375), supersedes Dependabot PR #28
+
+Deferred (major versions, separate review required):
+
+- `typescript` 5.9.3 → 6.0.3 (Dependabot PR #29)
+- `lint-staged` 16.4.0 → 17.0.2
+
+---
+
 ## v1.1.3 (2026-04-15)
 
 ### Dependencies
