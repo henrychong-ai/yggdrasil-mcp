@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.1.5 (2026-05-14)
+
+### Dependencies
+
+Routine minor/patch dependency bumps. Supersedes open Dependabot PR #37.
+
+- `@biomejs/biome` 2.4.14 → 2.4.15
+- `@types/node` 25.6.1 → 25.8.0
+- `@vitest/coverage-v8` 4.1.5 → 4.1.6
+- `vitest` 4.1.5 → 4.1.6
+- `oxlint` 1.63.0 → 1.64.0
+- `semver` 7.7.4 → 7.8.0
+- Added `fast-uri` override `<3.1.2` → `>=3.1.2` — security fix for malformed fragment decoding (GHSA-v39h-62p7-jpjc), supersedes Dependabot PR #37
+
+Deferred (major versions, separate review required):
+
+- `typescript` 5.9.3 → 6.0.3 (Dependabot PR #29)
+- `lint-staged` 16.4.0 → 17.0.4
+
+---
+
 ## v1.1.4 (2026-05-07)
 
 ### Dependencies
