@@ -1,6 +1,6 @@
 {
   "name": "yggdrasil-mcp",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
   "author": "Henry Chong <henrychong-ai@gmail.com>",
@@ -86,18 +86,20 @@
       "picomatch": ">=4.0.4",
       "micromatch>picomatch": "^2.3.2",
       "path-to-regexp@>=8.0.0 <8.4.0": ">=8.4.0",
-      "yaml@>=2.0.0 <2.8.3": ">=2.8.3"
+      "yaml@>=2.0.0 <2.8.3": ">=2.8.3",
+      "ip-address": "^10.1.1",
+      "tmp": "^0.2.4"
     }
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
-    "@biomejs/biome": "^2.4.14",
-    "@types/node": "^25.6.1",
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.5",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "oxlint": "^1.63.0",
-    "semver": "^7.7.4",
+    "lint-staged": "^17.0.5",
+    "oxlint": "^1.66.0",
+    "semver": "^7.8.0",
     "shx": "^0.4.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.5",

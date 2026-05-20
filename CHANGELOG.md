@@ -2,6 +2,42 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.2 (2026-05-20) — Dependency & security sweep
+
+Triaged all open Dependabot security alerts (4) and dependency PRs (10). Resolved the 4 security alerts, swept dev-deps to current, bumped GitHub Actions majors, and closed obsolete tracking PRs. Deferred TypeScript 6 major to a dedicated upgrade session.
+
+### Security — Dependabot alerts resolved (4 → 0)
+
+- **GHSA-q3j6-qgpj-74h6 + GHSA-v39h-62p7-jpjc** (HIGH): `fast-uri` → `^3.1.2`. Resolves both the path traversal (alert #34, ≤3.1.0) and host confusion (alert #35, ≤3.1.1) via percent-encoded authority delimiters. Pulled in transitively via `@modelcontextprotocol/sdk`. Landed via PR #37 merge.
+- **GHSA-v2v4-37r5-5v8g** (MEDIUM): `ip-address` → `^10.1.1` (resolved to 10.2.0 via pnpm `overrides`). XSS in `Address6` HTML-emitting methods (alert #33). Transitive via `express-rate-limit → @modelcontextprotocol/sdk`; required `pnpm.overrides` because the direct dep range pinned 10.1.0.
+- **GHSA-52f5-9888-hmc6** (LOW): `tmp` → `^0.2.4` (resolved to 0.2.5). Arbitrary temp file/dir write via symbolic link `dir` parameter (alert #37). Transitive via `external-editor → @inquirer/editor → @anthropic-ai/mcpb`; required `pnpm.overrides` to escape the legacy `0.0.33` resolution.
+
+### Changed — dev-dependency sweep (batched, replaces PRs #41/#45/#46/#47/#48)
+
+- `@biomejs/biome` 2.4.14 → 2.4.15 (patch)
+- `semver` 7.7.4 → 7.8.0 (minor)
+- `oxlint` 1.63.0 → 1.66.0 (minor)
+- `@types/node` 25.6.1 → 25.9.1 (minor)
+- `lint-staged` 16.4.0 → **17.0.5** (MAJOR — requires Node 22.22.1+ and Git 2.32.0+; both satisfied by `engines.node: >=24` and modern Git toolchains. Internal `commander` → `parseArgs` migration is no-op for consumers. `yaml` dependency now optional — we don't use it.)
+
+### Changed — GitHub Actions majors (batched, replaces PRs #43/#44)
+
+- `pnpm/action-setup` v4 → **v6** in all three jobs (`build`, `publish`, `release-mcpb`). v6 adds pnpm v11 support; CI green on PR confirms no input-format regressions for our usage.
+- `softprops/action-gh-release` v2 → **v3** in the `release-mcpb` job. v3 migrates the action runtime from Node 20 to Node 24, matching the rest of our CI stack.
+
+### Closed (no-op)
+
+- **PR #38** (Henry's own `claude/confident-dijkstra-bym1P` branch targeting v1.1.5) closed as obsolete — repo is already at v1.2.1 and the proposed bumps are subsumed by this release.
+- **PR #29** (`typescript` 5.9.3 → 6.0.3) closed with `defer` reasoning. CI was failing and the branch had merge conflicts; a TS major upgrade deserves its own focused session with test fixes, not a sweep. Dependabot will reopen on the next major refresh if still relevant.
+
+### Notes
+
+- All 4 Dependabot security alerts confirmed resolved on next-scan dismissal.
+- `pnpm.overrides` is the load-bearing mechanism for the `ip-address` + `tmp` fixes — they sit deep enough in the tree that a top-level `pnpm up` cannot reach them without the override hint. The `rm -f pnpm-lock.yaml && pnpm install` re-resolve was required (pnpm's cached resolutions ignore newly-added overrides).
+- CodeQL: 0 open alerts. Secret scanning: 0 open alerts.
+
+---
+
 ## v1.2.1 (2026-05-20) — OIDC publish migration + hardening
 
 Driven by Codex auto-PR-review + parallel `/simplify` + `/security-review` + `/codex` reviews on the OIDC migration branch. Substantive findings landed in this branch before merge; lower-priority findings documented for follow-up.
