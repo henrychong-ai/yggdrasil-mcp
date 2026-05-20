@@ -70,6 +70,28 @@ shasum -a 256 ~/Downloads/yggdrasil-mcp-*.mcpb
 
 Older versions remain available at `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-{version}.mcpb`.
 
+### Claude Cowork / Claude Code (plugin ZIP)
+
+For Cowork / Code, install the plugin ZIP:
+
+```bash
+# Claude Code — local install
+claude --plugin-dir https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.zip
+```
+
+**For Cowork org admins (Teams / Enterprise):** upload the ZIP via `Organization settings → Plugins → Add plugins → Upload a file`. All team members get the tools without further action.
+
+### Teams / Enterprise org admins
+
+If your Claude workspace is on a Teams or Enterprise plan, an Owner can distribute Yggdrasil organisation-wide:
+
+| Surface | Where | Artefact |
+|---|---|---|
+| Claude Desktop | Organization settings → Connectors → Desktop → Add custom extension | `.mcpb` |
+| Claude Cowork | Organization settings → Plugins → Add plugins → Upload a file | `.zip` |
+
+Both surface artefacts are attached to every GitHub Release. Mobile / browser-only Cowork remain out of scope (stdio MCP architecturally cannot reach those surfaces).
+
 ### Claude Code
 
 ```bash

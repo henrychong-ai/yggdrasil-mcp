@@ -1,0 +1,14 @@
+{
+  "name": "yggdrasil-mcp",
+  "description": "Tree of Thoughts reasoning, deep planning, and plan management for Claude. Adds sequential_thinking, deep_planning, list_plans, get_plan, promote_plan, archive_plans.",
+  "version": "1.2.0",
+  "author": {
+    "name": "Henry Chong",
+    "email": "henrychong-ai@gmail.com",
+    "url": "https://github.com/henrychong-ai"
+  },
+  "homepage": "https://github.com/henrychong-ai/yggdrasil-mcp",
+  "repository": "https://github.com/henrychong-ai/yggdrasil-mcp",
+  "license": "MIT",
+  "keywords": ["reasoning", "planning", "sequential-thinking", "tree-of-thoughts", "mcp"]
+}

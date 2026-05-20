@@ -146,6 +146,9 @@ jobs:
       - name: Build .mcpb bundle
         run: pnpm build:mcpb
 
+      - name: Build Cowork/Code plugin
+        run: pnpm build:cowork-plugin
+
       - name: Verify .mcpb version matches tag
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
@@ -158,19 +161,24 @@ jobs:
           echo "✅ Built $FILE matches tag v${TAG_VERSION}"
 
       - name: Aggregate SHA256SUMS
-        working-directory: dist-mcpb
         run: |
-          shasum -a 256 *.mcpb > SHA256SUMS
+          # Combined SHA256SUMS across both artefact directories
+          shasum -a 256 dist-mcpb/*.mcpb dist-cowork/*.zip > SHA256SUMS
+          # Per-dir copies for backwards-compat
+          shasum -a 256 dist-mcpb/*.mcpb | awk '{ sub(/^dist-mcpb\//, "", $2); print }' > dist-mcpb/SHA256SUMS
+          shasum -a 256 dist-cowork/*.zip | awk '{ sub(/^dist-cowork\//, "", $2); print }' > dist-cowork/SHA256SUMS
           echo "─── SHA256SUMS ───"
           cat SHA256SUMS
 
-      - name: Attach .mcpb + SHA256SUMS to GitHub Release
+      - name: Attach .mcpb + .zip + SHA256SUMS to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist-mcpb/*.mcpb
             dist-mcpb/*.sha256
-            dist-mcpb/SHA256SUMS
+            dist-cowork/*.zip
+            dist-cowork/*.sha256
+            SHA256SUMS
           generate_release_notes: true
 
       - name: Configure AWS CLI for Cloudflare R2
@@ -189,42 +197,44 @@ jobs:
           region=auto
           EOF
 
-      - name: Upload .mcpb + checksums to R2 (versioned + latest)
+      - name: Upload .mcpb + .zip + checksums to R2 (versioned + latest)
         env:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
           set -euo pipefail
-          FILE="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb)"
-          BASE="$(basename "$FILE")"
+          MCPB_FILE="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb)"
+          MCPB_BASE="$(basename "$MCPB_FILE")"
+          ZIP_FILE="$(ls dist-cowork/yggdrasil-mcp-*.zip)"
+          ZIP_BASE="$(basename "$ZIP_FILE")"
+          IMMUTABLE="public, max-age=31536000, immutable"
+          LATEST="public, max-age=300"
 
-          # Versioned upload (immutable, long cache)
-          aws s3 cp "$FILE" "s3://packages/yggdrasil-mcp/${BASE}" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --content-type application/zip \
-            --cache-control "public, max-age=31536000, immutable"
+          # === .mcpb (Claude Desktop) ===
+          aws s3 cp "$MCPB_FILE" "s3://packages/yggdrasil-mcp/${MCPB_BASE}" \
+            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$IMMUTABLE"
+          aws s3 cp "dist-mcpb/${MCPB_BASE}.sha256" "s3://packages/yggdrasil-mcp/${MCPB_BASE}.sha256" \
+            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
+          aws s3 cp "$MCPB_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
+            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
+          aws s3 cp "dist-mcpb/${MCPB_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
+            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
 
-          aws s3 cp "dist-mcpb/${BASE}.sha256" "s3://packages/yggdrasil-mcp/${BASE}.sha256" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --content-type text/plain \
-            --cache-control "public, max-age=31536000, immutable"
+          # === .zip (Cowork/Code plugin) ===
+          aws s3 cp "$ZIP_FILE" "s3://packages/yggdrasil-mcp/${ZIP_BASE}" \
+            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$IMMUTABLE"
+          aws s3 cp "dist-cowork/${ZIP_BASE}.sha256" "s3://packages/yggdrasil-mcp/${ZIP_BASE}.sha256" \
+            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
+          aws s3 cp "$ZIP_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip" \
+            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
+          aws s3 cp "dist-cowork/${ZIP_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip.sha256" \
+            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
 
-          # Latest pointer (short cache for hot rollback)
-          aws s3 cp "$FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --content-type application/zip \
-            --cache-control "public, max-age=300"
+          # === Combined SHA256SUMS ===
+          aws s3 cp "SHA256SUMS" "s3://packages/yggdrasil-mcp/SHA256SUMS" \
+            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
 
-          aws s3 cp "dist-mcpb/${BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --content-type text/plain \
-            --cache-control "public, max-age=300"
-
-          # Aggregate SHA256SUMS (always updated to reflect current latest)
-          aws s3 cp "dist-mcpb/SHA256SUMS" "s3://packages/yggdrasil-mcp/SHA256SUMS" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --content-type text/plain \
-            --cache-control "public, max-age=300"
-
-          echo "✅ Uploaded ${BASE} to R2:"
-          echo "   https://packages.henrychong.com/yggdrasil-mcp/${BASE}"
+          echo "✅ Uploaded to R2:"
+          echo "   https://packages.henrychong.com/yggdrasil-mcp/${MCPB_BASE}"
           echo "   https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb"
+          echo "   https://packages.henrychong.com/yggdrasil-mcp/${ZIP_BASE}"
+          echo "   https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.zip"

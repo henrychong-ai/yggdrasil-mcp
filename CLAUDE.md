@@ -99,11 +99,20 @@ yggdrasil-mcp/
 ├── mcpb/                    # Claude Desktop Extension assets
 │   ├── manifest.json        # MCPB manifest (manifest_version 0.3)
 │   ├── icon.png             # 256x256 icon
-│   └── README.md            # MCPB build + install docs
+│   ├── README.md            # MCPB build + install docs
+│   ├── install.html         # End-user install page (served from R2)
+│   └── SLACK_POST.md        # Launch announcement templates (Fusang + external)
+├── cowork-plugin/           # Claude Code / Cowork plugin assets
+│   ├── .claude-plugin/
+│   │   └── plugin.json      # Anthropic plugin manifest
+│   ├── .mcp.json            # MCP server config (stdio, ${CLAUDE_PLUGIN_ROOT})
+│   └── README.md            # Plugin build + install docs
 ├── scripts/
-│   └── build-mcpb.sh        # .mcpb bundle build script (pinned @anthropic-ai/mcpb)
+│   ├── build-mcpb.sh         # .mcpb bundle build (pinned @anthropic-ai/mcpb)
+│   └── build-cowork-plugin.sh # Cowork/Code plugin ZIP build
 ├── dist/                    # Compiled TypeScript output (npm package)
 ├── dist-mcpb/               # Built .mcpb bundles (gitignored)
+├── dist-cowork/             # Built plugin ZIPs (gitignored)
 ├── plans/                   # Implementation plans (gitignored)
 ├── .claude/
 │   └── settings.json        # Claude Code project settings (gitignored)

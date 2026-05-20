@@ -4,9 +4,10 @@ node_modules/
 # Build output
 dist/
 
-# MCPB bundle staging + output
+# MCPB bundle + Cowork/Code plugin staging + output
 build/
 dist-mcpb/
+dist-cowork/
 
 # Test coverage
 coverage/
