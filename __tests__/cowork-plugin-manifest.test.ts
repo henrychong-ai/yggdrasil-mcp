@@ -94,16 +94,14 @@ describe('Cowork/Code plugin .mcp.json', () => {
     expect(mcp.mcpServers.yggdrasil).toBeDefined();
   });
 
-  it('uses node as the command', () => {
-    expect(loadMcpJson().mcpServers.yggdrasil.command).toBe('node');
+  it('uses npx as the command (canonical pattern per Anthropic plugins-reference)', () => {
+    expect(loadMcpJson().mcpServers.yggdrasil.command).toBe('npx');
   });
 
-  it('args point at server/dist/index.js via ${CLAUDE_PLUGIN_ROOT}', () => {
+  it('args invoke yggdrasil-mcp via npx -y (non-interactive npm fetch)', () => {
     const args = loadMcpJson().mcpServers.yggdrasil.args;
     expect(args).toBeDefined();
-    expect(args).toHaveLength(1);
-    expect(args?.[0]).toContain('${CLAUDE_PLUGIN_ROOT}');
-    expect(args?.[0]).toContain('server/dist/index.js');
+    expect(args).toEqual(['-y', 'yggdrasil-mcp']);
   });
 });
 

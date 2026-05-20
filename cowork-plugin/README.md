@@ -4,14 +4,30 @@ This directory is the source for the Yggdrasil **plugin** distribution — a `.z
 
 Sibling distribution: the `.mcpb` produced from `../mcpb/` for one-click Claude Desktop install.
 
+## Architecture
+
+The plugin invokes Yggdrasil via `npx -y yggdrasil-mcp` — it does **not** bundle the server runtime. This matches Anthropic's [own reference plugins](https://github.com/anthropics/claude-code/tree/main/plugins) and the canonical example in the [plugins reference](https://code.claude.com/docs/en/plugins-reference) MCP servers section.
+
+Trade-offs:
+
+| | npx (current) | Bundled server (rejected) |
+|---|---|---|
+| ZIP size | ~2.5 KB | ~4.7 MB |
+| Auto-updates | Yes (npx pulls latest yggdrasil-mcp from npm) | No (re-upload required for new version) |
+| Cowork validator | Accepts | Rejects (npm-style node_modules paths trip the validator) |
+| Network at first run | Required (npm registry) | No |
+| Reproducibility | Floating (`yggdrasil-mcp@latest`) | Pinned to ZIP contents |
+| Anthropic-recommended | Yes (per plugins-reference) | Not used by any official reference plugin |
+
+If reproducibility on a specific version matters, change `cowork-plugin/.mcp.json` to pin: `args: ["-y", "yggdrasil-mcp@1.2.0"]`.
+
 ## Contents
 
 | File | Purpose |
 |---|---|
 | `.claude-plugin/plugin.json` | Anthropic plugin manifest (name, version, author, homepage, etc.) |
-| `.mcp.json` | MCP server config — declares the stdio `yggdrasil` server to Claude |
+| `.mcp.json` | MCP server config — declares the `yggdrasil` server to Claude via `npx -y yggdrasil-mcp` |
 | `README.md` | This file |
-| `server/` *(populated at build time)* | Compiled `dist/` + production `node_modules` + `package.json` |
 
 ## Building
 
@@ -21,20 +37,14 @@ From the repo root:
 pnpm build:cowork-plugin
 ```
 
-Produces `dist-cowork/yggdrasil-mcp-{version}.zip` with SHA256 sidecar.
+Produces `dist-cowork/yggdrasil-mcp-{version}.zip` (~2.5 KB) with SHA256 sidecar.
 
 The build script:
-1. Runs `pnpm build` (compile TS to `dist/`)
-2. Stages this directory into `build/cowork/`
-3. Copies `dist/` + `package.json` + `pnpm-lock.yaml` into `build/cowork/server/`
-4. **Installs prod deps with `--config.node-linker=hoisted`** — produces a flat npm-style `node_modules/`. This is **mandatory**: Cowork's plugin upload validator rejects `+` in paths, and pnpm's default `.pnpm/<pkg>+<peer>@<ver>/` content store contains exactly that.
-5. Scrubs pnpm metadata that could still leak (`.pnpm/`, `.modules.yaml`, `.pnpm-workspace-state-v1.json`, `.bin/`)
-6. Pre-flight check — fails the build if any `+`, `!`, or `?` characters appear in the staged tree
-7. ZIPs `build/cowork/` → `dist-cowork/yggdrasil-mcp-{version}.zip`
-8. Asserts size <45 MB (10% safety margin below the Cowork 50 MB hard limit)
-9. Emits SHA256 alongside
-
-Resulting bundle is ~4.7 MB. Bundles the same dependencies as the `.mcpb` (~12 MB) but the hoisted layout de-duplicates pnpm's per-peer-set copies.
+1. Stages `.claude-plugin/plugin.json` + `.mcp.json` + `README.md` into `build/cowork/`
+2. Pre-flight check — fails the build if any `+`, `!`, `?`, or `@` characters appear in any staged path (Cowork validator hardening)
+3. ZIPs `build/cowork/` → `dist-cowork/yggdrasil-mcp-{version}.zip`
+4. Asserts size <45 MB (well under Cowork's 50 MB hard limit; actual is ~2.5 KB)
+5. Emits SHA256
 
 ## Local install (Claude Code)
 
@@ -48,7 +58,7 @@ Then verify tools appear:
 /help
 ```
 
-You should see Yggdrasil tools listed under `yggdrasil:` namespace.
+You should see Yggdrasil tools listed under `yggdrasil:` namespace (e.g. `yggdrasil:sequential_thinking`).
 
 To pick up changes during development:
 
@@ -65,7 +75,7 @@ Org admin (Owner / Primary Owner) workflow:
 3. Drag `yggdrasil-mcp-{version}.zip` from the GitHub Release (or local `dist-cowork/`)
 4. Choose provisioning: **Auto-install** distributes to all members immediately
 
-End users see Yggdrasil tools without any further action.
+End users see Yggdrasil tools without any further action — Cowork invokes `npx -y yggdrasil-mcp` on their machine, which fetches from npm on first use and caches thereafter.
 
 ## Plans directory
 

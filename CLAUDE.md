@@ -419,21 +419,31 @@ If CI shows "publish skipped - version not higher":
 
 ### Cowork plugin upload rejected — "invalid characters in path"
 
-Anthropic's Cowork plugin upload validator rejects `+` characters in ZIP paths. By default `pnpm install` produces a content-addressable `node_modules/.pnpm/<pkg>@<ver>_<peer>@<ver>/` layout where `+` replaces `/` in scoped peer-dep names (e.g. `@modelcontextprotocol+sdk@1.29.0_zod@4.4.3`).
+Anthropic's Cowork plugin upload validator rejects bundled `node_modules/` trees, even with pnpm's content store flattened via `--node-linker=hoisted`. Tested rejections include paths containing `+` (pnpm peer-dep encoding) **and** standard npm scope paths like `node_modules/@modelcontextprotocol/sdk/...`. The validator appears to reject any nested package metadata, not just pnpm-specific layouts.
 
-The `scripts/build-cowork-plugin.sh` script handles this:
-1. Installs prod deps with `--config.node-linker=hoisted` (flat npm-style layout)
-2. Scrubs `.pnpm/`, `.modules.yaml`, `.pnpm-workspace-state-v1.json`, `.bin/` post-install
-3. Pre-flight `find` check fails the build if any `+`, `!`, or `?` characters slip into the staged tree
+**Architecture: use `npx -y` not bundled server.** Matches Anthropic's [reference plugins](https://github.com/anthropics/claude-code/tree/main/plugins) and the canonical example in their [plugins-reference docs](https://code.claude.com/docs/en/plugins-reference#mcp-servers).
 
-If you see the upload rejected anyway, the most likely cause is a regression in the build script — re-inspect the ZIP with:
+`cowork-plugin/.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "npx",
+      "args": ["-y", "yggdrasil-mcp"]
+    }
+  }
+}
+```
+
+The plugin ZIP contains only the manifest + `.mcp.json` + README (~2.5 KB total). The server runtime is fetched from npm at first invocation and cached locally.
+
+The `scripts/build-cowork-plugin.sh` script enforces this with a pre-flight `find` check that fails the build if any `+`, `!`, `?`, or `@` characters appear in any staged path. If you see the upload rejected anyway, re-inspect the ZIP:
 
 ```bash
 unzip -l dist-cowork/yggdrasil-mcp-*.zip | awk '{print $NF}' | grep -oE '[^a-zA-Z0-9./_-]' | sort -u
+# Should be empty — any output indicates a build-script regression
 ```
 
-Only `@` should appear (standard npm scope syntax). Any `+`/`!`/`?` indicates the validator-defence-in-depth missed something.
+### .mcpb vs .zip architectural difference
 
-### .mcpb size
-
-The `.mcpb` build script uses pnpm's default layout (no `--node-linker=hoisted`) since Claude Desktop's MCPB installer accepts the pnpm layout. Consequently `.mcpb` is ~12 MB while the Cowork `.zip` is ~4.7 MB despite bundling the same dependencies. Acceptable today; switch `.mcpb` to hoisted later for consistency if desired.
+The `.mcpb` (Claude Desktop) **does** bundle `node_modules/` because the MCPB installer doesn't perform the same path-character validation Cowork does. Result: `.mcpb` is ~12 MB while the Cowork `.zip` is ~2.5 KB. The two formats serve different surfaces with different validator strictness.
