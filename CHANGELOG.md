@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased — OIDC publish migration + hardening
+## v1.2.1 (2026-05-20) — OIDC publish migration + hardening
 
 Driven by Codex auto-PR-review + parallel `/simplify` + `/security-review` + `/codex` reviews on the OIDC migration branch. Substantive findings landed in this branch before merge; lower-priority findings documented for follow-up.
 
@@ -33,27 +33,22 @@ Driven by Codex auto-PR-review + parallel `/simplify` + `/security-review` + `/c
 - `claude plugin validate --strict` in CI — requires claude CLI install pattern in CI, not blocking. Manifest validation tests already catch the common drift patterns.
 - Pre-release detection via `semver.prerelease()` instead of `*-*` glob — the `*-*` pattern is industry-standard for npm publish workflows; adding `semver` devDep for marginal idiomatic gain not worth the cost.
 
----
+### OIDC migration core (the original work)
 
-## Unreleased — OIDC publish migration
+Investigation during v1.2.0 release surfaced that `NPM_TOKEN` had been silently failing since ~v1.1.3 (2026-04-15); npm registry was stuck at v1.1.2 for ~5 weeks. Migrating to OIDC trusted publishing eliminates token rotation entirely. Tagging v1.2.1 (rather than retrying v1.2.0) because npm publish is immutable — v1.2.0 attempts cannot be re-issued.
 
-Background: investigation during v1.2.0 release surfaced that `NPM_TOKEN` had been silently failing since ~v1.1.3 (2026-04-15); npm registry was stuck at v1.1.2 for ~5 weeks. Migrating to OIDC trusted publishing eliminates token rotation entirely.
-
-### Changed
-- `.github/workflows/ci-cd.yml` `publish` job:
-  - Authenticates to npm via OIDC trusted publisher (configured on npmjs.org) instead of `NODE_AUTH_TOKEN` / `NPM_TOKEN` secret
-  - Adds `--provenance` flag to `npm publish` → Sigstore-signed SLSA build attestation; "Verified" badge on npmjs.org package page
-  - Pre-release versions (containing `-`, e.g. `1.2.1-rc.0`) publish under `next` dist-tag instead of `latest` — protects `npm install yggdrasil-mcp` consumers
-  - Switched from `npm install` (with the `rm -rf node_modules && rm -f package-lock.json` anti-pattern that defeated lockfile integrity) to `pnpm install --frozen-lockfile` (matches the build job)
-  - Removed redundant `chmod +x dist/*.js` step — `pnpm build` already handles it via `shx chmod +x dist/*.js`
-
-### Security
+`.github/workflows/ci-cd.yml` `publish` job:
+- Authenticates to npm via OIDC trusted publisher (configured on npmjs.org) instead of `NODE_AUTH_TOKEN` / `NPM_TOKEN` secret
+- Adds `--provenance` flag to `npm publish` → Sigstore-signed SLSA build attestation; "Verified" badge on npmjs.org package page
+- Pre-release versions (containing `-`, e.g. `1.2.1-rc.0`) publish under `next` dist-tag instead of `latest` — protects `npm install yggdrasil-mcp` consumers
+- Switched from `npm install` (with the `rm -rf node_modules && rm -f package-lock.json` anti-pattern that defeated lockfile integrity) to `pnpm install --frozen-lockfile --ignore-scripts`
+- Removed redundant `chmod +x dist/*.js` step — `pnpm build` already handles it via `shx chmod +x dist/*.js`
 - Eliminates the long-lived `NPM_TOKEN` secret. OIDC tokens are short-lived (≤1 hour), scoped to one workflow run, and validated against the Trusted Publisher config on npmjs.org
 - npm package access switched to "Require two-factor authentication and disallow tokens (recommended)" — closes the attack vector entirely
-- Build provenance: every published version now ships a SLSA-level attestation linking the tarball to a specific commit + CI run
 
-### Sidebar
-- v1.1.3, v1.1.4, and v1.2.0 had successful CI runs but failed silently at the npm publish step (auth error returned 404). npm registry consequently sat at v1.1.2 for the entire period. Once OIDC is wired in this branch and a new tag fires, the registry catches up. Functional MCP server logic was identical across 1.1.2 → 1.2.0 (no tool behaviour changes; packaging-only deltas), so downstream consumers were unaffected at runtime — just running on an older version string.
+### Sidebar — npm registry gap
+
+v1.1.3, v1.1.4, and v1.2.0 had successful CI runs but failed silently at the npm publish step (auth error returned 404). npm registry consequently sat at v1.1.2 for the entire period. Functional MCP server logic was identical across 1.1.2 → 1.2.0 (no tool behaviour changes; packaging-only deltas), so downstream consumers were unaffected at runtime — just running on an older version string. v1.2.1 closes the gap.
 
 ---
 
