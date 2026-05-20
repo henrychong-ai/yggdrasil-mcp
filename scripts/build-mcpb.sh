@@ -9,8 +9,11 @@
 #   - SHA256 emitted for tamper-detection downstream
 set -euo pipefail
 
-# Pin @anthropic-ai/mcpb; do not allow floating
-MCPB_VERSION="^2.1.0"
+# @anthropic-ai/mcpb is pinned as an exact devDependency in package.json + locked by
+# pnpm-lock.yaml. We invoke via `pnpm exec mcpb` to use the lockfile-resolved version
+# rather than `npx -y @anthropic-ai/mcpb@<range>` which fetches live at build time and
+# allows minor/patch CLI drift to affect artefact reproducibility.
+MCPB_CMD="pnpm exec mcpb"
 
 VERSION="$(node -p "require('./package.json').version")"
 BUILD_DIR="build/mcpb"
@@ -41,13 +44,13 @@ cp mcpb/manifest.json "${BUILD_DIR}/manifest.json"
 cp mcpb/icon.png "${BUILD_DIR}/icon.png"
 
 echo "→ Validating source manifest"
-npx -y "@anthropic-ai/mcpb@${MCPB_VERSION}" validate "${BUILD_DIR}/manifest.json"
+${MCPB_CMD} validate "${BUILD_DIR}/manifest.json"
 
 echo "→ Packing .mcpb"
-npx -y "@anthropic-ai/mcpb@${MCPB_VERSION}" pack "${BUILD_DIR}" "${OUT}"
+${MCPB_CMD} pack "${BUILD_DIR}" "${OUT}"
 
 echo "→ Inspecting packed .mcpb"
-npx -y "@anthropic-ai/mcpb@${MCPB_VERSION}" info "${OUT}"
+${MCPB_CMD} info "${OUT}"
 
 echo "→ Computing SHA256"
 ( cd "${OUT_DIR}" && shasum -a 256 "$(basename "${OUT}")" | tee "$(basename "${OUT}").sha256" )
