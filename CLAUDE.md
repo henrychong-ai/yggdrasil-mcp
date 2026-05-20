@@ -341,14 +341,18 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 | Job                | Trigger           | Node Versions    |
 | ------------------ | ----------------- | ---------------- |
-| **Lint-Format-Typecheck-Test-Build** | All pushes, PRs | 24.x |
-| **Publish to npm** | Tags matching v\* | 24.x             |
+| **Gitleaks & Lint-Format-Typecheck-Test-Build** | All pushes, PRs, tags | 24.x |
+| **Publish to npm** | Tags matching `v*` | 24.x             |
+| **Build & Release Claude Desktop Extension (.mcpb)** | Tags matching `v*` | 24.x |
 
 ### npm Publishing
 
-- **Trigger**: Only on version tags (e.g., `v1.0.0`)
-- **Authentication**: NPM_TOKEN secret (unscoped packages require explicit token, not OIDC)
-- **Version Check**: Tag must match `package.json` version
+- **Trigger**: Only on version tags (e.g., `v1.2.2`).
+- **Authentication**: **OIDC trusted publisher** (configured on npmjs.org as of v1.2.1) — no `NPM_TOKEN` secret in the repo. The `publish` job declares `id-token: write` permissions and authenticates via the short-lived OIDC token validated by npmjs.org.
+- **Provenance**: `npm publish --provenance` emits a Sigstore-signed SLSA build attestation; the npmjs.org package page shows the "Verified" badge.
+- **Dist-tag handling**: stable releases (`X.Y.Z`) publish under `latest`. Pre-releases (any semver containing `-`, e.g. `1.2.1-rc.0`) publish under `next` instead — protects `npm install yggdrasil-mcp` consumers from accidentally getting pre-release code.
+- **Version Check**: Tag must match `package.json` version (verified by the workflow before publish).
+- **Install discipline (privileged jobs)**: `pnpm install --frozen-lockfile --ignore-scripts` (no lifecycle scripts under elevated permissions). `cache: 'pnpm'` deliberately dropped from `publish` + `release-mcpb` jobs (cache-poisoning defense — see v1.2.1 changelog).
 
 ## R2 Retention Policy (packages.henrychong.com)
 

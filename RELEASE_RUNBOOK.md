@@ -167,13 +167,23 @@ Per the policy in `CLAUDE.md` → "R2 Retention Policy": after a successful rele
 ```bash
 # Run AFTER a successful release (latest pointer has been repointed).
 # Working dir: yggdrasil-mcp repo root.
+# Tool choice: curl + AWS SigV4 (curl built-in `--aws-sigv4`, no `aws` CLI required) for
+# listing via the S3-compatible API; wrangler for delete. Both satisfy the repo's
+# "prefer CF MCP / curl+API / wrangler over AWS CLI" tool-selection rule.
 set -euo pipefail
 
+# S3-compatible credentials for the LIST call
 AKID=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
 SECRET=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
+
+# CF account-scoped API token for wrangler (R2 Edit scope on `packages` bucket)
+# Stopgap: ADMIN_API_KEY works. Follow-up: issue a scoped "packages R2 Edit" token.
+export CLOUDFLARE_API_TOKEN=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/API Tokens/ADMIN_API_KEY' | tr -d '\n\r')
+
 ACCOUNT_ID=32882cce864ab5c754075741115ca269
-ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
-BUCKET_PATH="s3://packages/yggdrasil-mcp/"
+S3_ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
+BUCKET=packages
+PREFIX=yggdrasil-mcp/
 
 # Anchor values (always-keep)
 CURRENT=$(node -p "require('./package.json').version")
@@ -183,41 +193,59 @@ echo "Current latest version (always kept): $CURRENT"
 echo "Cutoff date (anything older is a prune candidate): $CUTOFF_DATE"
 echo ""
 
-# 1. DRY RUN — list candidates
-echo "=== Prune candidates (DRY RUN) ==="
-AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
-  aws s3 ls "$BUCKET_PATH" --endpoint-url "$ENDPOINT" | \
-  awk -v cutoff="$CUTOFF_DATE" -v current="$CURRENT" '
-    /latest/     { next }                       # never prune latest pointers
-    /SHA256SUMS/ { next }                       # never prune aggregations
-    $4 ~ ("-"current"\\.") { next }             # never prune current version
-    $1 >= cutoff { next }                       # keep anything newer than cutoff
-    { print "  PRUNE: " $4 "  (uploaded " $1 ")" }
-  '
+# 1. LIST objects via S3-compatible API + SigV4 (curl, not `aws` CLI)
+#    Returns S3 XML; parse with python's stdlib xml.etree.
+LIST_XML=$(curl -s --aws-sigv4 "aws:amz:auto:s3" \
+  --user "${AKID}:${SECRET}" \
+  "${S3_ENDPOINT}/${BUCKET}/?list-type=2&prefix=${PREFIX}")
 
-# 2. After reviewing the list, run again piping each surviving key to `aws s3 rm`.
-#    Uncomment when ready to execute:
-# AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
-#   aws s3 ls "$BUCKET_PATH" --endpoint-url "$ENDPOINT" | \
-#   awk -v cutoff="$CUTOFF_DATE" -v current="$CURRENT" '
-#     /latest/     { next }
-#     /SHA256SUMS/ { next }
-#     $4 ~ ("-"current"\\.") { next }
-#     $1 >= cutoff { next }
-#     { print $4 }
-#   ' | while IFS= read -r key; do
-#       [ -n "$key" ] || continue
-#       AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
-#         aws s3 rm "${BUCKET_PATH}${key}" --endpoint-url "$ENDPOINT"
-#     done
+# 2. DRY RUN — show prune candidates
+echo "=== Prune candidates (DRY RUN) ==="
+echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY'
+import sys, xml.etree.ElementTree as ET
+cutoff, current = sys.argv[1], sys.argv[2]
+ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
+root = ET.fromstring(sys.stdin.read())
+for obj in root.findall("s3:Contents", ns):
+    key = obj.findtext("s3:Key", default="", namespaces=ns)
+    last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]  # YYYY-MM-DD
+    name = key.rsplit("/", 1)[-1]
+    if "latest" in name or "SHA256SUMS" in name:
+        continue
+    if f"-{current}." in name:
+        continue
+    if last_modified >= cutoff:
+        continue
+    print(f"  PRUNE: {key}  (uploaded {last_modified})")
+PY
+
+# 3. After reviewing the list, execute the deletes. Uncomment to run:
+# echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY' | while IFS= read -r key; do
+# import sys, xml.etree.ElementTree as ET
+# cutoff, current = sys.argv[1], sys.argv[2]
+# ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
+# root = ET.fromstring(sys.stdin.read())
+# for obj in root.findall("s3:Contents", ns):
+#     key = obj.findtext("s3:Key", default="", namespaces=ns)
+#     last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]
+#     name = key.rsplit("/", 1)[-1]
+#     if "latest" in name or "SHA256SUMS" in name: continue
+#     if f"-{current}." in name: continue
+#     if last_modified >= cutoff: continue
+#     print(key)
+# PY
+#   [ -n "$key" ] || continue
+#   pnpm exec wrangler r2 object delete "${BUCKET}/${key}" --remote
+# done
 ```
 
 **Notes:**
 
 - Always start with the DRY RUN. Inspect the candidate list. Surprises (e.g. a hand-uploaded test artefact) should be investigated, not auto-deleted.
-- The awk filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, and anchors on `-<CURRENT>.` so the current version's full asset set (`.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256`) is preserved.
+- The filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, and anchors on `-<CURRENT>.` so the current version's full asset set (`.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256`) is preserved.
 - Pre-release artefacts (`-rc.0`, `-beta.1`) WILL be pruned by this filter once they age past 90 days. That is intentional — pre-releases are transient.
-- The `aws s3` tool choice matches the existing R2 patterns in this runbook and in `ci-cd.yml`. The repo's general Cloudflare tool-selection rule prefers CF MCP / curl+API / project-scoped wrangler over AWS CLI; migrating the R2 ops here is a separate cleanup PR, not this commit.
+- **Tool choice**: `curl --aws-sigv4` for the LIST call (S3-style auth via curl built-in, no `aws` CLI installed). `wrangler r2 object delete --remote` for the DELETE calls. Both satisfy the repo's "no AWS CLI for R2" rule. The remaining `aws s3 cp` calls in Scenario 4 and `ci-cd.yml`'s `release-mcpb` job are tracked for a coupled cleanup PR (see CI-automation plan for the prune step).
+- **`CLOUDFLARE_API_TOKEN` scope**: stopgap uses `ADMIN_API_KEY` (broad). Follow-up: issue a scoped "packages R2 Edit" CF API token, reference path TBD in path-registry.
 
 ## Sanity checks before tagging
 
