@@ -94,7 +94,7 @@ Note: npm requires 2FA / OIDC for dist-tag operations on Trusted-Publisher packa
 
 ```bash
 # Get the previous version's SHA256
-PREV=1.2.0
+PREV=1.2.1
 curl -s "https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-${PREV}.mcpb.sha256"
 
 # Repoint -latest to the previous version (using R2 token from 1Password)
