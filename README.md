@@ -51,6 +51,47 @@ See the [CLAUDE.md](CLAUDE.md) for details:
 
 ## Installation
 
+### Claude Desktop (recommended — one-click install)
+
+Yggdrasil ships as a Claude Desktop Extension (`.mcpb`):
+
+1. Download the latest `.mcpb`:
+   [`packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb`](https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb)
+2. Double-click the file — Claude Desktop opens an install dialog → click **Install**
+3. Restart Claude Desktop
+
+Requires Claude Desktop 1.8000 or later (bundles Node.js 24+).
+
+Optionally verify integrity by comparing the SHA256 against [`SHA256SUMS`](https://packages.henrychong.com/yggdrasil-mcp/SHA256SUMS):
+
+```bash
+shasum -a 256 ~/Downloads/yggdrasil-mcp-*.mcpb
+```
+
+Older versions remain available at `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-{version}.mcpb`.
+
+### Claude Cowork / Claude Code (plugin ZIP)
+
+For Cowork / Code, install the plugin ZIP:
+
+```bash
+# Claude Code — local install
+claude --plugin-dir https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.zip
+```
+
+**For Cowork org admins (Teams / Enterprise):** upload the ZIP via `Organization settings → Plugins → Add plugins → Upload a file`. All team members get the tools without further action.
+
+### Teams / Enterprise org admins
+
+If your Claude workspace is on a Teams or Enterprise plan, an Owner can distribute Yggdrasil organisation-wide:
+
+| Surface | Where | Artefact |
+|---|---|---|
+| Claude Desktop | Organization settings → Connectors → Desktop → Add custom extension | `.mcpb` |
+| Claude Cowork | Organization settings → Plugins → Add plugins → Upload a file | `.zip` |
+
+Both surface artefacts are attached to every GitHub Release. Mobile / browser-only Cowork remain out of scope (stdio MCP architecturally cannot reach those surfaces).
+
 ### Claude Code
 
 ```bash

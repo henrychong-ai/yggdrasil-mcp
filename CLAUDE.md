@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.1.0.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Current version: see `package.json` / `CHANGELOG.md` (v1.2.0 added Claude Desktop Extension `.mcpb` distribution).
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,9 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.1.0                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tools**     | `sequential_thinking`, `deep_planning`, `list_plans`, `get_plan`, `promote_plan`, `archive_plans` |
+| **Distribution** | npm (`npx -y yggdrasil-mcp`) for Claude Code; `.mcpb` via `packages.henrychong.com/yggdrasil-mcp/` for Claude Desktop |
 
 ## Tech Stack
 
@@ -79,6 +79,18 @@ pnpm typecheck
 
 # Watch mode for TypeScript
 pnpm watch
+
+# Build .mcpb (Claude Desktop Extension)
+pnpm build:mcpb
+
+# Build .zip (Claude Code / Cowork plugin) — uses hoisted node_modules layout
+pnpm build:cowork-plugin
+
+# Build BOTH distribution artefacts
+pnpm build:dist
+
+# Validate the MCPB manifest source
+pnpm validate:mcpb
 ```
 
 ## Project Structure
@@ -91,11 +103,28 @@ yggdrasil-mcp/
 ├── persistence.ts           # Hybrid JSONL + Markdown persistence layer
 ├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
-│   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
-│   ├── planning.test.ts     # Deep planning test suite (80 tests)
-│   ├── persistence.test.ts  # Persistence layer test suite (80 tests)
-│   └── coercion.test.ts     # Coercion test suite (32 tests)
-├── dist/                    # Compiled output (npm package)
+│   ├── lib.test.ts                 # Sequential thinking test suite
+│   ├── planning.test.ts            # Deep planning test suite
+│   ├── persistence.test.ts         # Persistence layer test suite
+│   ├── coercion.test.ts            # Coercion test suite
+│   └── mcpb-manifest.test.ts       # MCPB manifest validation suite
+├── mcpb/                    # Claude Desktop Extension assets
+│   ├── manifest.json        # MCPB manifest (manifest_version 0.3)
+│   ├── icon.png             # 256x256 icon
+│   ├── README.md            # MCPB build + install docs
+│   ├── install.html         # End-user install page (served from R2)
+│   └── SLACK_POST.md        # Launch announcement templates (Fusang + external)
+├── cowork-plugin/           # Claude Code / Cowork plugin assets
+│   ├── .claude-plugin/
+│   │   └── plugin.json      # Anthropic plugin manifest
+│   ├── .mcp.json            # MCP server config (stdio, ${CLAUDE_PLUGIN_ROOT})
+│   └── README.md            # Plugin build + install docs
+├── scripts/
+│   ├── build-mcpb.sh         # .mcpb bundle build (pinned @anthropic-ai/mcpb)
+│   └── build-cowork-plugin.sh # Cowork/Code plugin ZIP build
+├── dist/                    # Compiled TypeScript output (npm package)
+├── dist-mcpb/               # Built .mcpb bundles (gitignored)
+├── dist-cowork/             # Built plugin ZIPs (gitignored)
 ├── plans/                   # Implementation plans (gitignored)
 ├── .claude/
 │   └── settings.json        # Claude Code project settings (gitignored)
@@ -366,9 +395,10 @@ See `plans/20260130-yggdrasil-roadmap.md` for the 5-phase roadmap:
 
 1. ~~**v1.0** - Core enhancements~~ (complete)
 2. ~~**v1.1** - Symbiotic plans integration, descriptive naming, plan lifecycle tools~~ (complete)
-3. **v1.2** - Differentiation (Mermaid export, thought history retrieval, self-evaluation)
-4. **v2.0** - Multi-agent evaluation (cross-model verification)
-5. **v2.5** - Advanced orchestration (n8n, MCTS)
+3. ~~**v1.2** - Claude Desktop Extension (`.mcpb`) distribution via `packages.henrychong.com`~~ (complete)
+4. **v1.3** - Differentiation (Mermaid export, thought history retrieval, self-evaluation)
+5. **v2.0** - Multi-agent evaluation (cross-model verification)
+6. **v2.5** - Advanced orchestration (n8n, MCTS)
 
 ## Troubleshooting
 
@@ -386,3 +416,34 @@ If CI shows "publish skipped - version not higher":
 
 - Increment version in `package.json`
 - Also update version in `index.ts` (MCP server version)
+
+### Cowork plugin upload rejected — "invalid characters in path"
+
+Anthropic's Cowork plugin upload validator rejects bundled `node_modules/` trees, even with pnpm's content store flattened via `--node-linker=hoisted`. Tested rejections include paths containing `+` (pnpm peer-dep encoding) **and** standard npm scope paths like `node_modules/@modelcontextprotocol/sdk/...`. The validator appears to reject any nested package metadata, not just pnpm-specific layouts.
+
+**Architecture: use `npx -y` not bundled server.** Matches Anthropic's [reference plugins](https://github.com/anthropics/claude-code/tree/main/plugins) and the canonical example in their [plugins-reference docs](https://code.claude.com/docs/en/plugins-reference#mcp-servers).
+
+`cowork-plugin/.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "npx",
+      "args": ["-y", "yggdrasil-mcp"]
+    }
+  }
+}
+```
+
+The plugin ZIP contains only the manifest + `.mcp.json` + README (~2.5 KB total). The server runtime is fetched from npm at first invocation and cached locally.
+
+The `scripts/build-cowork-plugin.sh` script enforces this with a pre-flight `find` check that fails the build if any `+`, `!`, `?`, or `@` characters appear in any staged path. If you see the upload rejected anyway, re-inspect the ZIP:
+
+```bash
+unzip -l dist-cowork/yggdrasil-mcp-*.zip | awk '{print $NF}' | grep -oE '[^a-zA-Z0-9./_-]' | sort -u
+# Should be empty — any output indicates a build-script regression
+```
+
+### .mcpb vs .zip architectural difference
+
+The `.mcpb` (Claude Desktop) **does** bundle `node_modules/` because the MCPB installer doesn't perform the same path-character validation Cowork does. Result: `.mcpb` is ~12 MB while the Cowork `.zip` is ~2.5 KB. The two formats serve different surfaces with different validator strictness.

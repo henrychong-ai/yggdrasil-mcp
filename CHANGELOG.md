@@ -2,6 +2,57 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.0 (2026-05-20)
+
+### Added — Multi-surface distribution to Claude Desktop, Cowork, and Code
+
+Yggdrasil now ships in **two complementary formats** alongside the existing npm distribution:
+
+1. **`.mcpb` (Claude Desktop Extension)** — one-click install in Claude Desktop. Distributed via Fusang Teams workspace allowlist (org admin upload) AND public download at `packages.henrychong.com`.
+2. **`.zip` (Claude Code / Cowork plugin)** — bundled stdio MCP server packaged per Anthropic's plugin spec (`.claude-plugin/plugin.json` + `.mcp.json`). Distributed via Fusang Teams workspace plugin upload AND public download at `packages.henrychong.com`.
+3. **npm (`npx -y yggdrasil-mcp`)** — unchanged, for Claude Code CLI / programmatic consumers.
+
+Mobile / pure-web Cowork remain architecturally out of scope (stdio MCP cannot reach those surfaces).
+
+### Repo changes
+
+- New `mcpb/` directory: `manifest.json` (MCPB manifest_version 0.3), `icon.png`, `README.md`, `install.html` (external download page), `SLACK_POST.md` (Fusang + external launch copy)
+- New `cowork-plugin/` directory: `.claude-plugin/plugin.json` (Anthropic plugin manifest), `.mcp.json` (stdio MCP config with `${CLAUDE_PLUGIN_ROOT}`), `README.md`
+- New `scripts/build-mcpb.sh` — compile → stage → pack via `@anthropic-ai/mcpb@^2.1.0` → SHA256
+- New `scripts/build-cowork-plugin.sh` — stages `.claude-plugin/plugin.json` + `.mcp.json` + `README.md` only (no bundled server runtime) → invalid-character pre-flight check → ZIP → assert <45 MB → SHA256. **Architecture matches Anthropic's reference plugins:** `.mcp.json` invokes `npx -y yggdrasil-mcp` at runtime; npm fetches the server on first use, auto-updates on each run. Resulting bundle is ~2.5 KB. The earlier attempt to bundle `server/dist/` + production `node_modules` was rejected by Cowork's plugin upload validator even with `--node-linker=hoisted` and full pnpm-metadata scrub, suggesting the validator rejects ALL paths under `node_modules/@*` not just pnpm-specific layouts — matches Anthropic's documented best practice of using `npx` / `uvx` rather than bundling
+- New `pnpm` scripts: `build:mcpb`, `build:cowork-plugin`, `build:dist` (both), `validate:mcpb`
+- Extended `.github/workflows/ci-cd.yml`: new `release-mcpb` job triggers on `v*` tags, builds **both** `.mcpb` and `.zip`, attaches to GitHub Release with combined `SHA256SUMS`, uploads versioned + `-latest` pointers + checksums to R2 (`packages` bucket on HC Personal Cloudflare)
+- New `.github/dependabot.yml` ecosystem `github-actions` — weekly SHA-pinning of CI actions
+- New tests: `__tests__/mcpb-manifest.test.ts` (17 assertions on MCPB manifest), `__tests__/cowork-plugin-manifest.test.ts` (16 assertions on plugin.json + `.mcp.json` + filesystem layout per Anthropic spec warning)
+
+### Infrastructure provisioned (out-of-repo, in same session)
+
+- R2 bucket `packages` on HC Personal CF account (APAC, Standard) — bound to `packages.henrychong.com` with TLS 1.2 min
+- Bifrost vanity route `henrychong.com/yggdrasil-latest` → 302 → `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb`
+- CORS rule applied uniformly to 10 public-bound R2 buckets on HC Personal account: GET-only, origins `*`, ExposeHeaders `[ETag]`, MaxAge 3600 (drift fix + future-proofing in same change)
+- `/infra-hc` skill updated with R2 bucket / domain / CORS snapshots + narrative (Cloudflare write-back rule)
+
+### Security
+
+- `@anthropic-ai/mcpb` pinned to `^2.1.0` in `.mcpb` build script (defends against package hijack)
+- `wrangler@4.93.0` added as devDep for local R2 operations
+- Production install in both build scripts runs with `--ignore-scripts` (defends against malicious postinstall hooks)
+- `SHA256SUMS` published alongside both `.mcpb` and `.zip` on both GitHub Release and R2 for tamper detection
+- R2 token scoped to bucket `packages` ONLY at creation — single-bucket scope verified before save (limits blast radius on key leak; protects `files-sonjachong` medical PII and other family buckets)
+- GitHub tag protection rule pending — will restrict `v*` tag creation to admin role
+- Dependabot ecosystem `github-actions` added — weekly SHA-pin auto-bumps for CI workflow
+
+### Distribution paths matrix
+
+| Audience | Surface | Path | Mechanism |
+|---|---|---|---|
+| Fusang Teams members | Claude Desktop | A | Org admin uploads `.mcpb`; one-click install |
+| Fusang Teams members | Claude Cowork (desktop) | B | Org admin uploads `.zip`; auto-install |
+| External / community / Henry's Personal plan | Claude Desktop | C | Direct download from `packages.henrychong.com` |
+| Henry's CLI | Claude Code | D | `npx -y yggdrasil-mcp` (unchanged) |
+
+---
+
 ## v1.1.4 (2026-05-07)
 
 ### Dependencies

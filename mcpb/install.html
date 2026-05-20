@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Install Yggdrasil for Claude Desktop</title>
+<meta name="description" content="One-click install for the Yggdrasil reasoning orchestration extension for Claude Desktop." />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0d1f2e;
+    --panel: #142a3d;
+    --text: #e8eef5;
+    --muted: #8fa8bc;
+    --accent: #7fb8d4;
+    --border: #1f3a52;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    padding: 32px 16px;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 32px; }
+  header img { width: 96px; height: 96px; border-radius: 18px; }
+  h1 { margin: 16px 0 4px; font-size: 28px; }
+  h1 + p { color: var(--muted); margin: 0; }
+  h2 { margin-top: 32px; font-size: 18px; color: var(--accent); }
+  ol { padding-left: 22px; }
+  ol li { margin-bottom: 12px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 16px;
+  }
+  .download {
+    display: inline-block;
+    background: var(--accent);
+    color: #0a1822;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+  .download:hover { filter: brightness(1.05); }
+  code, pre {
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: #0a1822;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+  }
+  .muted { color: var(--muted); font-size: 14px; }
+  footer { margin-top: 48px; text-align: center; color: var(--muted); font-size: 13px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="Yggdrasil icon" />
+    <h1>Yggdrasil for Claude Desktop</h1>
+    <p>Tree of Thoughts reasoning, deep planning, and plan management.</p>
+  </header>
+
+  <div class="panel">
+    <h2 style="margin-top:0;">Install in 3 clicks</h2>
+    <ol>
+      <li>
+        <strong>Download</strong> the latest <code>.mcpb</code>:<br />
+        <a class="download" href="yggdrasil-mcp-latest.mcpb">Download Yggdrasil (.mcpb)</a>
+      </li>
+      <li>
+        <strong>Double-click</strong> the downloaded file. Claude Desktop opens an install dialog → click <strong>Install</strong>.
+      </li>
+      <li>
+        <strong>Restart</strong> Claude Desktop.
+      </li>
+    </ol>
+    <p class="muted">Requires Claude Desktop 1.8000 or later.</p>
+  </div>
+
+  <h2>Try it</h2>
+  <p>Ask Claude in any chat:</p>
+  <pre>use sequential_thinking with 5 thoughts to analyse [your problem]</pre>
+  <p>Or for structured planning:</p>
+  <pre>start a deep_planning session for [your project]</pre>
+
+  <h2>Verify integrity (optional)</h2>
+  <p>Each build publishes a SHA256 hash. Compare against the official sums:</p>
+  <pre>shasum -a 256 ~/Downloads/yggdrasil-mcp-*.mcpb
+# Compare against
+# https://packages.henrychong.com/yggdrasil-mcp/SHA256SUMS</pre>
+
+  <h2>What does it do?</h2>
+  <ul>
+    <li><strong>sequential_thinking</strong> — step-by-step reasoning with revision and branching</li>
+    <li><strong>deep_planning</strong> — multi-phase planning sessions (init → clarify → explore → evaluate → finalize)</li>
+    <li><strong>list_plans / get_plan / promote_plan / archive_plans</strong> — plan lifecycle management</li>
+  </ul>
+
+  <p class="muted">Plans persist to <code>~/.claude/plans/</code>. The extension makes no network calls.</p>
+
+  <footer>
+    Open-source MIT.
+    <a href="https://github.com/henrychong-ai/yggdrasil-mcp">Source</a> ·
+    <a href="https://github.com/henrychong-ai/yggdrasil-mcp/issues">Report a bug</a>
+  </footer>
+</main>
+</body>
+</html>

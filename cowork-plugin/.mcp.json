@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yggdrasil": {
+      "command": "npx",
+      "args": ["-y", "yggdrasil-mcp"]
+    }
+  }
+}
