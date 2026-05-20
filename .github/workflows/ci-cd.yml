@@ -201,7 +201,7 @@ jobs:
           cat dist-cowork/yggdrasil-mcp-latest.zip.sha256
 
       - name: Attach .mcpb + .zip + SHA256SUMS to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist-mcpb/*.mcpb
