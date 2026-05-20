@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Version 1.1.0.
+**Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Current version: see `package.json` / `CHANGELOG.md` (v1.2.0 added Claude Desktop Extension `.mcpb` distribution).
 
 | Aspect        | Details                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
@@ -12,9 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **npm**       | https://www.npmjs.com/package/yggdrasil-mcp                                      |
 | **Origin**    | Fork of `@modelcontextprotocol/server-sequential-thinking`                       |
 | **Upstream**  | https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking |
-| **Version**   | 1.1.0                                                                            |
 | **Key Fix**   | Claude Code string coercion bug #3084                                            |
 | **Tools**     | `sequential_thinking`, `deep_planning`, `list_plans`, `get_plan`, `promote_plan`, `archive_plans` |
+| **Distribution** | npm (`npx -y yggdrasil-mcp`) for Claude Code; `.mcpb` via `packages.henrychong.com/yggdrasil-mcp/` for Claude Desktop |
 
 ## Tech Stack
 
@@ -91,11 +91,19 @@ yggdrasil-mcp/
 ├── persistence.ts           # Hybrid JSONL + Markdown persistence layer
 ├── coercion.ts              # Safe type coercion helpers (boolean, number, score)
 ├── __tests__/
-│   ├── lib.test.ts          # Sequential thinking test suite (14 tests)
-│   ├── planning.test.ts     # Deep planning test suite (80 tests)
-│   ├── persistence.test.ts  # Persistence layer test suite (80 tests)
-│   └── coercion.test.ts     # Coercion test suite (32 tests)
-├── dist/                    # Compiled output (npm package)
+│   ├── lib.test.ts                 # Sequential thinking test suite
+│   ├── planning.test.ts            # Deep planning test suite
+│   ├── persistence.test.ts         # Persistence layer test suite
+│   ├── coercion.test.ts            # Coercion test suite
+│   └── mcpb-manifest.test.ts       # MCPB manifest validation suite
+├── mcpb/                    # Claude Desktop Extension assets
+│   ├── manifest.json        # MCPB manifest (manifest_version 0.3)
+│   ├── icon.png             # 256x256 icon
+│   └── README.md            # MCPB build + install docs
+├── scripts/
+│   └── build-mcpb.sh        # .mcpb bundle build script (pinned @anthropic-ai/mcpb)
+├── dist/                    # Compiled TypeScript output (npm package)
+├── dist-mcpb/               # Built .mcpb bundles (gitignored)
 ├── plans/                   # Implementation plans (gitignored)
 ├── .claude/
 │   └── settings.json        # Claude Code project settings (gitignored)
@@ -366,9 +374,10 @@ See `plans/20260130-yggdrasil-roadmap.md` for the 5-phase roadmap:
 
 1. ~~**v1.0** - Core enhancements~~ (complete)
 2. ~~**v1.1** - Symbiotic plans integration, descriptive naming, plan lifecycle tools~~ (complete)
-3. **v1.2** - Differentiation (Mermaid export, thought history retrieval, self-evaluation)
-4. **v2.0** - Multi-agent evaluation (cross-model verification)
-5. **v2.5** - Advanced orchestration (n8n, MCTS)
+3. ~~**v1.2** - Claude Desktop Extension (`.mcpb`) distribution via `packages.henrychong.com`~~ (complete)
+4. **v1.3** - Differentiation (Mermaid export, thought history retrieval, self-evaluation)
+5. **v2.0** - Multi-agent evaluation (cross-model verification)
+6. **v2.5** - Advanced orchestration (n8n, MCTS)
 
 ## Troubleshooting
 

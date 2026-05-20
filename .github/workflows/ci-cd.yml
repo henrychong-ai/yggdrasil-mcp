@@ -113,3 +113,118 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release-mcpb:
+    name: Build & Release Claude Desktop Extension (.mcpb)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write   # Attach .mcpb to GitHub Release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate source manifest
+        run: pnpm validate:mcpb
+
+      - name: Build .mcpb bundle
+        run: pnpm build:mcpb
+
+      - name: Verify .mcpb version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          FILE="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb)"
+          EXPECTED="dist-mcpb/yggdrasil-mcp-${TAG_VERSION}.mcpb"
+          if [ "$FILE" != "$EXPECTED" ]; then
+            echo "❌ Built .mcpb $FILE does not match tag-derived path $EXPECTED"
+            exit 1
+          fi
+          echo "✅ Built $FILE matches tag v${TAG_VERSION}"
+
+      - name: Aggregate SHA256SUMS
+        working-directory: dist-mcpb
+        run: |
+          shasum -a 256 *.mcpb > SHA256SUMS
+          echo "─── SHA256SUMS ───"
+          cat SHA256SUMS
+
+      - name: Attach .mcpb + SHA256SUMS to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist-mcpb/*.mcpb
+            dist-mcpb/*.sha256
+            dist-mcpb/SHA256SUMS
+          generate_release_notes: true
+
+      - name: Configure AWS CLI for Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+          EOF
+          cat > ~/.aws/config <<EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Upload .mcpb + checksums to R2 (versioned + latest)
+        env:
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          FILE="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb)"
+          BASE="$(basename "$FILE")"
+
+          # Versioned upload (immutable, long cache)
+          aws s3 cp "$FILE" "s3://packages/yggdrasil-mcp/${BASE}" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type application/zip \
+            --cache-control "public, max-age=31536000, immutable"
+
+          aws s3 cp "dist-mcpb/${BASE}.sha256" "s3://packages/yggdrasil-mcp/${BASE}.sha256" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type text/plain \
+            --cache-control "public, max-age=31536000, immutable"
+
+          # Latest pointer (short cache for hot rollback)
+          aws s3 cp "$FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type application/zip \
+            --cache-control "public, max-age=300"
+
+          aws s3 cp "dist-mcpb/${BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type text/plain \
+            --cache-control "public, max-age=300"
+
+          # Aggregate SHA256SUMS (always updated to reflect current latest)
+          aws s3 cp "dist-mcpb/SHA256SUMS" "s3://packages/yggdrasil-mcp/SHA256SUMS" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --content-type text/plain \
+            --cache-control "public, max-age=300"
+
+          echo "✅ Uploaded ${BASE} to R2:"
+          echo "   https://packages.henrychong.com/yggdrasil-mcp/${BASE}"
+          echo "   https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb"

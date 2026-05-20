@@ -4,6 +4,10 @@ node_modules/
 # Build output
 dist/
 
+# MCPB bundle staging + output
+build/
+dist-mcpb/
+
 # Test coverage
 coverage/
 

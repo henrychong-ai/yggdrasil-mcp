@@ -51,6 +51,25 @@ See the [CLAUDE.md](CLAUDE.md) for details:
 
 ## Installation
 
+### Claude Desktop (recommended — one-click install)
+
+Yggdrasil ships as a Claude Desktop Extension (`.mcpb`):
+
+1. Download the latest `.mcpb`:
+   [`packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb`](https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb)
+2. Double-click the file — Claude Desktop opens an install dialog → click **Install**
+3. Restart Claude Desktop
+
+Requires Claude Desktop 1.8000 or later (bundles Node.js 24+).
+
+Optionally verify integrity by comparing the SHA256 against [`SHA256SUMS`](https://packages.henrychong.com/yggdrasil-mcp/SHA256SUMS):
+
+```bash
+shasum -a 256 ~/Downloads/yggdrasil-mcp-*.mcpb
+```
+
+Older versions remain available at `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-{version}.mcpb`.
+
 ### Claude Code
 
 ```bash

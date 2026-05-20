@@ -1,6 +1,15 @@
 version: 2
 updates:
+  # Application dependencies (existing)
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
+    open-pull-requests-limit: 10
+
+  # CI workflow actions — auto-pins SHAs weekly (defends against tag hijack)
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5

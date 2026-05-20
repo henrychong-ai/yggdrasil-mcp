@@ -2,6 +2,30 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.0 (2026-05-20)
+
+### Added — Claude Desktop Extension (MCPB) distribution
+
+Yggdrasil is now packaged as a Claude Desktop Extension (`.mcpb` bundle), distributed via `packages.henrychong.com` (Cloudflare R2). End users install in three clicks (download → double-click → restart Claude Desktop). The existing npm distribution (`npx -y yggdrasil-mcp`) continues unchanged for Claude Code / programmatic consumers.
+
+- New `mcpb/` directory: `manifest.json` (MCPB manifest_version 0.3), `icon.png`, `README.md`
+- New `scripts/build-mcpb.sh` build script — TypeScript compile → stage `dist/` + production deps → pack + validate via `@anthropic-ai/mcpb` → emit SHA256
+- New `pnpm build:mcpb` and `pnpm validate:mcpb` scripts
+- New CI release job `release-mcpb` — builds `.mcpb` on `v*` tags, attaches to GitHub Release with `SHA256SUMS`, uploads versioned + `-latest` pointers + checksums to R2 at `packages.henrychong.com/yggdrasil-mcp/`
+- New `.github/dependabot.yml` ecosystem `github-actions` — weekly SHA-pinning of CI actions
+- New manifest validation test suite (`__tests__/mcpb-manifest.test.ts`)
+
+### Security
+
+- `@anthropic-ai/mcpb` pinned to `^2.1.0` in build script (defends against package hijack)
+- Production install runs with `--ignore-scripts` (defends against malicious postinstall hooks)
+- `SHA256SUMS` published alongside `.mcpb` on both GitHub Release and R2 for tamper detection
+- R2 token to be scoped to bucket `packages` only — verification step documented in plan (defends family R2 buckets on key leak)
+- GitHub tag protection rule to be applied — restricts `v*` tag creation to admin role
+- Dependabot ecosystem `github-actions` added — weekly SHA-pin auto-bumps for CI workflow
+
+---
+
 ## v1.1.4 (2026-05-07)
 
 ### Dependencies

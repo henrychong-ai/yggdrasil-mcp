@@ -1,6 +1,6 @@
 {
   "name": "yggdrasil-mcp",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
   "author": "Henry Chong <henrychong-ai@gmail.com>",
@@ -31,7 +31,8 @@
     "mcp-server-sequential-thinking": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "mcpb"
   ],
   "exports": {
     ".": {
@@ -45,6 +46,8 @@
   "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
   "scripts": {
     "build": "shx rm -rf dist && tsc && shx chmod +x dist/*.js",
+    "build:mcpb": "bash scripts/build-mcpb.sh",
+    "validate:mcpb": "npx -y @anthropic-ai/mcpb@^2.1.0 validate mcpb/manifest.json",
     "prepare": "husky",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
