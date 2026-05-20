@@ -79,6 +79,18 @@ pnpm typecheck
 
 # Watch mode for TypeScript
 pnpm watch
+
+# Build .mcpb (Claude Desktop Extension)
+pnpm build:mcpb
+
+# Build .zip (Claude Code / Cowork plugin) — uses hoisted node_modules layout
+pnpm build:cowork-plugin
+
+# Build BOTH distribution artefacts
+pnpm build:dist
+
+# Validate the MCPB manifest source
+pnpm validate:mcpb
 ```
 
 ## Project Structure
@@ -404,3 +416,24 @@ If CI shows "publish skipped - version not higher":
 
 - Increment version in `package.json`
 - Also update version in `index.ts` (MCP server version)
+
+### Cowork plugin upload rejected — "invalid characters in path"
+
+Anthropic's Cowork plugin upload validator rejects `+` characters in ZIP paths. By default `pnpm install` produces a content-addressable `node_modules/.pnpm/<pkg>@<ver>_<peer>@<ver>/` layout where `+` replaces `/` in scoped peer-dep names (e.g. `@modelcontextprotocol+sdk@1.29.0_zod@4.4.3`).
+
+The `scripts/build-cowork-plugin.sh` script handles this:
+1. Installs prod deps with `--config.node-linker=hoisted` (flat npm-style layout)
+2. Scrubs `.pnpm/`, `.modules.yaml`, `.pnpm-workspace-state-v1.json`, `.bin/` post-install
+3. Pre-flight `find` check fails the build if any `+`, `!`, or `?` characters slip into the staged tree
+
+If you see the upload rejected anyway, the most likely cause is a regression in the build script — re-inspect the ZIP with:
+
+```bash
+unzip -l dist-cowork/yggdrasil-mcp-*.zip | awk '{print $NF}' | grep -oE '[^a-zA-Z0-9./_-]' | sort -u
+```
+
+Only `@` should appear (standard npm scope syntax). Any `+`/`!`/`?` indicates the validator-defence-in-depth missed something.
+
+### .mcpb size
+
+The `.mcpb` build script uses pnpm's default layout (no `--node-linker=hoisted`) since Claude Desktop's MCPB installer accepts the pnpm layout. Consequently `.mcpb` is ~12 MB while the Cowork `.zip` is ~4.7 MB despite bundling the same dependencies. Acceptable today; switch `.mcpb` to hoisted later for consistency if desired.

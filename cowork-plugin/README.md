@@ -26,10 +26,15 @@ Produces `dist-cowork/yggdrasil-mcp-{version}.zip` with SHA256 sidecar.
 The build script:
 1. Runs `pnpm build` (compile TS to `dist/`)
 2. Stages this directory into `build/cowork/`
-3. Copies `dist/` + production `node_modules` + `package.json` into `build/cowork/server/`
-4. ZIPs `build/cowork/` → `dist-cowork/yggdrasil-mcp-{version}.zip`
-5. Asserts size <45 MB (Cowork limit is 50 MB)
-6. Emits SHA256 alongside
+3. Copies `dist/` + `package.json` + `pnpm-lock.yaml` into `build/cowork/server/`
+4. **Installs prod deps with `--config.node-linker=hoisted`** — produces a flat npm-style `node_modules/`. This is **mandatory**: Cowork's plugin upload validator rejects `+` in paths, and pnpm's default `.pnpm/<pkg>+<peer>@<ver>/` content store contains exactly that.
+5. Scrubs pnpm metadata that could still leak (`.pnpm/`, `.modules.yaml`, `.pnpm-workspace-state-v1.json`, `.bin/`)
+6. Pre-flight check — fails the build if any `+`, `!`, or `?` characters appear in the staged tree
+7. ZIPs `build/cowork/` → `dist-cowork/yggdrasil-mcp-{version}.zip`
+8. Asserts size <45 MB (10% safety margin below the Cowork 50 MB hard limit)
+9. Emits SHA256 alongside
+
+Resulting bundle is ~4.7 MB. Bundles the same dependencies as the `.mcpb` (~12 MB) but the hoisted layout de-duplicates pnpm's per-peer-set copies.
 
 ## Local install (Claude Code)
 

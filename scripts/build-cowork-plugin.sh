@@ -33,11 +33,32 @@ cp -R dist "${BUILD_DIR}/server/dist"
 cp package.json "${BUILD_DIR}/server/package.json"
 cp pnpm-lock.yaml "${BUILD_DIR}/server/pnpm-lock.yaml"
 
-echo "→ Installing production dependencies"
+echo "→ Installing production dependencies (hoisted layout — required by Cowork upload validator)"
+# Cowork's plugin validator rejects pnpm's content-addressable `.pnpm/<pkg>@<ver>+<peer>@<ver>/`
+# directory names because they contain `+`. We force a flat npm-style node_modules so paths only
+# contain alphanumeric, `.`, `_`, `-`, `/`, and `@` (the last is legal for npm scopes).
 (
   cd "${BUILD_DIR}/server"
-  pnpm install --prod --frozen-lockfile --ignore-scripts --config.confirmModulesPurge=false
+  pnpm install --prod --frozen-lockfile --ignore-scripts \
+    --config.node-linker=hoisted \
+    --config.confirmModulesPurge=false
 )
+
+# Defence-in-depth: scrub any pnpm metadata or other dotfiles that might trip the upload validator
+rm -rf "${BUILD_DIR}/server/node_modules/.pnpm" \
+       "${BUILD_DIR}/server/node_modules/.modules.yaml" \
+       "${BUILD_DIR}/server/node_modules/.pnpm-workspace-state-v1.json" \
+       "${BUILD_DIR}/server/node_modules/.bin"
+# .bin/ is only needed for CLI invocation of dep binaries; Yggdrasil runs `node server/dist/index.js`
+# directly so the symlinked entrypoints are unused at runtime.
+
+echo "→ Verifying no invalid characters in any bundled path"
+INVALID=$(find "${BUILD_DIR}/server" \( -name '*+*' -o -name '*\!*' -o -name '*\?*' \) 2>/dev/null | head -5)
+if [ -n "$INVALID" ]; then
+  echo "ERROR: found paths with characters Cowork rejects:" >&2
+  echo "$INVALID" >&2
+  exit 1
+fi
 
 echo "→ Creating ZIP"
 (
