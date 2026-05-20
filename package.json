@@ -50,7 +50,7 @@
     "build:mcpb": "bash scripts/build-mcpb.sh",
     "build:cowork-plugin": "bash scripts/build-cowork-plugin.sh",
     "build:dist": "pnpm build:mcpb && pnpm build:cowork-plugin",
-    "validate:mcpb": "npx -y @anthropic-ai/mcpb@^2.1.0 validate mcpb/manifest.json",
+    "validate:mcpb": "pnpm exec mcpb validate mcpb/manifest.json",
     "prepare": "husky",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
@@ -90,6 +90,7 @@
     }
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
     "@biomejs/biome": "^2.4.14",
     "@types/node": "^25.6.1",
     "@vitest/coverage-v8": "^4.1.5",

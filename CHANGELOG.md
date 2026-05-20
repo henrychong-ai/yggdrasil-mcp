@@ -2,6 +2,61 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased — OIDC publish migration + hardening
+
+Driven by Codex auto-PR-review + parallel `/simplify` + `/security-review` + `/codex` reviews on the OIDC migration branch. Substantive findings landed in this branch before merge; lower-priority findings documented for follow-up.
+
+### Hardening — security
+
+- **Cache-poisoning defense**: dropped `cache: 'pnpm'` from `publish` (has `id-token: write`) and `release-mcpb` (has `contents: write`) jobs. A pnpm cache populated by lower-trust PR workflows could leak malicious tarballs that execute via lifecycle scripts under elevated privileges on a later tagged release. Defense-in-depth: `pnpm install --frozen-lockfile --ignore-scripts` in both privileged jobs.
+- **Pinned `@anthropic-ai/mcpb` to exact `2.1.2`** as devDep. `build-mcpb.sh` now invokes via `pnpm exec mcpb` (lockfile-resolved) instead of `npx -y @anthropic-ai/mcpb@^2.1.0` (live semver fetch at build time). Eliminates a supply-chain surface where a malicious 2.1.x patch could alter built artefacts.
+- **Latest-pointer .sha256 sidecars** now reference `yggdrasil-mcp-latest.{mcpb,zip}` in body (was: copied versioned sidecar verbatim). `shasum -a 256 -c yggdrasil-mcp-latest.mcpb.sha256` after downloading the latest pointer now succeeds.
+
+### Hardening — correctness
+
+- **Cowork plugin pins runtime version**: `cowork-plugin/.mcp.json` source uses `npx -y yggdrasil-mcp` (resolves to `@latest` for local dev). `build-cowork-plugin.sh` substitutes to `yggdrasil-mcp@${VERSION}` at build time so the shipped `.zip` is reproducible — a `v1.2.1-rc.0` plugin won't accidentally run the stable npm `latest` after upload.
+
+### Hardening — efficiency / cleanup
+
+- **SHA256SUMS aggregation reuses build-script sidecars**: build scripts already emit per-artefact `.sha256` sidecars; the workflow's aggregate step now concats them instead of re-running `shasum`. Dropped redundant per-dir `dist-{mcpb,cowork}/SHA256SUMS` (byte-identical to existing sidecars).
+- **Artefact paths derived from `$GITHUB_REF`** instead of fragile `ls` glob.
+- **`r2_put` bash helper** consolidates 9× near-identical `aws s3 cp` calls. ~30 lines → ~12.
+
+### Added — operations docs
+
+- **`RELEASE_RUNBOOK.md`**: happy-path release procedure, per-channel verification commands, six failure-mode scenarios with concrete rollback steps (npm dist-tag rollback, R2 latest-pointer repoint, GitHub Release retraction, Fusang Cowork re-upload, OIDC config drift, emergency token fallback).
+
+### Deferred (separate PRs)
+
+- Redundant `pnpm build` across 3 jobs — artifact-passing refactor for marginal ($0.50/yr) savings, not blocking
+- `release-mcpb: needs: [build, publish]` to serialize the two distribution legs — re-analysis: `.mcpb` is self-contained (bundles `dist/`); the `.zip` plugin's `npx -y yggdrasil-mcp@<version>` pin now eliminates the cross-channel divergence concern that motivated this finding. Partial-release scenarios are now covered by the `RELEASE_RUNBOOK.md` rollback procedures.
+- `claude plugin validate --strict` in CI — requires claude CLI install pattern in CI, not blocking. Manifest validation tests already catch the common drift patterns.
+- Pre-release detection via `semver.prerelease()` instead of `*-*` glob — the `*-*` pattern is industry-standard for npm publish workflows; adding `semver` devDep for marginal idiomatic gain not worth the cost.
+
+---
+
+## Unreleased — OIDC publish migration
+
+Background: investigation during v1.2.0 release surfaced that `NPM_TOKEN` had been silently failing since ~v1.1.3 (2026-04-15); npm registry was stuck at v1.1.2 for ~5 weeks. Migrating to OIDC trusted publishing eliminates token rotation entirely.
+
+### Changed
+- `.github/workflows/ci-cd.yml` `publish` job:
+  - Authenticates to npm via OIDC trusted publisher (configured on npmjs.org) instead of `NODE_AUTH_TOKEN` / `NPM_TOKEN` secret
+  - Adds `--provenance` flag to `npm publish` → Sigstore-signed SLSA build attestation; "Verified" badge on npmjs.org package page
+  - Pre-release versions (containing `-`, e.g. `1.2.1-rc.0`) publish under `next` dist-tag instead of `latest` — protects `npm install yggdrasil-mcp` consumers
+  - Switched from `npm install` (with the `rm -rf node_modules && rm -f package-lock.json` anti-pattern that defeated lockfile integrity) to `pnpm install --frozen-lockfile` (matches the build job)
+  - Removed redundant `chmod +x dist/*.js` step — `pnpm build` already handles it via `shx chmod +x dist/*.js`
+
+### Security
+- Eliminates the long-lived `NPM_TOKEN` secret. OIDC tokens are short-lived (≤1 hour), scoped to one workflow run, and validated against the Trusted Publisher config on npmjs.org
+- npm package access switched to "Require two-factor authentication and disallow tokens (recommended)" — closes the attack vector entirely
+- Build provenance: every published version now ships a SLSA-level attestation linking the tarball to a specific commit + CI run
+
+### Sidebar
+- v1.1.3, v1.1.4, and v1.2.0 had successful CI runs but failed silently at the npm publish step (auth error returned 404). npm registry consequently sat at v1.1.2 for the entire period. Once OIDC is wired in this branch and a new tag fires, the registry catches up. Functional MCP server logic was identical across 1.1.2 → 1.2.0 (no tool behaviour changes; packaging-only deltas), so downstream consumers were unaffected at runtime — just running on an older version string.
+
+---
+
 ## v1.2.0 (2026-05-20)
 
 ### Added — Multi-surface distribution to Claude Desktop, Cowork, and Code

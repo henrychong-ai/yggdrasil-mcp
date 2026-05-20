@@ -77,42 +77,54 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Use Node.js 24.x
+        # Deliberately NO `cache: 'pnpm'` — this job has `id-token: write` (OIDC for npm publish).
+        # Restoring a shared dependency cache populated by lower-trust contexts (PR workflows
+        # from forks/contributors) would let a poisoned cache entry execute install-time scripts
+        # under elevated privileges, enabling OIDC-token theft and malicious npm publish.
+        # Trade-off: ~30s slower install on each tag push. Worth it.
         uses: actions/setup-node@v6
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm install
+        # --ignore-scripts: defense in depth against malicious lifecycle scripts even if the
+        # pnpm registry tarballs themselves are compromised. We don't need any dep's postinstall
+        # behaviour to publish the package.
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build package
-        run: npm run build
-
-      - name: Set executable permissions
-        run: chmod +x dist/*.js
+        run: pnpm build
 
       - name: Verify tag matches package.json version
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Tag version: $TAG_VERSION"
-
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "Package.json version: $PACKAGE_VERSION"
-
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            echo "❌ Tag version ($TAG_VERSION) ≠ package.json ($PACKAGE_VERSION)"
             exit 1
           fi
-          echo "✅ Tag version matches package.json version"
+          echo "✅ Tag v${TAG_VERSION} matches package.json"
 
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (OIDC + SLSA provenance)
+        # Authenticates via OIDC (Trusted Publisher configured on npmjs.org for this repo + workflow);
+        # no NODE_AUTH_TOKEN secret needed. --provenance produces a Sigstore-signed SLSA build
+        # attestation visible as the "Verified" badge on the npmjs.org package page.
+        # Pre-release versions (containing "-", e.g. "1.2.1-rc.0") publish under the "next"
+        # dist-tag so they don't replace "latest" for `npm install yggdrasil-mcp` consumers.
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "Pre-release detected: publishing v${VERSION} with --tag next"
+            npm publish --access public --provenance --tag next
+          else
+            echo "Stable release: publishing v${VERSION} with default --tag latest"
+            npm publish --access public --provenance
+          fi
 
   release-mcpb:
     name: Build & Release Claude Desktop Extension (.mcpb)
@@ -132,13 +144,15 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Use Node.js 24.x
+        # Deliberately NO `cache: 'pnpm'` — same rationale as publish job: this job has
+        # `contents: write` (uploads to GitHub Release + R2). Shared dep cache poisoned by a
+        # lower-trust PR workflow could execute install-time scripts under elevated privileges.
         uses: actions/setup-node@v6
         with:
           node-version: 24.x
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Validate source manifest
         run: pnpm validate:mcpb
@@ -160,15 +174,31 @@ jobs:
           fi
           echo "✅ Built $FILE matches tag v${TAG_VERSION}"
 
-      - name: Aggregate SHA256SUMS
+      - name: Aggregate SHA256SUMS + generate latest-pointer sidecars
+        # Reuses the per-artefact .sha256 sidecars produced by build-mcpb.sh / build-cowork-plugin.sh
+        # — no re-hashing. The latest-pointer rewrite is load-bearing: without it,
+        # `shasum -a 256 -c yggdrasil-mcp-latest.mcpb.sha256` fails because the versioned sidecar
+        # references yggdrasil-mcp-<version>.mcpb, not the file the user downloaded.
         run: |
-          # Combined SHA256SUMS across both artefact directories
-          shasum -a 256 dist-mcpb/*.mcpb dist-cowork/*.zip > SHA256SUMS
-          # Per-dir copies for backwards-compat
-          shasum -a 256 dist-mcpb/*.mcpb | awk '{ sub(/^dist-mcpb\//, "", $2); print }' > dist-mcpb/SHA256SUMS
-          shasum -a 256 dist-cowork/*.zip | awk '{ sub(/^dist-cowork\//, "", $2); print }' > dist-cowork/SHA256SUMS
-          echo "─── SHA256SUMS ───"
+          set -euo pipefail
+          MCPB_SIDECAR="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb.sha256)"
+          ZIP_SIDECAR="$(ls dist-cowork/yggdrasil-mcp-*.zip.sha256)"
+          MCPB_SHA="$(awk '{print $1}' "$MCPB_SIDECAR")"
+          ZIP_SHA="$(awk '{print $1}' "$ZIP_SIDECAR")"
+
+          # Aggregate SHA256SUMS — concat sidecars with path-prefixed filenames
+          { awk -v p="dist-mcpb/"   '{print $1"  "p$2}' "$MCPB_SIDECAR"
+            awk -v p="dist-cowork/" '{print $1"  "p$2}' "$ZIP_SIDECAR"; } > SHA256SUMS
+
+          # Latest-pointer sidecars with correct filename inside body
+          printf '%s  yggdrasil-mcp-latest.mcpb\n' "$MCPB_SHA" > dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256
+          printf '%s  yggdrasil-mcp-latest.zip\n'  "$ZIP_SHA"  > dist-cowork/yggdrasil-mcp-latest.zip.sha256
+
+          echo "─── SHA256SUMS (aggregate) ───"
           cat SHA256SUMS
+          echo "─── latest sidecars ───"
+          cat dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256
+          cat dist-cowork/yggdrasil-mcp-latest.zip.sha256
 
       - name: Attach .mcpb + .zip + SHA256SUMS to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -202,36 +232,33 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
           set -euo pipefail
-          MCPB_FILE="$(ls dist-mcpb/yggdrasil-mcp-*.mcpb)"
-          MCPB_BASE="$(basename "$MCPB_FILE")"
-          ZIP_FILE="$(ls dist-cowork/yggdrasil-mcp-*.zip)"
-          ZIP_BASE="$(basename "$ZIP_FILE")"
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          MCPB_BASE="yggdrasil-mcp-${TAG_VERSION}.mcpb"
+          ZIP_BASE="yggdrasil-mcp-${TAG_VERSION}.zip"
+          MCPB_FILE="dist-mcpb/${MCPB_BASE}"
+          ZIP_FILE="dist-cowork/${ZIP_BASE}"
           IMMUTABLE="public, max-age=31536000, immutable"
           LATEST="public, max-age=300"
+          [ -f "$MCPB_FILE" ] || { echo "missing $MCPB_FILE"; exit 1; }
+          [ -f "$ZIP_FILE"  ] || { echo "missing $ZIP_FILE";  exit 1; }
 
-          # === .mcpb (Claude Desktop) ===
-          aws s3 cp "$MCPB_FILE" "s3://packages/yggdrasil-mcp/${MCPB_BASE}" \
-            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$IMMUTABLE"
-          aws s3 cp "dist-mcpb/${MCPB_BASE}.sha256" "s3://packages/yggdrasil-mcp/${MCPB_BASE}.sha256" \
-            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
-          aws s3 cp "$MCPB_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
-            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
-          aws s3 cp "dist-mcpb/${MCPB_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
-            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
+          r2_put() {
+            # $1=local path, $2=R2 key, $3=content-type, $4=cache-control
+            aws s3 cp "$1" "s3://packages/yggdrasil-mcp/$2" \
+              --endpoint-url "$R2_ENDPOINT" --content-type "$3" --cache-control "$4"
+          }
 
-          # === .zip (Cowork/Code plugin) ===
-          aws s3 cp "$ZIP_FILE" "s3://packages/yggdrasil-mcp/${ZIP_BASE}" \
-            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$IMMUTABLE"
-          aws s3 cp "dist-cowork/${ZIP_BASE}.sha256" "s3://packages/yggdrasil-mcp/${ZIP_BASE}.sha256" \
-            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
-          aws s3 cp "$ZIP_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip" \
-            --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
-          aws s3 cp "dist-cowork/${ZIP_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip.sha256" \
-            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
+          r2_put "$MCPB_FILE"                                          "${MCPB_BASE}"                          application/zip "$IMMUTABLE"
+          r2_put "dist-mcpb/${MCPB_BASE}.sha256"                       "${MCPB_BASE}.sha256"                   text/plain      "$IMMUTABLE"
+          r2_put "$MCPB_FILE"                                          "yggdrasil-mcp-latest.mcpb"             application/zip "$LATEST"
+          r2_put "dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256"          "yggdrasil-mcp-latest.mcpb.sha256"      text/plain      "$LATEST"
 
-          # === Combined SHA256SUMS ===
-          aws s3 cp "SHA256SUMS" "s3://packages/yggdrasil-mcp/SHA256SUMS" \
-            --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
+          r2_put "$ZIP_FILE"                                           "${ZIP_BASE}"                           application/zip "$IMMUTABLE"
+          r2_put "dist-cowork/${ZIP_BASE}.sha256"                      "${ZIP_BASE}.sha256"                    text/plain      "$IMMUTABLE"
+          r2_put "$ZIP_FILE"                                           "yggdrasil-mcp-latest.zip"              application/zip "$LATEST"
+          r2_put "dist-cowork/yggdrasil-mcp-latest.zip.sha256"         "yggdrasil-mcp-latest.zip.sha256"       text/plain      "$LATEST"
+
+          r2_put "SHA256SUMS"                                          "SHA256SUMS"                            text/plain      "$LATEST"
 
           echo "✅ Uploaded to R2:"
           echo "   https://packages.henrychong.com/yggdrasil-mcp/${MCPB_BASE}"

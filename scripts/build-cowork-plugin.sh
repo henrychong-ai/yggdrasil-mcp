@@ -27,8 +27,23 @@ mkdir -p "${BUILD_DIR}/.claude-plugin" "${OUT_DIR}"
 
 echo "→ Staging plugin manifest + MCP config + README"
 cp cowork-plugin/.claude-plugin/plugin.json "${BUILD_DIR}/.claude-plugin/plugin.json"
-cp cowork-plugin/.mcp.json "${BUILD_DIR}/.mcp.json"
 cp cowork-plugin/README.md "${BUILD_DIR}/README.md"
+
+# Pin .mcp.json's `npx -y yggdrasil-mcp` to the exact version of this build.
+# The committed source cowork-plugin/.mcp.json uses the unpinned package name so
+# local dev (`claude --plugin-dir cowork-plugin/`) picks up whatever's on npm.
+# Built artefacts must pin to avoid version drift between plugin metadata and runtime:
+# without this, a v1.2.1-rc.0 plugin would still execute the npm `latest` (stable) tag.
+node -e "
+const fs = require('fs');
+const cfg = JSON.parse(fs.readFileSync('cowork-plugin/.mcp.json', 'utf8'));
+const args = cfg.mcpServers.yggdrasil.args;
+const idx = args.indexOf('yggdrasil-mcp');
+if (idx === -1) { console.error('ERROR: yggdrasil-mcp not found in .mcp.json args'); process.exit(1); }
+args[idx] = 'yggdrasil-mcp@${VERSION}';
+fs.writeFileSync('${BUILD_DIR}/.mcp.json', JSON.stringify(cfg, null, 2) + '\n');
+console.log('  pinned to yggdrasil-mcp@${VERSION}');
+"
 
 echo "→ Verifying no invalid characters in any staged path"
 INVALID=$(find "${BUILD_DIR}" \( -name '*+*' -o -name '*\!*' -o -name '*\?*' -o -name '*@*' \) 2>/dev/null | head -5)
