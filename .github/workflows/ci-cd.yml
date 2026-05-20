@@ -165,15 +165,27 @@ jobs:
           fi
           echo "✅ Built $FILE matches tag v${TAG_VERSION}"
 
-      - name: Aggregate SHA256SUMS
+      - name: Aggregate SHA256SUMS + generate latest-pointer sidecars
         run: |
-          # Combined SHA256SUMS across both artefact directories
+          set -euo pipefail
+          # Combined SHA256SUMS across both artefact directories (relative paths inside)
           shasum -a 256 dist-mcpb/*.mcpb dist-cowork/*.zip > SHA256SUMS
-          # Per-dir copies for backwards-compat
+          # Per-dir copies for backwards-compat (basename-only entries)
           shasum -a 256 dist-mcpb/*.mcpb | awk '{ sub(/^dist-mcpb\//, "", $2); print }' > dist-mcpb/SHA256SUMS
           shasum -a 256 dist-cowork/*.zip | awk '{ sub(/^dist-cowork\//, "", $2); print }' > dist-cowork/SHA256SUMS
-          echo "─── SHA256SUMS ───"
+          # Generate latest-pointer sidecars with the LATEST filename inside the sidecar body
+          # (the versioned sidecars already reference the versioned filename correctly via shasum).
+          # Without this rewrite, `shasum -a 256 -c yggdrasil-mcp-latest.mcpb.sha256` fails because
+          # the sidecar references yggdrasil-mcp-<version>.mcpb, not the file the user downloaded.
+          MCPB_SHA="$(awk '{print $1}' dist-mcpb/yggdrasil-mcp-*.mcpb.sha256)"
+          ZIP_SHA="$(awk '{print $1}' dist-cowork/yggdrasil-mcp-*.zip.sha256)"
+          printf '%s  %s\n' "$MCPB_SHA" "yggdrasil-mcp-latest.mcpb" > dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256
+          printf '%s  %s\n' "$ZIP_SHA"  "yggdrasil-mcp-latest.zip"  > dist-cowork/yggdrasil-mcp-latest.zip.sha256
+          echo "─── SHA256SUMS (aggregate) ───"
           cat SHA256SUMS
+          echo "─── latest sidecars ───"
+          cat dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256
+          cat dist-cowork/yggdrasil-mcp-latest.zip.sha256
 
       - name: Attach .mcpb + .zip + SHA256SUMS to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -221,7 +233,8 @@ jobs:
             --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
           aws s3 cp "$MCPB_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
             --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
-          aws s3 cp "dist-mcpb/${MCPB_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
+          # Latest-pointer sidecar references "yggdrasil-mcp-latest.mcpb" (rewritten in aggregate step)
+          aws s3 cp "dist-mcpb/yggdrasil-mcp-latest.mcpb.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb.sha256" \
             --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
 
           # === .zip (Cowork/Code plugin) ===
@@ -231,7 +244,8 @@ jobs:
             --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$IMMUTABLE"
           aws s3 cp "$ZIP_FILE" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip" \
             --endpoint-url "$R2_ENDPOINT" --content-type application/zip --cache-control "$LATEST"
-          aws s3 cp "dist-cowork/${ZIP_BASE}.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip.sha256" \
+          # Latest-pointer sidecar references "yggdrasil-mcp-latest.zip" (rewritten in aggregate step)
+          aws s3 cp "dist-cowork/yggdrasil-mcp-latest.zip.sha256" "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.zip.sha256" \
             --endpoint-url "$R2_ENDPOINT" --content-type text/plain --cache-control "$LATEST"
 
           # === Combined SHA256SUMS ===
