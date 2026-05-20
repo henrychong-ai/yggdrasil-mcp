@@ -160,6 +160,65 @@ Build artefacts:
 - `.mcpb` and `.zip` still ship to R2 + GitHub Release with the full version string (`yggdrasil-mcp-1.2.1-rc.0.{mcpb,zip}`)
 - The `-latest.{mcpb,zip}` pointers on R2 are STILL updated by every release including pre-releases — be careful: if you tag a pre-release, the public `henrychong.com/yggdrasil-latest` vanity redirect will start pointing at the pre-release until the next stable tag
 
+## R2 retention (manual prune on release)
+
+Per the policy in `CLAUDE.md` → "R2 Retention Policy": after a successful release upload, prune versioned R2 artefacts older than 90 days. Always retain the latest version's artefacts regardless of age. Never touch `latest.*` pointers or `SHA256SUMS` aggregations. The pruned artefacts remain available via GitHub Release (`github.com/henrychong-ai/yggdrasil-mcp/releases/download/vX.Y.Z/...`).
+
+```bash
+# Run AFTER a successful release (latest pointer has been repointed).
+# Working dir: yggdrasil-mcp repo root.
+set -euo pipefail
+
+AKID=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
+SECRET=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
+ACCOUNT_ID=32882cce864ab5c754075741115ca269
+ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
+BUCKET_PATH="s3://packages/yggdrasil-mcp/"
+
+# Anchor values (always-keep)
+CURRENT=$(node -p "require('./package.json').version")
+CUTOFF_DATE=$(date -v-90d +%Y-%m-%d)   # macOS. Linux: date -d "90 days ago" +%Y-%m-%d
+
+echo "Current latest version (always kept): $CURRENT"
+echo "Cutoff date (anything older is a prune candidate): $CUTOFF_DATE"
+echo ""
+
+# 1. DRY RUN — list candidates
+echo "=== Prune candidates (DRY RUN) ==="
+AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
+  aws s3 ls "$BUCKET_PATH" --endpoint-url "$ENDPOINT" | \
+  awk -v cutoff="$CUTOFF_DATE" -v current="$CURRENT" '
+    /latest/     { next }                       # never prune latest pointers
+    /SHA256SUMS/ { next }                       # never prune aggregations
+    $4 ~ ("-"current"\\.") { next }             # never prune current version
+    $1 >= cutoff { next }                       # keep anything newer than cutoff
+    { print "  PRUNE: " $4 "  (uploaded " $1 ")" }
+  '
+
+# 2. After reviewing the list, run again piping each surviving key to `aws s3 rm`.
+#    Uncomment when ready to execute:
+# AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
+#   aws s3 ls "$BUCKET_PATH" --endpoint-url "$ENDPOINT" | \
+#   awk -v cutoff="$CUTOFF_DATE" -v current="$CURRENT" '
+#     /latest/     { next }
+#     /SHA256SUMS/ { next }
+#     $4 ~ ("-"current"\\.") { next }
+#     $1 >= cutoff { next }
+#     { print $4 }
+#   ' | while IFS= read -r key; do
+#       [ -n "$key" ] || continue
+#       AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
+#         aws s3 rm "${BUCKET_PATH}${key}" --endpoint-url "$ENDPOINT"
+#     done
+```
+
+**Notes:**
+
+- Always start with the DRY RUN. Inspect the candidate list. Surprises (e.g. a hand-uploaded test artefact) should be investigated, not auto-deleted.
+- The awk filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, and anchors on `-<CURRENT>.` so the current version's full asset set (`.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256`) is preserved.
+- Pre-release artefacts (`-rc.0`, `-beta.1`) WILL be pruned by this filter once they age past 90 days. That is intentional — pre-releases are transient.
+- The `aws s3` tool choice matches the existing R2 patterns in this runbook and in `ci-cd.yml`. The repo's general Cloudflare tool-selection rule prefers CF MCP / curl+API / project-scoped wrangler over AWS CLI; migrating the R2 ops here is a separate cleanup PR, not this commit.
+
 ## Sanity checks before tagging
 
 ```bash

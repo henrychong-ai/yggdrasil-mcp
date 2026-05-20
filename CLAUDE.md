@@ -350,6 +350,19 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 - **Authentication**: NPM_TOKEN secret (unscoped packages require explicit token, not OIDC)
 - **Version Check**: Tag must match `package.json` version
 
+## R2 Retention Policy (packages.henrychong.com)
+
+On every release that uploads to `packages.henrychong.com/yggdrasil-mcp/`:
+
+1. **Prune versioned artefacts older than 90 days** from the upload date of the new release: `yggdrasil-mcp-X.Y.Z.{mcpb,zip}` and their `.sha256` sidecars.
+2. **Always retain the latest version's artefacts**, regardless of age. If every version on R2 is >90 days old, prune all except the latest.
+3. **Out of scope — never prune**: `yggdrasil-mcp-latest.{mcpb,zip}`, `yggdrasil-mcp-latest.*.sha256`, any `SHA256SUMS` aggregation files.
+4. **Sequence**: prune AFTER the new upload + latest-pointer repoint succeeds. Atomic-add-then-prune; never prune-then-add.
+5. **Durable archive**: GitHub Release assets retain all versions indefinitely (`github.com/henrychong-ai/yggdrasil-mcp/releases/download/vX.Y.Z/...`). That is the canonical pin URL for consumers who need a specific historical version; `packages.henrychong.com` is the recency-bounded mirror.
+6. **Implementation**: manual today. `RELEASE_RUNBOOK.md` carries the concrete prune commands. CI-automated step in the `release-mcpb` job is a follow-up.
+
+**Rationale**: bounds R2 storage growth, reduces stable-URL exposure to old known-bad versions, preserves comfortable rollback window. The "keep latest" floor + GitHub Release fallback make this a one-way door we can always unwind from.
+
 ## Configuration
 
 ### Environment Variables
