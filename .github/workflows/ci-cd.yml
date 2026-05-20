@@ -77,42 +77,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Use Node.js 24.x
         uses: actions/setup-node@v6
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build package
-        run: npm run build
-
-      - name: Set executable permissions
-        run: chmod +x dist/*.js
+        run: pnpm build
 
       - name: Verify tag matches package.json version
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Tag version: $TAG_VERSION"
-
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "Package.json version: $PACKAGE_VERSION"
-
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            echo "❌ Tag version ($TAG_VERSION) ≠ package.json ($PACKAGE_VERSION)"
             exit 1
           fi
-          echo "✅ Tag version matches package.json version"
+          echo "✅ Tag v${TAG_VERSION} matches package.json"
 
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (OIDC + SLSA provenance)
+        # Authenticates via OIDC (Trusted Publisher configured on npmjs.org for this repo + workflow);
+        # no NODE_AUTH_TOKEN secret needed. --provenance produces a Sigstore-signed SLSA build
+        # attestation visible as the "Verified" badge on the npmjs.org package page.
+        # Pre-release versions (containing "-", e.g. "1.2.1-rc.0") publish under the "next"
+        # dist-tag so they don't replace "latest" for `npm install yggdrasil-mcp` consumers.
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "Pre-release detected: publishing v${VERSION} with --tag next"
+            npm publish --access public --provenance --tag next
+          else
+            echo "Stable release: publishing v${VERSION} with default --tag latest"
+            npm publish --access public --provenance
+          fi
 
   release-mcpb:
     name: Build & Release Claude Desktop Extension (.mcpb)
