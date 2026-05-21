@@ -19,7 +19,7 @@ Trade-offs:
 | Reproducibility | Floating (`yggdrasil-mcp@latest`) | Pinned to ZIP contents |
 | Anthropic-recommended | Yes (per plugins-reference) | Not used by any official reference plugin |
 
-If reproducibility on a specific version matters, change `cowork-plugin/.mcp.json` to pin: `args: ["-y", "yggdrasil-mcp@1.2.2"]`.
+If reproducibility on a specific version matters, change `cowork-plugin/.mcp.json` to pin: `args: ["-y", "yggdrasil-mcp@1.2.3"]`.
 
 ## Contents
 

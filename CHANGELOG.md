@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.3 (2026-05-21) — Dependency upgrade pass
+
+Routine maintenance sweep. No open Dependabot PRs or alerts to consolidate at the time of this pass (the previous v1.2.2 sweep cleared the backlog). Single transitive security advisory caught by `pnpm audit` resolved via override.
+
+### Security — pnpm audit advisory resolved (1 → 0)
+
+- **GHSA-58qx-3vcg-4xpx** (MODERATE): `ws` uninitialized memory disclosure in `>=8.0.0 <8.20.1`. Pulled in transitively via `wrangler → miniflare → ws@8.18.0` (miniflare pins exactly, so a top-level bump can't reach it). Resolved via `pnpm.overrides`: `"ws@>=8.0.0 <8.20.1": ">=8.20.1"` — now resolves to `ws@8.20.1`. API-compatible patch within 8.x.
+
+### Changed — dev-dependency patch bumps
+
+- `@vitest/coverage-v8` 4.1.5 → 4.1.7 (patch)
+- `vitest` 4.1.5 → 4.1.7 (patch)
+- `semver` 7.8.0 → 7.8.1 (patch)
+- `wrangler` 4.93.0 → 4.93.1 (patch — exact pin re-bumped)
+
+### Deferred
+
+- **`typescript` 5.9.3 → 6.0.3** — major. Same deferral reasoning as v1.2.2: TS 6 deserves a dedicated upgrade session with focused test/type-fix coverage, not a routine sweep.
+
+### Notes
+
+- `pnpm audit` clean (0 known vulnerabilities) after the override.
+- No open Dependabot PRs (the v1.2.2 sweep consolidated them all). No open Security / Dependabot alerts.
+- `dependencies` (`@modelcontextprotocol/sdk`, `chalk`, `zod`) all already on latest; no app-runtime changes in this release.
+
+---
+
 ## v1.2.2 (2026-05-20) — Dependency & security sweep
 
 Triaged all open Dependabot security alerts (4) and dependency PRs (10). Resolved the 4 security alerts, swept dev-deps to current, bumped GitHub Actions majors, and closed obsolete tracking PRs. Deferred TypeScript 6 major to a dedicated upgrade session.

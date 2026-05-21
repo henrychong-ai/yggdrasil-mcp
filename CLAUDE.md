@@ -347,7 +347,7 @@ curl -s "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src
 
 ### npm Publishing
 
-- **Trigger**: Only on version tags (e.g., `v1.2.2`).
+- **Trigger**: Only on version tags (e.g., `v1.2.3`).
 - **Authentication**: **OIDC trusted publisher** (configured on npmjs.org as of v1.2.1) — no `NPM_TOKEN` secret in the repo. The `publish` job declares `id-token: write` permissions and authenticates via the short-lived OIDC token validated by npmjs.org.
 - **Provenance**: `npm publish --provenance` emits a Sigstore-signed SLSA build attestation; the npmjs.org package page shows the "Verified" badge.
 - **Dist-tag handling**: stable releases (`X.Y.Z`) publish under `latest`. Pre-releases (any semver containing `-`, e.g. `1.2.1-rc.0`) publish under `next` instead — protects `npm install yggdrasil-mcp` consumers from accidentally getting pre-release code.
