@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.4 (2026-05-27) — Install page icon → absolute URL on assets.henrychong.com
+
+Tiny follow-up to v1.2.3: the install.html landing page referenced the icon via a relative path (`src="icon.png"`), which only resolves inside the .mcpb bundle. When the same install.html was served standalone from `packages.henrychong.com/yggdrasil-mcp/install.html`, the icon failed to load (no co-located icon.png on R2).
+
+### Changed
+
+- **`mcpb/install.html`** — `<img src="icon.png">` → `<img src="https://assets.henrychong.com/yggdrasil/yggdrasil-mcp-icon.png">`. Works on both surfaces:
+  - **Standalone** (`packages.henrychong.com/yggdrasil-mcp/install.html`) — fetches the icon from the public R2 CDN.
+  - **Inside .mcpb** — same absolute URL also works (browser doesn't care about absolute vs relative as long as the URL resolves).
+- Uploaded `mcpb/icon.png` (256×256, 7.7 KB) to `assets.henrychong.com/yggdrasil/yggdrasil-mcp-icon.png` to match the existing `/yggdrasil/yggdrasil-mcp-logo*.png` naming convention.
+
 ## v1.2.3 (2026-05-27) — Install page typography update
 
 Patched the MCPB install landing page (`mcpb/install.html`, served from `packages.henrychong.com/yggdrasil-mcp/install.html`) to use the Fusang Group canonical typography stack — **Inter Variable** (Latin sans) + **Maple Mono NL Variable** (mono for code/pre blocks), both self-hosted on `assets.fusang.co`. No CJK on this surface (English-only install flow).
