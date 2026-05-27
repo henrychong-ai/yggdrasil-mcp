@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.5 (2026-05-27) — Install page: tiny `.mcpb` icon → proper wordmark logo
+
+The v1.2.4 fix pointed the install.html header image at the .mcpb's bundled 256×256 icon (a stylised "Y" symbol). Visually too small/abstract for a landing-page hero — readers couldn't tell what the product is from the icon alone.
+
+### Changed
+
+- **`mcpb/install.html`** — header image switched from `yggdrasil-mcp-icon.png` to `yggdrasil-mcp-logo-readme.png` (1200×654 wordmark logo at `assets.henrychong.com/yggdrasil/yggdrasil-mcp-logo-readme.png`, 1.3 MB). Alt text updated from "Yggdrasil icon" to "Yggdrasil — Reasoning Orchestration MCP". CSS swapped from forced 96×96 square + 18px border-radius to natural-aspect `max-width: 360px; width: 100%; height: auto; display: block; margin: 0 auto`.
+- **R2 cleanup**: deleted the stray `assets.henrychong.com/yggdrasil/yggdrasil-mcp-icon.png` upload (was a v1.2.4 misstep — the .mcpb bundle keeps its own internal `mcpb/icon.png` for the Claude Desktop install dialog; that doesn't need to be hosted on R2 separately).
+
+### Notes
+
+- The full-res `yggdrasil-mcp-logo.png` (2816×1536, 7.4 MB) remains on R2 as the hi-res master for marketing collateral; the README variant is the right pick for the install page (better page-load time, same brand mark).
+- The .mcpb bundle still references `icon.png` (relative path) for the Claude Desktop install dialog metadata via `mcpb/manifest.json` icon field — that path is internal to the .mcpb and unaffected.
+
 ## v1.2.4 (2026-05-27) — Install page icon → absolute URL on assets.henrychong.com
 
 Tiny follow-up to v1.2.3: the install.html landing page referenced the icon via a relative path (`src="icon.png"`), which only resolves inside the .mcpb bundle. When the same install.html was served standalone from `packages.henrychong.com/yggdrasil-mcp/install.html`, the icon failed to load (no co-located icon.png on R2).
