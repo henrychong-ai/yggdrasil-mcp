@@ -5,7 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Install Yggdrasil for Claude Desktop</title>
 <meta name="description" content="One-click install for the Yggdrasil reasoning orchestration extension for Claude Desktop." />
+<link rel="preconnect" href="https://assets.fusang.co" crossorigin />
 <style>
+  /* Canonical Fusang Group typography stack — Inter (Latin sans) + Maple Mono NL (mono).
+     Self-hosted on assets.fusang.co. WOFF2 only. font-display: swap.
+     Maple Mono NL requires cv01 + cv32-cv37 feature-settings (applied below). */
+  @font-face {
+    font-family: 'Inter';
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    src: url('https://assets.fusang.co/fonts/inter/inter-variable.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+    src: url('https://assets.fusang.co/fonts/inter/inter-variable-italic.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Maple Mono NL';
+    font-weight: 100 800;
+    font-style: normal;
+    font-display: swap;
+    src: url('https://assets.fusang.co/fonts/maple/maple-mono-nl.woff2') format('woff2-variations');
+  }
+  @font-face {
+    font-family: 'Maple Mono NL';
+    font-weight: 100 800;
+    font-style: italic;
+    font-display: swap;
+    src: url('https://assets.fusang.co/fonts/maple/maple-mono-nl-italic.woff2') format('woff2-variations');
+  }
+
   :root {
     color-scheme: light dark;
     --bg: #0d1f2e;
@@ -20,7 +53,8 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-optical-sizing: auto;
     line-height: 1.55;
     padding: 32px 16px;
   }
@@ -51,7 +85,8 @@
   }
   .download:hover { filter: brightness(1.05); }
   code, pre {
-    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-family: 'Maple Mono NL', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-feature-settings: 'cv01' 1, 'cv32' 1, 'cv33' 1, 'cv34' 1, 'cv35' 1, 'cv36' 1, 'cv37' 1;
     font-size: 13px;
   }
   pre {

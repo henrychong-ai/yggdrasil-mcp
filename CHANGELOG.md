@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.3 (2026-05-27) — Install page typography update
+
+Patched the MCPB install landing page (`mcpb/install.html`, served from `packages.henrychong.com/yggdrasil-mcp/install.html`) to use the Fusang Group canonical typography stack — **Inter Variable** (Latin sans) + **Maple Mono NL Variable** (mono for code/pre blocks), both self-hosted on `assets.fusang.co`. No CJK on this surface (English-only install flow).
+
+### Changed
+
+- **`mcpb/install.html`** — added `<link rel="preconnect" href="https://assets.fusang.co" crossorigin />`, four `@font-face` blocks (Inter roman + italic, Maple Mono NL roman + italic), body `font-family` chain now leads with Inter, `code, pre` block leads with Maple Mono NL and applies mandatory `font-feature-settings: 'cv01' 1, 'cv32' 1, 'cv33' 1, 'cv34' 1, 'cv35' 1, 'cv36' 1, 'cv37' 1` (cv01 tames Maple Mono NL v7.9's fancy `@` and broken-slash `$`; cv32–cv37 is the official "plain style" italic preset). Inter `font-optical-sizing: auto` set on `body`.
+- Aligns the install landing page with the canonical Fusang Group brand typography (same stack as henrychong.com, fusang.co, blocktree.co, portcullis.group, etc.).
+
+### Notes
+
+- The install.html file is bundled into the `.mcpb` artefact at build time AND served separately from `packages.henrychong.com/yggdrasil-mcp/install.html`. Both surfaces pick up the new fonts via the next release.
+- WOFF2-only delivery; no TTF fallback (universal browser support since IE11 EOL 2022).
+- Single-layer fallback per font: Inter → system stack; Maple Mono NL → `ui-monospace` → system mono. No Google Fonts DR layer (matches `/brand-guidelines` font-hosting doctrine).
+
 ## v1.2.2 (2026-05-20) — Dependency & security sweep
 
 Triaged all open Dependabot security alerts (4) and dependency PRs (10). Resolved the 4 security alerts, swept dev-deps to current, bumped GitHub Actions majors, and closed obsolete tracking PRs. Deferred TypeScript 6 major to a dedicated upgrade session.
