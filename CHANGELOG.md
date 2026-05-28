@@ -2,6 +2,46 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.6 (2026-05-28) — Dependency maintenance + security advisory sweep
+
+Routine maintenance pass: dev-dep minor/patch bumps plus pnpm overrides for two newly surfaced transitive security advisories.
+
+### Dependencies bumped (all minor / patch)
+
+| Package | From | To | Kind |
+|---|---|---|---|
+| `@biomejs/biome` | 2.4.15 | 2.4.16 | devDep, patch |
+| `@vitest/coverage-v8` | 4.1.5 | 4.1.7 | devDep, patch |
+| `oxlint` | 1.66.0 | 1.67.0 | devDep, minor |
+| `semver` | 7.8.0 | 7.8.1 | devDep, patch |
+| `vitest` | 4.1.5 | 4.1.7 | devDep, patch |
+| `wrangler` | 4.93.0 | 4.95.0 | devDep, minor (exact pin) |
+
+### Security overrides (pnpm.overrides)
+
+- **GHSA-ph9p-34f9-6g65** (HIGH) — `tmp` Path Traversal via unsanitized prefix/postfix. Pulled transitively via `@anthropic-ai/mcpb → @inquirer/prompts → @inquirer/editor → external-editor → tmp`. Existing override `tmp: ^0.2.4` was satisfied by 0.2.5 (still vulnerable). Bumped override to `^0.2.6` (patched range starts at 0.2.6).
+- **GHSA-58qx-3vcg-4xpx** (MODERATE) — `ws` uninitialized memory disclosure in `>=8.0.0 <8.20.1`. Pulled transitively via `wrangler → miniflare → ws@8.18.0`. Added override `"ws@>=8.0.0 <8.20.1": ">=8.20.1"`.
+- **GHSA-q8mj-m7cp-5q26** (MODERATE) — `qs` remotely triggerable DoS in `>=6.11.1 <=6.15.1`. Pulled transitively via `@modelcontextprotocol/sdk → express → qs`. Added override `"qs@>=6.11.1 <=6.15.1": ">=6.15.2"`.
+
+### Dependabot PRs / Security issues addressed
+
+- Open Dependabot PRs at time of pass: **#51** (`wrangler 4.93.0 → 4.93.1`) and **#52** (`semver 7.8.0 → 7.8.1`). Both subsumed by this sweep (`wrangler` went further to 4.95.0; `semver` matches at 7.8.1). Dependabot will auto-close on merge.
+- Open Security issues: 0 at time of pass.
+
+### Skipped (deferred)
+
+- **`typescript` 5.9.3 → 6.0.3** — MAJOR. Same deferral reasoning as v1.2.2 and v1.2.3: TS 6 warrants a dedicated upgrade session, not a routine sweep.
+
+### Validation
+
+- `pnpm install` — OK (lockfile regenerated for overrides)
+- `pnpm audit` — **0 vulnerabilities** (was 1 high + 2 moderate)
+- `pnpm lint` (oxlint) — pass
+- `pnpm format:check` (biome) — pass
+- `pnpm typecheck` (tsc) — pass
+- `pnpm build` — pass
+- `pnpm test` — 232 pass, 3 pre-existing root-environment failures (same chmod-based tests noted in v1.2.3; CI runs as non-root and passes them)
+
 ## v1.2.5 (2026-05-27) — Install page: tiny `.mcpb` icon → proper wordmark logo
 
 The v1.2.4 fix pointed the install.html header image at the .mcpb's bundled 256×256 icon (a stylised "Y" symbol). Visually too small/abstract for a landing-page hero — readers couldn't tell what the product is from the icon alone.
@@ -509,7 +549,6 @@ All patches applied via `pnpm.overrides` (vulnerable packages are transitive-onl
 **Technical Changes:**
 
 - `coercion.ts`: Extracted coercion helpers into testable module
-- `eslint.config.js`: Full plugin stack (stylistic, import, unicorn, sonarjs, promise, n)
 - `tsconfig.eslint.json`: Separate tsconfig for linting (includes test files)
 - `vitest.config.ts`: Ironclad-compliant config with 90% thresholds, reporters, timeouts
 - `package.json`: TypeScript ^5.7.0, `engines: >=18`, `check` script
