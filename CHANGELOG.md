@@ -2,6 +2,38 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.6 (2026-06-04) — Dependency maintenance: minor/patch sweep + security overrides
+
+Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for three transitive security advisories. No runtime/source changes.
+
+### Changed
+
+- **Dev dependencies (minor / patch):**
+  - `@biomejs/biome` 2.4.15 → 2.4.16 (patch)
+  - `@vitest/coverage-v8` 4.1.5 → 4.1.8 (patch)
+  - `lint-staged` 17.0.5 → 17.0.7 (patch)
+  - `oxlint` 1.66.0 → 1.68.0 (minor)
+  - `semver` 7.8.0 → 7.8.2 (patch)
+  - `vitest` 4.1.5 → 4.1.8 (patch)
+  - `wrangler` 4.93.0 → 4.98.0 (minor, exact pin)
+
+### Security (pnpm.overrides)
+
+- **`tmp`** override bumped `^0.2.4` → `^0.2.6` — GHSA-ph9p-34f9-6g65 (HIGH, path traversal via unsanitized prefix/postfix; transitive via `@anthropic-ai/mcpb → @inquirer/prompts → @inquirer/editor → external-editor → tmp`). 0.2.5 was still vulnerable; patched range starts at 0.2.6.
+- **`ws`** override added `"ws@>=8.0.0 <8.20.1": ">=8.20.1"` — GHSA-58qx-3vcg-4xpx (MODERATE, uninitialized memory disclosure; transitive via `wrangler → miniflare → ws`).
+- **`qs`** override added `"qs@>=6.11.1 <=6.15.1": ">=6.15.2"` — GHSA-q8mj-m7cp-5q26 (MODERATE, remotely triggerable DoS; transitive via `@modelcontextprotocol/sdk → express → qs`).
+- **`hono`** override floor bumped `>=4.12.14` → `>=4.12.21`.
+- `pnpm audit`: **0 known vulnerabilities** after the sweep.
+
+### Deferred
+
+- **`typescript` 5.9.3 → 6.0.3** — MAJOR. Deferred to a dedicated upgrade session (out of scope for a routine minor/patch sweep), consistent with prior passes.
+
+### Notes
+
+- Version synced across `package.json`, `index.ts`, `mcpb/manifest.json`, `cowork-plugin/.claude-plugin/plugin.json`, and this file.
+- Subsumes Dependabot PRs #52 (semver), #54 (wrangler), #55 (oxlint), #56 (biome) — each goes equal-or-further than the bot's proposed version.
+
 ## v1.2.5 (2026-05-27) — Install page: tiny `.mcpb` icon → proper wordmark logo
 
 The v1.2.4 fix pointed the install.html header image at the .mcpb's bundled 256×256 icon (a stylised "Y" symbol). Visually too small/abstract for a landing-page hero — readers couldn't tell what the product is from the icon alone.
