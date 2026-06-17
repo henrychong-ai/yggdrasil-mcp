@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.7 (2026-06-17) — Dependency maintenance: Dependabot patch/minor sweep
+
+Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for current transitive security advisories. No runtime/source changes.
+
+### Changed
+
+- **Dev dependencies (minor / patch):**
+  - `@types/node` 25.9.1 → 25.9.3 (patch)
+  - `oxlint` 1.68.0 → 1.69.0 (minor)
+  - `semver` 7.8.2 → 7.8.4 (patch)
+  - `wrangler` 4.98.0 → 4.100.0 (minor, exact pin)
+
+### Security (pnpm.overrides)
+
+- **`hono`** override floor bumped `>=4.12.21` → `>=4.12.25` to pick up the patched `hono` 4.12.x line.
+- **`vite`** override changed from `^7.3.2` to `"vite@>=7.0.0 <=7.3.4": ">=7.3.5 <8"` to resolve Vite 7.x advisories without crossing to Vite 8.
+- **`ws`** override floor bumped `>=8.20.1` → `>=8.21.0` for the patched 8.x line used transitively through Wrangler/Miniflare.
+- **`esbuild`** override added `"esbuild@>=0.17.0 <0.28.1": ">=0.28.1"` to resolve the current esbuild advisory inherited through Vite/tsx tooling.
+
+### Deferred
+
+- **`gitleaks-action` v2 → v3** — MAJOR. Deferred to a dedicated CI upgrade session.
+- **`typescript` 5.9.3 → 6.0.3** — MAJOR. Deferred to a dedicated TypeScript upgrade session.
+
+### Notes
+
+- Version synced across `package.json`, `index.ts`, `mcpb/manifest.json`, `cowork-plugin/.claude-plugin/plugin.json`, and this file.
+- Subsumes Dependabot PRs #63 (`@types/node`), #64 (`oxlint`), #65 (`wrangler`), and #66 (`semver`).
+
 ## v1.2.6 (2026-06-04) — Dependency maintenance: minor/patch sweep + security overrides
 
 Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for three transitive security advisories. No runtime/source changes.
