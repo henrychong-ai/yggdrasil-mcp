@@ -2,6 +2,40 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.7 (2026-07-03) — Dependency maintenance: minor/patch sweep + security overrides
+
+Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for transitive security advisories. No runtime/source changes.
+
+### Changed
+
+- **Dev dependencies (minor / patch):**
+  - `@biomejs/biome` 2.4.16 → 2.5.2 (minor; package range `^2.5.0`)
+  - `@types/node` 25.9.1 → 25.9.4 (patch; package range `^25.9.3`)
+  - `@vitest/coverage-v8` 4.1.8 → 4.1.9 (patch)
+  - `oxlint` 1.68.0 → 1.72.0 (minor; package range `^1.70.0`)
+  - `semver` 7.8.2 → 7.8.5 (patch; package range `^7.8.4`)
+  - `vite` added as a direct dev dependency so Vitest resolves to the patched same-major Vite 7.3.6 line.
+  - `vitest` 4.1.8 → 4.1.9 (patch)
+  - `wrangler` 4.98.0 → 4.102.0 (minor, exact pin)
+
+### Security (pnpm.overrides)
+
+- **`hono`** floor bumped `>=4.12.21` → `>=4.12.25` for GHSA-p6cf-m48q-h9jf.
+- **`vite`** floor bumped `^7.3.2` → `>=7.3.5 <8.0.0` for GHSA-9crc-q9x8-hgqq / GHSA-jqfw-vq24-v9c3 / GHSA-c9hg-v6c8-5j2c while staying on Vite 7.
+- **`ws`** override bumped to `>=8.21.0 <9.0.0` for GHSA-3h5v-q93c-6h6q.
+- **`undici`** overrides added for patched 7.x and 8.x ranges for GHSA-3rg2-3qfw-wq27 / GHSA-cxrh-j4jr-qwg3.
+- **`esbuild`** override added for patched 0.28.x resolution for GHSA-67mh-4wv8-2f99.
+
+### Deferred
+
+- **`actions/checkout` v6 → v7** — MAJOR. Deferred to a dedicated CI/action-runtime review.
+- **`gitleaks/gitleaks-action` v2 → v3** — MAJOR. Deferred to a dedicated CI/action-runtime review.
+
+### Notes
+
+- Version synced across `package.json`, `index.ts`, `mcpb/manifest.json`, `cowork-plugin/.claude-plugin/plugin.json`, and this file.
+- Subsumes Dependabot PRs #63 (`@types/node`), #66 (`semver`), #69 (`oxlint`), #70 (`@biomejs/biome`), and #71 (`wrangler`).
+
 ## v1.2.6 (2026-06-04) — Dependency maintenance: minor/patch sweep + security overrides
 
 Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for three transitive security advisories. No runtime/source changes.
