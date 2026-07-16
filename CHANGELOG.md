@@ -2,6 +2,41 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.7 (2026-07-16) — Dependency maintenance: minor/patch sweep + security overrides
+
+Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for newly-surfaced transitive security advisories. No runtime/source changes.
+
+### Changed
+
+- **Dev dependencies (minor / patch):**
+  - `@biomejs/biome` 2.4.16 → 2.5.4 (minor)
+  - `@vitest/coverage-v8` 4.1.8 → 4.1.10 (patch)
+  - `lint-staged` 17.0.7 → 17.0.8 (patch)
+  - `oxlint` 1.68.0 → 1.74.0 (minor)
+  - `semver` 7.8.2 → 7.8.5 (patch)
+  - `vitest` 4.1.8 → 4.1.10 (patch)
+  - `wrangler` 4.98.0 → 4.111.0 (minor, exact pin)
+
+### Security (pnpm.overrides)
+
+- **`hono`** override floor bumped `>=4.12.21` → `>=4.12.25` — resolves five advisories (transitive via `@modelcontextprotocol/sdk → hono`): CORS middleware reflecting any Origin (GHSA-88fw-hqm2-52qc, HIGH), `serve-static` path traversal on Windows (GHSA-wwfh-h76j-fc44), and three Set-Cookie / body-limit bypasses on the AWS Lambda / Lambda@Edge adapters (GHSA-j6c9-x7qj-28xf, GHSA-rv63-4mwf-qqc2, GHSA-wgpf-jwqj-8h8p).
+- **`undici`** override added `"undici@>=7.0.0 <7.28.0": ">=7.28.0"` — resolves six advisories (transitive via `wrangler → miniflare → undici`): TLS certificate validation bypass (GHSA-vmh5-mc38-953g, HIGH), WebSocket DoS (GHSA-vxpw-j846-p89q, HIGH), cross-origin request routing (GHSA-hm92-r4w5-c3mj, HIGH), plus header-injection / info-disclosure / queue-poisoning / SameSite-downgrade issues.
+- **`ws`** override range widened `"ws@>=8.0.0 <8.20.1": ">=8.20.1"` → `"ws@>=8.0.0 <8.21.0": ">=8.21.0"` — GHSA-96hv-2xvq-fx4p (HIGH, memory-exhaustion DoS from tiny fragments; patched range now starts at 8.21.0; transitive via `wrangler → miniflare → ws`).
+- **`vite`** override floor bumped `^7.3.2` → `^7.3.5` — GHSA-fx2h-pf6j-xcff (HIGH, `server.fs.deny` bypass on Windows) and GHSA-v6wh-96g9-6wx3 (MODERATE, launch-editor NTLMv2 hash disclosure); transitive via `vitest → vite`.
+- **`esbuild`** override added `"esbuild@>=0.27.3 <0.28.1": ">=0.28.1"` — GHSA-g7r4-m6w7-qqqr (LOW, arbitrary file read via dev server; transitive via `vitest → vite → esbuild`).
+- `pnpm audit`: **0 known vulnerabilities** after the sweep (was 6 high / 7 moderate / 4 low).
+
+### Deferred
+
+- **`typescript` 5.9.3 → 7.0.2** — MAJOR (Dependabot #84). Deferred to a dedicated upgrade session, consistent with prior passes.
+- **`@types/node` 25.9.1 → 26.1.1** — MAJOR (Dependabot #83). Deferred; would pair with a Node engine review.
+- **`actions/checkout` 6 → 7** (Dependabot #68) and **`gitleaks/gitleaks-action` 2 → 3** (Dependabot #58) — MAJOR CI-action bumps. Deferred from this routine dependency sweep.
+
+### Notes
+
+- Version synced across `package.json`, `index.ts`, `mcpb/manifest.json`, `cowork-plugin/.claude-plugin/plugin.json`, and this file.
+- Subsumes Dependabot PRs #85 (biome), #82 (wrangler), #81 (oxlint), #77 (lint-staged), #75 (semver) — each goes equal-or-further than the bot's proposed version.
+
 ## v1.2.6 (2026-06-04) — Dependency maintenance: minor/patch sweep + security overrides
 
 Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for three transitive security advisories. No runtime/source changes.

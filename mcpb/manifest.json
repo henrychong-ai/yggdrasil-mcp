@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "yggdrasil-mcp",
   "display_name": "Yggdrasil — Reasoning Orchestration",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Tree of Thoughts reasoning, deep planning, and plan management for Claude.",
   "long_description": "Yggdrasil adds structured reasoning tools to Claude Desktop:\n\n- sequential_thinking — step-by-step reasoning with revision and branching\n- deep_planning — multi-phase planning sessions (init → clarify → explore → evaluate → finalize)\n- list_plans / get_plan / promote_plan / archive_plans — plan lifecycle management\n\nFork of Anthropic's sequential-thinking server with critical bug fixes (string coercion, Claude Code #3084).",
   "author": {
