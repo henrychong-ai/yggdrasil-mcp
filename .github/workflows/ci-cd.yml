@@ -39,7 +39,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Use Node.js 24.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
           cache: 'pnpm'
@@ -86,7 +86,7 @@ jobs:
         # from forks/contributors) would let a poisoned cache entry execute install-time scripts
         # under elevated privileges, enabling OIDC-token theft and malicious npm publish.
         # Trade-off: ~30s slower install on each tag push. Worth it.
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
@@ -147,7 +147,7 @@ jobs:
         # Deliberately NO `cache: 'pnpm'` — same rationale as publish job: this job has
         # `contents: write` (uploads to GitHub Release + R2). Shared dep cache poisoned by a
         # lower-trust PR workflow could execute install-time scripts under elevated privileges.
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
 
