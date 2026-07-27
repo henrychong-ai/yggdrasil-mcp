@@ -2,6 +2,48 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.7 (2026-07-28) — Dependency maintenance: minor/patch sweep + 22 advisories cleared
+
+Routine dependency maintenance pass. Resolves every open Dependabot advisory and refreshes the dependency set to current minor/patch versions. No runtime/source changes.
+
+> **Release note:** v1.2.6 was merged to `main` but never tagged or published — the last published release was v1.2.5. v1.2.7 is cumulative and includes everything from v1.2.6; the v1.2.6 tag simply does not exist.
+
+### Changed
+
+- **Runtime:** `@modelcontextprotocol/sdk` ^1.29.0 → ^1.30.0 (required for the `@hono/node-server` fix — 1.30.0 widens its declared range to `^1.19.9 || ^2.0.5`, so pinning the patched 2.x line no longer violates the SDK's own constraint).
+- **Dev dependencies (minor / patch):**
+  - `@biomejs/biome` 2.4.16 → 2.5.5 (minor)
+  - `@types/node` 25.9.1 → 25.9.5 (patch — deliberately held on 25.x to match `engines: node >=24`)
+  - `@vitest/coverage-v8` 4.1.8 → 4.1.10 (patch)
+  - `lint-staged` 17.0.7 → 17.2.0 (minor)
+  - `oxlint` 1.68.0 → 1.76.0 (minor)
+  - `semver` 7.8.2 → 7.8.5 (patch)
+  - `vitest` 4.1.8 → 4.1.10 (patch)
+  - `wrangler` 4.98.0 → 4.114.0 (minor, exact pin)
+  - `vite` — **added** as a direct devDependency at ^7.3.6 (see Fixed)
+
+### Security (pnpm.overrides)
+
+All 22 open Dependabot advisories resolved. Resolved versions: `fast-uri` 3.1.4, `hono` 4.12.32, `@hono/node-server` 2.0.12, `body-parser` 2.3.0, `undici` 7.29.0, `sharp` 0.35.3, `vite` 7.3.6, `esbuild` 0.28.1, `ws` 8.21.1.
+
+- **`fast-uri` `>=3.1.4 <4`** (2 HIGH, transitive via `ajv` ← MCP SDK) — host confusion via literal backslash authority and via failed IDN canonicalisation. Major bound retained so it cannot float outside `ajv`'s declared `^3`.
+- **`hono` `>=4.12.28`, `@hono/node-server` `>=2.0.5`, `body-parser` `>=2.3.0`** (9 advisories, transitive via the MCP SDK's HTTP stack) — JSX escaping bypass in `cx()`, per-request context bleed in `hono/jsx`, API Gateway v1 repeated-header drop, `serve-static` path traversal on Windows, invalid-limit DoS, plus the pre-4.12.25 cluster.
+- **`undici` `>=7.28.0 <8`** (6 advisories, 2 HIGH; dev-only, transitive via `wrangler → miniflare`). **The upper bound is load-bearing:** `miniflare` pins `undici` at exactly `7.28.0`, and an unbounded `>=7.28.0` override silently floated the tree to undici 8.9.0 — a transitive major outside miniflare's expectation. Bounded to the 7.x line.
+- **`sharp` `>=0.35.0`** (HIGH; dev-only, transitive via `wrangler → miniflare`).
+- **`ws` `>=8.21.1`** (replaces the narrower `ws@>=8.0.0 <8.20.1` range key).
+- **`vite` `>=7.3.6 <8`, `esbuild` `>=0.28.1 <0.29`** (dev-only) — `server.fs.deny` bypass on Windows alternate paths (HIGH), launch-editor NTLMv2 hash disclosure, esbuild dev-server arbitrary file read.
+
+### Fixed
+
+- **`vite` pnpm override was silently inert.** `vite` reached the tree only as an auto-installed *peer* of `vitest`, and pnpm overrides do not apply to auto-installed peers — the `^7.3.2` override was ignored and resolution stayed pinned at 7.3.2, leaving both vite advisories unfixable by override alone. `vite` is now declared as a direct devDependency so the override binds.
+
+### Notes
+
+- Held back deliberately (majors): `typescript` 7.x, `@types/node` 26.x, `chalk` 6.x, `vite` 8.x, and the GitHub Actions majors (`actions/checkout` 7, `actions/setup-node` 7, `gitleaks/gitleaks-action` 3).
+- `wrangler` is **not** an unused devDependency despite having no config file or script reference — `RELEASE_RUNBOOK.md` invokes `pnpm exec wrangler r2 object delete` for R2 release operations. Kept and bumped.
+- Version is duplicated in four files (`package.json`, `index.ts`, `mcpb/manifest.json`, `cowork-plugin/.claude-plugin/plugin.json`) — all four bumped.
+- Verified before release: oxlint clean, biome format clean, `tsc --noEmit` clean, build OK, **235 tests passing**, mcpb manifest schema valid, `pnpm install --frozen-lockfile` clean.
+
 ## v1.2.6 (2026-06-04) — Dependency maintenance: minor/patch sweep + security overrides
 
 Routine dependency maintenance pass. Dev-dependency minor/patch bumps plus pnpm overrides for three transitive security advisories. No runtime/source changes.

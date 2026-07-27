@@ -398,9 +398,28 @@ On every release that uploads to `packages.henrychong.com/yggdrasil-mcp/`:
 
 **Files to Update:**
 
-1. `package.json` - Package version
-2. `index.ts` - MCP server version (line ~11)
-3. `CHANGELOG.md` - New changelog entry
+The version string is duplicated in **four** files — all must move together or the published artefacts disagree with each other:
+
+1. `package.json` — package version
+2. `index.ts` — MCP server version (`McpServer({ version: ... })`, line ~20)
+3. `mcpb/manifest.json` — MCPB bundle version (`"version"`, line ~5)
+4. `cowork-plugin/.claude-plugin/plugin.json` — Cowork plugin version (`"version"`, line ~4)
+
+Plus `CHANGELOG.md` — new entry.
+
+⚠️ **Do not bump these by JSON round-trip** (`json.load` → `json.dump`). Python's `json.dump` defaults to `ensure_ascii=True`, which rewrites the em-dashes and arrows in `mcpb/manifest.json`'s `display_name` / `long_description` as `—` / `→` escapes, and its indentation differs from Biome's — producing a large spurious diff that `format:check` then rejects. Use targeted string replacement instead.
+
+## Dependency Maintenance
+
+**pnpm overrides do NOT apply to auto-installed peers.** `vite` reaches the tree only as an auto-installed peer of `vitest`, so a `pnpm.overrides.vite` entry is silently ignored — resolution stays put even after deleting `pnpm-lock.yaml` and purging the pnpm metadata cache. Any transitive that arrives only as an auto-installed peer must be declared as a **direct devDependency** for its override to bind. Symptom: one override does nothing while every other override in the same block applies.
+
+**Bound every override that shadows an exact upstream pin.** `miniflare` pins `undici` at exactly `7.28.0`; an unbounded `undici: ">=7.28.0"` override floated the tree to undici **8.9.0** — a transitive major outside miniflare's expectation, with no error. Prefer `>=X <MAJOR+1` for any override on a package the tooling pins precisely (`undici`, `fast-uri`, `sharp`).
+
+**Overrides pinning a transitive major need the parent's declared range checked first.** `@hono/node-server >=2.0.5` is only legitimate from MCP SDK 1.30.0, which widened its range to `^1.19.9 || ^2.0.5`.
+
+**`wrangler` is NOT an unused devDependency.** It has no config file and no `package.json` script, but `RELEASE_RUNBOOK.md` invokes `pnpm exec wrangler r2 object delete` for R2 release operations. Do not prune it as dead weight — it is also the transitive source of the `sharp` and `undici` advisories, so those need overrides rather than removal.
+
+After any override change, regenerate the lockfile and confirm with `pnpm install --frozen-lockfile`.
 
 ## Version History
 
