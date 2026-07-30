@@ -1,11 +1,21 @@
 version: 2
 updates:
-  # Application dependencies (existing)
+  # Application dependencies
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 10
+    groups:
+      # One combined PR per bucket for minor/patch bumps.
+      # Majors intentionally ungrouped — each gets its own PR and review
+      # (the held TS 7 / @types/node 26 majors stay individual).
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types: ['minor', 'patch']
+      prod-dependencies:
+        dependency-type: 'production'
+        update-types: ['minor', 'patch']
 
   # CI workflow actions — auto-pins SHAs weekly (defends against tag hijack)
   - package-ecosystem: 'github-actions'
@@ -13,3 +23,6 @@ updates:
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ['*']

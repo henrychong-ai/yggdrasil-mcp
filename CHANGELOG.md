@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.8 (2026-07-29) — Dependabot grouped updates
+
+CI-config-only release; no runtime/source changes.
+
+- `.github/dependabot.yml`: added `groups:` — minor/patch npm bumps now arrive
+  as one combined PR per bucket (dev-dependencies / prod-dependencies) instead
+  of one PR per package; GitHub Actions bumps grouped into a single PR.
+  Majors deliberately stay individual PRs (held TS 7 / @types/node 26 majors
+  keep their per-package review).
+
 ## v1.2.7 (2026-07-28) — Dependency maintenance: minor/patch sweep + 22 advisories cleared
 
 Routine dependency maintenance pass. Resolves every open Dependabot advisory and refreshes the dependency set to current minor/patch versions. No runtime/source changes.
