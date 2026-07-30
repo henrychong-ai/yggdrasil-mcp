@@ -2,6 +2,68 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.9 (2026-07-30) — Dependency maintenance: CI action majors + dev minor/patch
+
+Routine dependency maintenance pass. No runtime/source changes — the only `.ts`
+edit is the `McpServer` version string.
+
+### Changed
+
+- **Dev dependencies (minor / patch):**
+  - `@biomejs/biome` 2.5.5 → 2.5.6 (patch)
+  - `wrangler` 4.114.0 → 4.116.0 (minor, exact pin — supersedes Dependabot's
+    4.115.0 in #97)
+- **GitHub Actions (major, deliberate — supersedes #96):**
+  - `actions/checkout` v6 → v7
+  - `actions/setup-node` v6 → v7
+  - `gitleaks/gitleaks-action` v2 → v3
+
+### Rationale for the action majors
+
+All three majors are runtime/ESM migrations forced by GitHub's Node 20
+deprecation, not behavioural changes:
+
+- **`gitleaks-action` v3** is a runtime-only bump (Node 20 → 24, `@actions/core`
+  1.10.0 → 1.11.1) with the release notes stating *"no changes to inputs,
+  outputs, or behavior"*. v2 requires an opt-in env var after 2026-06-02 and
+  stops working entirely on GitHub-hosted runners after 2026-09-16 — this bump
+  is time-boxed, not optional.
+- **`actions/checkout` v7** migrates to ESM. Its one breaking change blocks
+  fork-PR checkout under `pull_request_target` / `workflow_run`; `ci-cd.yml`
+  uses neither trigger (`push` / `pull_request` / `workflow_dispatch` only), so
+  it is a no-op here.
+- **`actions/setup-node` v7** migrates to ESM and **removes the dummy
+  `NODE_AUTH_TOKEN` export**. That removal is favourable for this repo: the
+  `publish` job authenticates to npm via OIDC trusted publishing with no token
+  secret, and the dummy value was a known source of npm falling back to token
+  auth instead of OIDC. v7 also adds first-class OIDC trusted-publisher docs.
+
+  ⚠️ The `publish` and `release-mcpb` jobs only run on `v*` tags, so PR CI does
+  not exercise setup-node v7 in those two jobs — only in `build`. Watch the
+  first tagged release after this change.
+
+### Security
+
+`pnpm audit` and `pnpm audit --prod` both report **no known vulnerabilities**.
+No new overrides required. All 16 existing `pnpm.overrides` re-verified against
+the current registry: every one resolves to the newest version inside its
+declared bound (`undici` 7.29.0 under `<8`, `fast-uri` 3.1.4 under `<4`,
+`esbuild` 0.28.1 under `<0.29`, `sharp` 0.35.3, `ws` 8.21.1, `hono` 4.12.32,
+`vite` 7.3.6 under `<8`, …) — no stale floors holding a package back.
+
+### Deliberately held (majors, no advisory)
+
+- `typescript` 5.9.3 → 7.0.2 (#84) — TypeScript 7 is the native-Go port; a
+  compiler-swap of that size needs its own review pass, not a maintenance PR.
+- `@types/node` 25.9.5 → 26.1.2 (#99) — held on 25.x, consistent with the
+  existing policy of tracking the runtime rather than the newest types major
+  (`engines: node >=24`, `.node-version` 24).
+- `chalk` 5.6.2 → 6.0.0 (#98) — runtime dependency, no advisory, no functional
+  need. Not worth the blast radius in a routine sweep.
+- `vite` 7.3.6 → 8.2.0 — out of scope by construction: the `vite` override is
+  bounded `>=7.3.6 <8` and `vite` is a direct devDependency purely so that
+  override binds (auto-installed-peer landmine, see CLAUDE.md).
+
 ## v1.2.8 (2026-07-29) — Dependabot grouped updates
 
 CI-config-only release; no runtime/source changes.
