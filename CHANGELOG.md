@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.9 (2026-08-07) — Security overrides + minor/patch dependency updates
+
+- Security (Dependabot alerts closed): `fast-uri` override floor raised to
+  `>=3.1.5 <4` (high, locked 3.1.5); `hono` override raised AND bounded to
+  `>=4.12.34 <5` (medium, locked 4.13.1 — the previous bare `>=4.12.28`
+  could float transitives across majors).
+- Dev minors/patches: @biomejs/biome 2.5.7, lint-staged 17.3.0,
+  oxlint 1.77.0, wrangler 4.119.0.
+- Deliberately NOT taken (majors): chalk 6, @types/node 26, vite 8,
+  typescript 7 (ecosystem-blocked — typescript-eslint + astro toolchain).
+
 ## v1.2.8 (2026-07-29) — Dependabot grouped updates
 
 CI-config-only release; no runtime/source changes.
