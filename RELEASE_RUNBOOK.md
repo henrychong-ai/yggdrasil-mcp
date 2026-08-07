@@ -7,9 +7,13 @@ Operational procedures for `yggdrasil-mcp` releases — happy path, failure mode
 ```bash
 # 1. Bump version (package.json + index.ts + CHANGELOG.md per CLAUDE.md Version Policy)
 # 2. Quality gate
-pnpm check && pnpm test
+pnpm check && pnpm test   # BOTH — check alone does NOT run the version-parity tests
+rg --hidden -n "$(jq -r .version package.json)" package.json index.ts \
+  mcpb/manifest.json cowork-plugin/.claude-plugin/plugin.json | wc -l  # must print 4
 # 3. Tag + push (admin-only per the v* tag protection ruleset)
 git tag v1.2.x && git push origin v1.2.x
+# If the tag run FAILS: never move/reuse the tag — fix, bump the next patch,
+# tag that, and mark the dead tag in CHANGELOG (precedent: v1.2.9).
 # 4. CI does the rest — watch
 gh run watch
 ```

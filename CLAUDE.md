@@ -407,6 +407,22 @@ The version string is duplicated in **four** files — all must move together or
 
 Plus `CHANGELOG.md` — new entry.
 
+**Verify all four moved before committing** (the cowork-plugin manifest lives
+in a HIDDEN directory — a default `rg` sweep skips it, which is exactly how the
+v1.2.9 release shipped a 1.2.8 stamp and died on CI):
+
+```bash
+rg --hidden -n "$(jq -r .version package.json)" package.json index.ts \
+  mcpb/manifest.json cowork-plugin/.claude-plugin/plugin.json | wc -l  # must be 4
+```
+
+**Pre-tag gate is `pnpm check && pnpm test` — BOTH.** `pnpm check` does NOT run
+the test suite, and the version-parity tests (`__tests__/cowork-plugin-manifest.test.ts`,
+`__tests__/mcpb-manifest.test.ts`) are what catch a missed surface before the
+tag run does. **Never move/reuse a pushed tag whose CI failed** — ship the next
+patch version instead and mark the failed tag DEAD in the CHANGELOG (precedent:
+v1.2.9).
+
 ⚠️ **Do not bump these by JSON round-trip** (`json.load` → `json.dump`). Python's `json.dump` defaults to `ensure_ascii=True`, which rewrites the em-dashes and arrows in `mcpb/manifest.json`'s `display_name` / `long_description` as `—` / `→` escapes, and its indentation differs from Biome's — producing a large spurious diff that `format:check` then rejects. Use targeted string replacement instead.
 
 ## Dependency Maintenance

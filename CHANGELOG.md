@@ -2,7 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
-## v1.2.9 (2026-08-07) — Security overrides + minor/patch dependency updates
+## v1.2.10 (2026-08-07) — v1.2.9 release repair
+
+- Completes the v1.2.9 release: the `v1.2.9` tag pointed at a commit whose
+  CI failed (cowork-plugin `plugin.json` still stamped 1.2.8 — the parity
+  test caught it), so no package was built or published. `v1.2.9` is a DEAD
+  TAG — do not reuse or ship it. No functional changes beyond v1.2.9's.
+- Release-process guardrails added to CLAUDE.md: the four version surfaces,
+  and `pnpm test` required before tagging (`pnpm check` does not run tests).
+
+## v1.2.9 (2026-08-07) — Security overrides + minor/patch dependency updates (DEAD TAG — never shipped)
 
 - Security (Dependabot alerts closed): `fast-uri` override floor raised to
   `>=3.1.5 <4` (high, locked 3.1.5); `hono` override raised AND bounded to
