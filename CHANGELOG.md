@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.11 (2026-08-13) — Dependency maintenance: nanoid advisory + GitHub Actions bumps
+
+Routine dependency maintenance pass. No runtime/source changes.
+
+- **Security:** added a bounded `nanoid` override `>=3.3.18 <4`, clearing the one
+  open advisory (GHSA-2v37-7h3g-55p8, high — custom generators can loop
+  indefinitely when size is zero). Transitive-only, reached via
+  `vite > postcss > nanoid` (was locked at 3.3.16; `postcss@8.5.23` declares
+  `^3.3.11`, so the patched 3.3.18 satisfies it without touching postcss).
+  Bounded top and bottom per the override doctrine in CLAUDE.md.
+  `pnpm audit` now reports no known vulnerabilities.
+- **GitHub Actions (supersedes Dependabot #96):** `actions/checkout` v6 → v7,
+  `actions/setup-node` v6 → v7, `gitleaks/gitleaks-action` v2 → v3. All three
+  are ESM/Node-runtime modernisations with no input, output, or behaviour
+  changes. The gitleaks bump is time-critical rather than cosmetic: v2 runs on
+  the Node 20 action runtime, which GitHub removes from hosted runners on
+  2026-09-16. `actions/checkout@v7`'s one behavioural change (blocking fork-PR
+  checkout under `pull_request_target` / `workflow_run`) does not apply — this
+  workflow triggers only on `push`, `pull_request`, and `workflow_dispatch`.
+- **Dev minors/patches:** `@biomejs/biome` 2.5.7 → 2.5.8, `oxlint` 1.77.0 →
+  1.78.0, `wrangler` 4.119.0 → 4.123.0.
+- **Deliberately NOT taken (majors, unchanged from v1.2.9's rationale):**
+  `chalk` 6 (#98), `@types/node` 26 (#99), `typescript` 7 (#84, ecosystem-blocked),
+  `vite` 8.
+
 ## v1.2.10 (2026-08-07) — v1.2.9 release repair
 
 - Completes the v1.2.9 release: the `v1.2.9` tag pointed at a commit whose
