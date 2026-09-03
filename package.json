@@ -1,6 +1,6 @@
 {
   "name": "yggdrasil-mcp",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
   "author": "Henry Chong <henrychong-ai@gmail.com>",
@@ -75,7 +75,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "chalk": "^5.6.2",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "pnpm": {
     "overrides": {
@@ -89,28 +89,29 @@
       "yaml@>=2.0.0 <2.8.3": ">=2.8.3",
       "ip-address": "^10.1.1",
       "tmp": "^0.2.6",
-      "qs@>=6.11.1 <=6.15.1": ">=6.15.2",
-      "fast-uri": ">=3.1.5 <4",
+      "qs": ">=6.16.0 <7",
+      "fast-uri": ">=3.1.6 <4",
       "body-parser": ">=2.3.0",
       "undici": ">=7.28.0 <8",
-      "sharp": ">=0.35.0",
+      "nanoid": ">=3.3.18 <4",
+      "sharp": ">=0.35.0 <0.36",
       "esbuild": ">=0.28.1 <0.29",
-      "ws": ">=8.21.0"
+      "ws": ">=8.21.0 <9"
     }
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.12",
     "@types/node": "^25.9.5",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "oxlint": "^1.77.0",
+    "lint-staged": "^17.4.1",
+    "oxlint": "~1.78.0",
     "semver": "^7.8.5",
     "shx": "^0.4.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
-    "vitest": "^4.1.10",
-    "wrangler": "4.119.0"
+    "vitest": "^4.1.11",
+    "wrangler": "4.129.0"
   }
 }
