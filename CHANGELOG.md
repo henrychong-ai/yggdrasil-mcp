@@ -2,6 +2,55 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.11 (2026-09-03) — Dependency maintenance: advisory overrides + minor/patch sweep
+
+Routine dependency maintenance pass. No runtime/source changes.
+
+- **Security — all open advisories cleared** (`pnpm audit` goes 7 → 0):
+  - `nanoid` override added, bounded `>=3.3.18 <4` (GHSA-2v37-7h3g-55p8, high —
+    `customAlphabet`/`customRandom` loop indefinitely at size 0). Transitive-only
+    via `vite > postcss > nanoid`, locked at 3.3.16; `postcss@8.5.23` declares
+    `^3.3.16`, so 3.3.18 satisfies it without touching postcss.
+  - `qs` override floor raised to `>=6.16.0 <7` (GHSA-x5fp-wj9c-mxmx +
+    GHSA-4mjr-xmp4-gh2g, moderate). The old scoped key
+    `qs@>=6.11.1 <=6.15.1: >=6.15.2` had gone stale and no longer matched the
+    resolved 6.15.3 — an override is a pin, not a minimum guarantee. Replaced
+    with a plain bounded entry; `express@5.2.1` declares `^6.14.0`, so 6.16.0 fits.
+  - `fast-uri` override floor raised `>=3.1.5` → `>=3.1.6 <4` (four high
+    advisories: GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf,
+    GHSA-jqff-g426-hqxp). Resolves 3.1.7; `ajv@8.20.0` declares `^3.0.1`.
+- **Override ceilings closed (doctrine gap, no advisory):** `sharp` →
+  `>=0.35.0 <0.36` and `ws` → `>=8.21.0 <9`. Both shadow exact upstream pins in
+  `miniflare` (`sharp@0.35.2`, `ws@8.21.0`), which is precisely the case
+  CLAUDE.md says must carry a `<MAJOR+1` ceiling — an unbounded floor is how the
+  sibling-repo `undici` 7→8 float happened. Resolution is unchanged (0.35.3 / 8.21.1).
+- **Minor/patch bumps:** `zod` 4.4.3 → 4.5.4 (prod); `@biomejs/biome` 2.5.7 →
+  2.5.12, `@vitest/coverage-v8` 4.1.10 → 4.1.11, `lint-staged` 17.3.0 → 17.4.1,
+  `oxlint` 1.77.0 → 1.78.0, `vitest` 4.1.10 → 4.1.11, `wrangler` 4.119.0 →
+  4.129.0 (dev).
+- **`oxlint` deliberately held at `~1.78.0` (was `^1.77.0`), not 1.81.0.**
+  oxlint **1.79.0** starts reporting the standard rest-sibling omit idiom in
+  `persistence.ts:501` — `paginated.map(({ _sortKey: _, ...rest }) => rest)` —
+  as `eslint(no-unused-vars)`, which fails `oxlint --max-warnings=0`. The
+  underlying reason it cannot simply be configured away is a **pre-existing
+  latent bug, unrelated to this bump**: oxlint auto-discovers `.oxlintrc.json`,
+  not `oxlint.json`, so this repo's config file has **never been loaded**. Proof:
+  the finding is emitted at `warning` severity even though `oxlint.json` sets
+  `no-unused-vars` to `error`, and adding `ignoreRestSiblings`/`argsIgnorePattern`
+  there changes nothing. Passing the file explicitly (`oxlint -c oxlint.json`)
+  fails to parse (`Rule 'prevent-abbreviations' not found in plugin 'unicorn'`),
+  and once that entry is removed the now-live config surfaces several hundred
+  new `vitest(...)` style warnings across `__tests__/`. Making the config
+  actually bind is therefore a separate, deliberate change — out of scope for a
+  dependency pass. The `~` keeps 1.78 patch updates flowing.
+- **Deliberately NOT taken (majors):** `chalk` 6 (#98), `@types/node` 26 (#104),
+  `vitest`/`@vitest/coverage-v8` 5, `vite` 8, `typescript` 7 (#84,
+  ecosystem-blocked). GitHub Actions majors (`actions/checkout` v7,
+  `actions/setup-node` v7, `gitleaks/gitleaks-action` v3 — Dependabot #96) are
+  also out of scope for this minor/patch pass and remain outstanding; the
+  gitleaks v2 bump is time-sensitive because its Node 20 action runtime is
+  removed from hosted runners on 2026-09-16.
+
 ## v1.2.10 (2026-08-07) — v1.2.9 release repair
 
 - Completes the v1.2.9 release: the `v1.2.9` tag pointed at a commit whose
