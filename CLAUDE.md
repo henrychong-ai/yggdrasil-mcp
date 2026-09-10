@@ -433,6 +433,12 @@ v1.2.9).
 
 **Overrides pinning a transitive major need the parent's declared range checked first.** `@hono/node-server >=2.0.5` is only legitimate from MCP SDK 1.30.0, which widened its range to `^1.19.9 || ^2.0.5`.
 
+**An override FLOOR goes stale, and a stale floor actively HOLDS A PACKAGE BACK.** An override is a *pin*, not a *minimum guarantee* — pnpm will not float past whatever the lockfile already holds. `fast-uri: ">=3.1.5 <4"` (written for an earlier advisory) kept resolution parked on exactly 3.1.5 when 3.1.6 patched four new highs; `hono: ">=4.12.34 <5"` and `sharp: ">=0.35.0"` did the same. When a new advisory names a package you *already* override, **raise the floor** — never assume the existing entry covers it. Corollary to the upper-bound rule above: bound the top, but keep the bottom current.
+
+**A version-selector override silently stops applying when resolution drifts past its selector.** `"qs@>=6.11.1 <=6.15.1": ">=6.15.2"` matched nothing once qs resolved to 6.15.3, so the entry was inert while `pnpm audit` still reported qs — the override *looked* present in `package.json` and did nothing. Prefer a plain bounded `"qs": ">=6.16.0 <7"` unless you specifically need to rewrite only one vulnerable window; a selector is a maintenance liability that fails silently.
+
+**oxlint ≥1.79.0 flags a destructured property renamed to `_` inside a parameter**, ignoring the configured `argsIgnorePattern`/`varsIgnorePattern` (and `ignoreRestSiblings: true` does not suppress it). `({ _sortKey: _, ...rest }) => rest` warns; `({ _sortKey, ...rest }) => rest` does not. Fix the binding name, not `oxlint.json` — the rule config is correct and relaxing it would hide genuinely dead variables.
+
 **`wrangler` is NOT an unused devDependency.** It has no config file and no `package.json` script, but `RELEASE_RUNBOOK.md` invokes `pnpm exec wrangler r2 object delete` for R2 release operations. Do not prune it as dead weight — it is also the transitive source of the `sharp` and `undici` advisories, so those need overrides rather than removal.
 
 After any override change, regenerate the lockfile and confirm with `pnpm install --frozen-lockfile`.

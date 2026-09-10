@@ -1,7 +1,7 @@
 {
   "name": "yggdrasil-mcp",
   "description": "Tree of Thoughts reasoning, deep planning, and plan management for Claude. Adds sequential_thinking, deep_planning, list_plans, get_plan, promote_plan, archive_plans.",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "author": {
     "name": "Henry Chong",
     "email": "henrychong-ai@gmail.com",

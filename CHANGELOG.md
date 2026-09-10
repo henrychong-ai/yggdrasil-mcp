@@ -2,6 +2,59 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.11 (2026-09-10) — Advisory sweep (13 → 0) + minor/patch dependency updates
+
+Dependency maintenance only; no functional changes to the server's behaviour.
+
+- **Security — all 13 open advisories cleared** (`pnpm audit`: 6 high /
+  7 moderate → 0). Every fix was available inside the existing major, so no
+  major bump was required:
+  - `fast-uri` override floor raised `>=3.1.5` → `>=3.1.6 <4` (4 high: host
+    confusion via skipped IDN canonicalisation + percent-encoded scheme, SSRF
+    via malformed and repeated authority). Locked at 3.1.5 by a stale floor —
+    the "an override floor goes stale and then holds the package back" failure
+    mode; resolves 3.1.7.
+  - `hono` override floor raised `>=4.12.34` → `>=4.13.5 <5` (3 moderate:
+    `toSSG()` path traversal — incomplete fix for CVE-2026-39408, `parseBody()`
+    unbounded dot-notation memory exhaustion, query parser reading past the URL
+    fragment). Resolves 4.13.7.
+  - `qs`: the narrow `qs@>=6.11.1 <=6.15.1` selector no longer matched the
+    resolved 6.15.3, so the override had silently stopped applying. Replaced
+    with a plain bounded `qs: ">=6.16.0 <7"` (2 moderate: array-limit bypass
+    via bracket-key comma parsing, DoS via attacker-controlled `isBuffer`).
+    Resolves 6.16.0.
+  - `sharp` override raised and bounded `>=0.35.0` → `>=0.35.4 <0.36`
+    (1 high: libheif GHSA-g89c-p67h-r497). Reached via
+    `wrangler > miniflare > sharp`. Resolves 0.35.4.
+  - `nanoid`: **new** bounded override `>=3.3.18 <4` (1 high: custom
+    generators loop indefinitely on a non-integer `size`). Reached via
+    `vite > postcss > nanoid`, which pinned 3.3.16. Resolves 3.3.19.
+  - `vitest` / `@vitest/mocker` (1 moderate: path traversal / arbitrary file
+    read via the redirect mock) fixed by the direct devDependency bump to
+    4.1.11 — no override needed.
+- **Every override now carries an upper bound.** `@hono/node-server`,
+  `picomatch`, `body-parser`, `ws`, `sharp`, `nanoid`, and the `path-to-regexp`
+  / `yaml` replacement values previously specified a bare `>=X` floor, which
+  lets `pnpm update` float a transitive across a major boundary with no error.
+  Verified post-change that nothing crossed a major: undici 7.29.1, esbuild
+  0.28.2, nanoid 3.3.19, sharp 0.35.4, hono 4.13.7, `@hono/node-server` 2.1.1
+  (legitimate — MCP SDK 1.30.0 declares `^1.19.9 || ^2.0.5`).
+- **Dependency bumps** (all minor/patch, within the existing major):
+  zod 4.4.3 → 4.6.1; @biomejs/biome 2.5.7 → 2.5.13; @types/node 25.9.5 →
+  25.9.6; @vitest/coverage-v8 4.1.10 → 4.1.11; lint-staged 17.3.0 → 17.5.1;
+  oxlint 1.77.0 → 1.82.0; vitest 4.1.10 → 4.1.11; wrangler 4.119.0 → 4.131.0.
+- **`persistence.ts`**: renamed the discarded destructuring binding in
+  `listPlans` from `_` to `_sortKey` (`({ _sortKey, ...rest }) => rest`).
+  oxlint **1.79.0** changed `no-unused-vars` to flag a renamed-to-`_`
+  destructured property inside a parameter, ignoring the configured
+  `argsIgnorePattern`/`varsIgnorePattern` (`ignoreRestSiblings: true` does not
+  suppress it either). Behaviour is identical and no lint rule was relaxed —
+  `oxlint.json` is unchanged.
+- **Deliberately NOT taken (majors, deferred):** chalk 6, @types/node 26,
+  typescript 7, vite 8, vitest 5 / @vitest/coverage-v8 5, and the CI action
+  majors (actions/checkout v7, actions/setup-node v7, gitleaks-action v3).
+  None is required to clear an advisory.
+
 ## v1.2.10 (2026-08-07) — v1.2.9 release repair
 
 - Completes the v1.2.9 release: the `v1.2.9` tag pointed at a commit whose
