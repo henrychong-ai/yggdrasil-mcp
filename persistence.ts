@@ -498,7 +498,10 @@ export class PersistenceManager {
       total,
       offset,
       limit,
-      plans: paginated.map(({ _sortKey: _, ...rest }) => rest),
+      plans: paginated.map((plan) => {
+        const { _sortKey, ...rest } = plan;
+        return rest;
+      }),
     };
   }
 

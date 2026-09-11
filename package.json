@@ -75,42 +75,42 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "chalk": "^5.6.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.2"
   },
   "pnpm": {
     "overrides": {
-      "@isaacs/brace-expansion": "^5.0.1",
-      "hono": ">=4.12.34 <5",
-      "@hono/node-server": ">=2.0.5",
+      "hono": ">=4.13.5 <5",
+      "@hono/node-server": ">=2.0.5 <3",
       "vite": ">=7.3.6 <8",
-      "picomatch": ">=4.0.4",
+      "picomatch": ">=4.0.4 <5",
       "micromatch>picomatch": "^2.3.2",
       "path-to-regexp@>=8.0.0 <8.4.0": ">=8.4.0",
       "yaml@>=2.0.0 <2.8.3": ">=2.8.3",
       "ip-address": "^10.1.1",
       "tmp": "^0.2.6",
-      "qs@>=6.11.1 <=6.15.1": ">=6.15.2",
-      "fast-uri": ">=3.1.5 <4",
-      "body-parser": ">=2.3.0",
+      "qs": ">=6.16.0 <7",
+      "nanoid": ">=3.3.18 <4",
+      "fast-uri": ">=3.1.6 <4",
+      "body-parser": ">=2.3.0 <3",
       "undici": ">=7.28.0 <8",
-      "sharp": ">=0.35.0",
+      "sharp": ">=0.35.4 <0.36",
       "esbuild": ">=0.28.1 <0.29",
-      "ws": ">=8.21.0"
+      "ws": ">=8.21.0 <9"
     }
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
-    "@biomejs/biome": "^2.5.7",
-    "@types/node": "^25.9.5",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@biomejs/biome": "^2.5.13",
+    "@types/node": "^25.9.6",
+    "@vitest/coverage-v8": "^4.1.11",
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "oxlint": "^1.77.0",
+    "lint-staged": "^17.5.1",
+    "oxlint": "^1.82.0",
     "semver": "^7.8.5",
     "shx": "^0.4.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "wrangler": "4.119.0"
   }
 }
