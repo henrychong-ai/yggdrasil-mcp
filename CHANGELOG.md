@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.11 (2026-09-11) — Dependency security sweep + override hygiene
+
+- Security (13 advisories cleared, `pnpm audit` now clean): `hono` floor
+  raised to `>=4.13.5 <5` (GHSA-gqvv-2mrq-wpjv, GHSA-g6gw-c38x-mqfc,
+  GHSA-crvj-82cr-hjcx); `fast-uri` to `>=3.1.6 <4` (GHSA-f65p-4m7j-42xc,
+  GHSA-jqff-g426-hqxp, GHSA-fph4-wmhf-6fwf, GHSA-5jgf-p345-68v8); `sharp`
+  to `>=0.35.4 <0.36` (GHSA-rgj7-g3m4-5g8c); the dead selector override
+  `qs@>=6.11.1 <=6.15.1` replaced by `qs: ">=6.16.0 <7"`
+  (GHSA-4mjr-xmp4-gh2g, GHSA-x5fp-wj9c-mxmx); new `nanoid: ">=3.3.18 <4"`
+  (GHSA-2v37-7h3g-55p8); vitest/@vitest/mocker moved to 4.1.11
+  (GHSA-82fw-gwwq-j7x9).
+- Override hygiene: removed the dead `@isaacs/brace-expansion` override (no
+  lockfile match); added a `<MAJOR+1` ceiling to the five unbounded floors
+  (`@hono/node-server`, `picomatch`, `body-parser`, `sharp`, `ws`) so an
+  override can never float a transitive across a major. Bounding alone did
+  not move any resolution — every one already sat below its new ceiling.
+- In-range sweep (`pnpm update`, never `--latest`): zod 4.6.2,
+  @biomejs/biome 2.5.13, lint-staged 17.5.1, oxlint 1.82.0, vitest and
+  @vitest/coverage-v8 4.1.11, @types/node 25.9.6.
+- oxlint 1.82.0 adopted with lint green at zero warnings and **no rule
+  disabled**: its `no-unused-vars` no longer honours `argsIgnorePattern`
+  for a destructured parameter binding, so `persistence.ts` now hoists the
+  `_sortKey` omit into the function body instead of the map parameter.
+- `wrangler` exact pin 4.119.0 → 4.131.0 (R2 release tooling invoked from
+  `RELEASE_RUNBOOK.md`).
+- Deliberately NOT taken (majors): chalk 6, typescript 7, vite 8, vitest 5
+  and @vitest/coverage-v8 5, @types/node 26.
+
 ## v1.2.10 (2026-08-07) — v1.2.9 release repair
 
 - Completes the v1.2.9 release: the `v1.2.9` tag pointed at a commit whose
