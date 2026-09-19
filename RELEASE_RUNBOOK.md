@@ -102,8 +102,8 @@ PREV=1.2.1
 curl -s "https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-${PREV}.mcpb.sha256"
 
 # Repoint -latest to the previous version (using R2 token from 1Password)
-AKID=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
-SECRET=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
+AKID=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
+SECRET=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
 ACCOUNT_ID=32882cce864ab5c754075741115ca269
 
 # Server-side copy versioned → latest
@@ -177,12 +177,12 @@ Per the policy in `CLAUDE.md` → "R2 Retention Policy": after a successful rele
 set -euo pipefail
 
 # S3-compatible credentials for the LIST call
-AKID=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
-SECRET=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
+AKID=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
+SECRET=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
 
 # CF account-scoped API token for wrangler (R2 Edit scope on `packages` bucket)
 # Stopgap: ADMIN_API_KEY works. Follow-up: issue a scoped "packages R2 Edit" token.
-export CLOUDFLARE_API_TOKEN=$(op --account my.1password.com read 'op://Technology/Cloudflare - HC/API Tokens/ADMIN_API_KEY' | tr -d '\n\r')
+export CLOUDFLARE_API_TOKEN=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/API Tokens/ADMIN_API_KEY' | tr -d '\n\r')
 
 ACCOUNT_ID=32882cce864ab5c754075741115ca269
 S3_ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
