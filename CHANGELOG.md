@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.12 (2026-09-18) — Routine dependency sweep
+
+`pnpm audit` clean before and after — no advisories were open, so unlike
+v1.2.11 this release closes none. The clean result was verified against a
+deliberately vulnerable control package (`minimist@1.2.5`), which the audit
+flagged, so it is a live registry response rather than a silently failing
+audit.
+
+- In-range sweep (`pnpm update`, never `--latest`): zod 4.6.2 → 4.6.5,
+  @biomejs/biome 2.5.13 → 2.5.14, oxlint 1.82.0 → 1.83.0, @types/node
+  25.9.6 → 25.9.7. Transitive drift floated within the existing override
+  bounds: hono 4.13.7 → 4.13.8, yaml 2.9.0 → 2.9.1, ip-address 10.7.0 →
+  10.7.2, fast-uri 3.1.7 → 3.1.8 (runtime-reachable via `ajv`).
+- `wrangler` exact pin 4.131.0 → 4.134.0 (R2 release tooling invoked from
+  `RELEASE_RUNBOOK.md`), carrying workerd 1.20260910.1 → 1.20260917.1 and
+  miniflare 5.20260911.1-alpha → 5.20260917.0-alpha.
+- Override block audited and deliberately left unchanged: every floor was
+  checked against the latest published version inside its own ceiling, and
+  no floor sits above its target's newest in-range release — so no floor is
+  stale and none is holding a package back. The four transitives that moved
+  did so by floating inside their existing bounds, which is the intended
+  behaviour of a floor-plus-ceiling override.
+- Deliberately NOT taken (majors, out of scope for a patch sweep): chalk 6,
+  typescript 7, vite 8, vitest 5 and @vitest/coverage-v8 5, @types/node 26,
+  and the GitHub Actions majors actions/checkout v7, actions/setup-node v7,
+  gitleaks/gitleaks-action v3.
+- No source changes.
+
 ## v1.2.11 (2026-09-11) — Dependency security sweep + override hygiene
 
 - Security (13 advisories cleared, `pnpm audit` now clean): `hono` floor
