@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.12 (2026-09-24) — Routine minor/patch dependency sweep
+
+- `pnpm audit` clean before and after — no advisories to close; no source
+  changes.
+- Runtime: `@modelcontextprotocol/sdk` ^1.30.0 → ^1.30.1, `zod` 4.6.2 →
+  4.6.5.
+- Dev: @biomejs/biome 2.5.13 → 2.5.14, oxlint 1.82.0 → 1.85.0 (lint green
+  at zero warnings, no rule disabled), @types/node 25.9.6 → 25.9.8 (held on
+  25.x), `wrangler` exact pin 4.131.0 → 4.138.0 (R2 release tooling;
+  workerd 1.20260910.1 → 1.20260921.1).
+- Transitive drift inside existing override bounds: hono 4.13.7 → 4.13.9,
+  fast-uri 3.1.7 → 3.1.8, yaml 2.9.0 → 2.9.1, ip-address 10.7.0 → 10.7.2.
+  Override block unchanged — no floor is stale.
+- Deliberately NOT taken (majors): chalk 6, typescript 6/7, vite 8,
+  vitest 5 and @vitest/coverage-v8 5, @types/node 26, and the GitHub
+  Actions majors (actions/checkout v7, actions/setup-node v7,
+  gitleaks/gitleaks-action v3).
+
 ## v1.2.11 (2026-09-11) — Dependency security sweep + override hygiene
 
 - Security (13 advisories cleared, `pnpm audit` now clean): `hono` floor
