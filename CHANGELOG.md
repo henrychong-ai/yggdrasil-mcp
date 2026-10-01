@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.12 (2026-10-01) — Dependency security sweep
+
+- Security (3 moderate advisories cleared, `pnpm audit` now clean):
+  `fast-uri` override floor raised to `>=3.1.8 <4` (GHSA-hrr3-gc8f-f4qj —
+  runtime-reachable via the MCP SDK's `ajv`, locked 3.1.8); `ip-address`
+  override replaced by the bounded `>=10.7.1 <11` (GHSA-j6r3-76f7-8jcv,
+  GHSA-h3mg-xc3c-68pw — via `express-rate-limit`, HTTP stack only, not
+  loaded by the stdio server; locked 10.7.2).
+- Minor/patch bumps (caret floors raised to the resolved versions):
+  @modelcontextprotocol/sdk 1.30.0 → 1.31.0, zod 4.6.2 → 4.6.5,
+  @biomejs/biome 2.5.13 → 2.5.15, oxlint 1.82.0 → 1.86.0, lint-staged
+  17.5.1 → 17.6.0, @types/node 25.9.6 → 25.9.8. In-range transitive
+  refresh via `pnpm update` (e.g. hono 4.13.12, undici 7.30.0, sharp
+  0.35.5, esbuild 0.28.2 — all within their bounded overrides).
+- `wrangler` exact pin 4.131.0 → 4.146.0 (R2 release tooling invoked from
+  `RELEASE_RUNBOOK.md`; kept as a devDependency).
+- Lockfile importer re-reconciled with a plain `pnpm install` after
+  `pnpm update` (the vite direct-dep + override specifier desync);
+  `pnpm install --frozen-lockfile` passes.
+- Deliberately NOT taken (majors): chalk 6, typescript 7, vite 8, vitest 5
+  and @vitest/coverage-v8 5, @types/node 26; GitHub Actions majors
+  (actions/checkout 7, actions/setup-node 7, gitleaks-action 3).
+
 ## v1.2.11 (2026-09-11) — Dependency security sweep + override hygiene
 
 - Security (13 advisories cleared, `pnpm audit` now clean): `hono` floor
