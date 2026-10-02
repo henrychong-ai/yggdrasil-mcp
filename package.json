@@ -57,8 +57,8 @@
     "test:watch": "vitest",
     "lint": "oxlint --max-warnings=0",
     "lint:fix": "oxlint --fix --max-warnings=0",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck"
@@ -66,10 +66,10 @@
   "lint-staged": {
     "*.ts": [
       "oxlint --fix --max-warnings=0",
-      "biome format --write"
+      "biome check --write --no-errors-on-unmatched"
     ],
     "*.json": [
-      "biome format --write"
+      "biome check --write --no-errors-on-unmatched"
     ]
   },
   "dependencies": {
