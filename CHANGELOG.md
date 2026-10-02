@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.12 (2026-10-02) — Lint config repair, stricter type checks, working Dockerfile
+
+- Lint: the Oxlint config was named `oxlint.json`, which Oxlint does not
+  auto-discover, so only default rules ran. It is now `.oxlintrc.json` with the
+  `typescript`, `unicorn` and `oxc` plugins listed and the `style` category off.
+  Findings fixed: test assertions now state the expected error, optional
+  manifest fields are asserted unconditionally, shadowed locals renamed.
+- Type checks: `noUncheckedIndexedAccess`, `noImplicitReturns` and
+  `noImplicitOverride` enabled. Three sites gained explicit checks that throw
+  a clear error where a `TypeError` was thrown before
+  (`sequential_thinking` with no content block; a branch with no thought list).
+  Published `.d.ts` files are unchanged.
+- Errors: invalid-JSON errors in `planning.ts` carry the original `SyntaxError`
+  as `cause`.
+- `@types/node` moved from `^25` to `^24` to match the Node 24 runtime line.
+- Dockerfile rewritten: the previous file was a relic of the upstream fork and
+  could not build. Now `node:24-alpine`, two stages, pinned Corepack, non-root
+  user, stdio entrypoint; built and exercised locally.
+- Pre-commit hook scans staged changes with gitleaks before lint-staged.
+- No change to tool names, inputs or outputs.
+
 ## v1.2.11 (2026-09-11) — Dependency security sweep + override hygiene
 
 - Security (13 advisories cleared, `pnpm audit` now clean): `hono` floor
