@@ -20,7 +20,7 @@ import {
 
 export interface Clarification {
   question: string;
-  answer?: string;
+  answer?: string | undefined;
 }
 
 export interface Approach {
@@ -64,7 +64,7 @@ export type PlanPhase = 'init' | 'clarify' | 'explore' | 'evaluate' | 'finalize'
 export interface PlanningSession {
   sessionId: string;
   problem: string;
-  context?: string;
+  context?: string | undefined;
   constraints: string[];
   phase: PlanPhase;
   clarifications: Clarification[];
@@ -82,35 +82,35 @@ export interface PlanningSession {
 export interface DeepPlanningInput {
   phase: string;
   // Session targeting
-  sessionId?: string;
+  sessionId?: string | undefined;
   // Init fields
-  problem?: string;
-  planName?: string;
-  context?: string;
-  constraints?: string;
+  problem?: string | undefined;
+  planName?: string | undefined;
+  context?: string | undefined;
+  constraints?: string | undefined;
   // Clarify fields
-  question?: string;
-  answer?: string;
+  question?: string | undefined;
+  answer?: string | undefined;
   // Explore fields
-  branchId?: string;
-  name?: string;
-  description?: string;
-  pros?: string;
-  cons?: string;
+  branchId?: string | undefined;
+  name?: string | undefined;
+  description?: string | undefined;
+  pros?: string | undefined;
+  cons?: string | undefined;
   // Evaluate fields
-  feasibility?: number;
-  completeness?: number;
-  coherence?: number;
-  risk?: number;
-  rationale?: string;
-  recommendation?: string;
+  feasibility?: number | undefined;
+  completeness?: number | undefined;
+  coherence?: number | undefined;
+  risk?: number | undefined;
+  rationale?: string | undefined;
+  recommendation?: string | undefined;
   // Finalize fields
-  selectedBranch?: string;
-  steps?: string;
-  risks?: string;
-  assumptions?: string;
-  successCriteria?: string;
-  format?: string;
+  selectedBranch?: string | undefined;
+  steps?: string | undefined;
+  risks?: string | undefined;
+  assumptions?: string | undefined;
+  successCriteria?: string | undefined;
+  format?: string | undefined;
 }
 
 export interface DeepPlanningOutput {

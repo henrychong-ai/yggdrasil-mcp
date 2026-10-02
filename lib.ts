@@ -4,11 +4,11 @@ export interface ThoughtData {
   thought: string;
   thoughtNumber: number;
   totalThoughts: number;
-  isRevision?: boolean;
-  revisesThought?: number;
-  branchFromThought?: number;
-  branchId?: string;
-  needsMoreThoughts?: boolean;
+  isRevision?: boolean | undefined;
+  revisesThought?: number | undefined;
+  branchFromThought?: number | undefined;
+  branchId?: string | undefined;
+  needsMoreThoughts?: boolean | undefined;
   nextThoughtNeeded: boolean;
 }
 

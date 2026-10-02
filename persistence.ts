@@ -93,7 +93,7 @@ export function extractMarkdownTitle(filePath: string, fallback: string): string
 
 export interface PlanIndexEntry {
   problem: string;
-  name?: string;
+  name?: string | undefined;
   createdAt: string;
   finalizedAt: string | null;
   selectedBranch: string | null;
@@ -402,11 +402,11 @@ export class PersistenceManager {
    * Supports filters: status, keyword, source, and pagination via limit/offset.
    */
   public async listPlans(filters?: {
-    status?: 'complete' | 'in-progress';
-    keyword?: string;
-    source?: 'yggdrasil' | 'cc' | 'all';
-    limit?: number;
-    offset?: number;
+    status?: 'complete' | 'in-progress' | undefined;
+    keyword?: string | undefined;
+    source?: 'yggdrasil' | 'cc' | 'all' | undefined;
+    limit?: number | undefined;
+    offset?: number | undefined;
   }): Promise<{
     total: number;
     offset: number;
@@ -417,7 +417,7 @@ export class PersistenceManager {
       title: string;
       date: string;
       phase?: string;
-      name?: string;
+      name?: string | undefined;
       filePaths?: { jsonl: string; markdown: string | null };
     }>;
   }> {
@@ -432,7 +432,7 @@ export class PersistenceManager {
       title: string;
       date: string;
       phase?: string;
-      name?: string;
+      name?: string | undefined;
       filePaths?: { jsonl: string; markdown: string | null };
       /** Full ISO timestamp for stable sorting. Not included in output. */
       _sortKey: string;
@@ -698,10 +698,10 @@ export class PersistenceManager {
    * Removes archived entries from the index. Default mode is dry run (preview only).
    */
   public async archivePlans(options: {
-    olderThan?: number;
-    sessionIds?: string[];
-    source?: 'yggdrasil' | 'cc' | 'promoted' | 'all';
-    dryRun?: boolean;
+    olderThan?: number | undefined;
+    sessionIds?: string[] | undefined;
+    source?: 'yggdrasil' | 'cc' | 'promoted' | 'all' | undefined;
+    dryRun?: boolean | undefined;
   }): Promise<{
     dryRun: boolean;
     archived: Array<{ sessionId: string; files: string[]; year: string }>;
