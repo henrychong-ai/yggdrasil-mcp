@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Layer           | Technology                                             |
 | --------------- | ------------------------------------------------------ |
-| Language        | TypeScript                                             |
+| Language        | TypeScript 6.0 (`typescript@~6.0`)                     |
 | Runtime         | Node.js 24                                             |
 | MCP SDK         | @modelcontextprotocol/sdk                              |
 | Validation      | Zod                                                    |
@@ -143,13 +143,27 @@ yggdrasil-mcp/
 ├── SECURITY.md              # Vulnerability reporting policy
 ├── .oxlintrc.json           # Oxlint config (eslint core + 7 built-in plugins, zero npm deps)
 ├── biome.json               # Biome formatter config (linter disabled)
-├── tsconfig.json            # TypeScript config (ES2024, NodeNext)
+├── tsconfig.json            # TypeScript config (ES2024, NodeNext, strict flag set below)
 ├── vitest.config.ts         # Vitest configuration
 ├── .node-version            # Node.js version (24)
 ├── LICENSE                  # MIT (Anthropic + Henry Chong)
 └── .husky/
     └── pre-commit           # gitleaks staged scan, then lint-staged
 ```
+
+## TypeScript Configuration
+
+`typescript` is pinned to the 6.0 line (`~6.0.x`). npm's `latest` tag is TypeScript 7: never run `pnpm add -D typescript` without the range.
+
+| tsconfig flag | State | What it asks of the code |
+| ------------- | ----- | ------------------------ |
+| `types: ["node"]`, `lib: ["ES2024"]` | set | TypeScript 6 loads no `@types/*` package unless listed; no DOM library |
+| `strict`, `noUncheckedIndexedAccess`, `noImplicitReturns`, `noImplicitOverride`, `noFallthroughCasesInSwitch` | on | — |
+| `exactOptionalPropertyTypes` | on | An optional property that can receive an explicit `undefined` is declared `name?: T \| undefined` |
+| `noPropertyAccessFromIndexSignature` | on | `process.env['NAME']` and `record['key']`: bracket access for index-signature reads |
+| `verbatimModuleSyntax`, `isolatedModules` | on | `import type` for type-only imports |
+
+`tsc` does not type-check `__tests__/` or `vitest.config.ts` (both are excluded in `tsconfig.json`); Vitest strips their types without checking them.
 
 ## String Coercion Fix (Critical)
 
@@ -434,6 +448,10 @@ v1.2.9).
 **Overrides pinning a transitive major need the parent's declared range checked first.** `@hono/node-server >=2.0.5` is only legitimate from MCP SDK 1.30.0, which widened its range to `^1.19.9 || ^2.0.5`.
 
 **`wrangler` is NOT an unused devDependency.** It has no config file and no `package.json` script, but `RELEASE_RUNBOOK.md` invokes `pnpm exec wrangler r2 object delete` for R2 release operations. Do not prune it as dead weight — it is also the transitive source of the `sharp` and `undici` advisories, so those need overrides rather than removal.
+
+**`pnpm update` leaves the `vite` importer specifier out of step with its override**, so the next `pnpm install --frozen-lockfile` fails with "1 dependencies are mismatched: vite". Run a plain `pnpm install` after `pnpm update`, then the frozen install.
+
+**`pnpm audit` reports `node-forge` (GHSA-86w9-cpqp-85rv, high) with no fix to take** (checked 2026-10-02): every published node-forge release is affected. It arrives only through the dev-only `.mcpb` packer `@anthropic-ai/mcpb`, which uses it for bundle signatures. The build scripts run `validate`, `pack` and `info` on this repo's own unsigned bundle, so no signature is ever relied on, and node-forge is not in the npm package or the `.mcpb`. `pnpm audit --prod` is clean. Re-check on each sweep and raise the floor with an override once a patched release exists.
 
 After any override change, regenerate the lockfile and confirm with `pnpm install --frozen-lockfile`.
 
