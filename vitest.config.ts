@@ -8,10 +8,24 @@
  *
  * @see https://vitest.dev/config/
  */
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
+
+// Every run gets a throwaway plans directory. Without it, a test that builds a
+// DeepPlanningServer with default settings writes its sessions, and rewrites the
+// plans index, in the developer's real plans directory.
+const testPlansDir = mkdtempSync(path.join(tmpdir(), 'yggdrasil-test-plans-'));
+process.on('exit', () => {
+  rmSync(testPlansDir, { recursive: true, force: true });
+});
 
 export default defineConfig({
   test: {
+    // Applied to every test worker; a test may still override it with vi.stubEnv.
+    env: { YGGDRASIL_PLANS_DIR: testPlansDir },
+
     // Enable global test APIs (describe, it, expect)
     globals: true,
 
