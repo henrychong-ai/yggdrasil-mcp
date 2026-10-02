@@ -206,7 +206,7 @@ LIST_XML=$(curl -s --aws-sigv4 "aws:amz:auto:s3" \
 # 2. DRY RUN — show prune candidates
 echo "=== Prune candidates (DRY RUN) ==="
 echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY'
-import sys, xml.etree.ElementTree as ET
+import re, sys, xml.etree.ElementTree as ET
 cutoff, current = sys.argv[1], sys.argv[2]
 ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 root = ET.fromstring(sys.stdin.read())
@@ -215,6 +215,9 @@ for obj in root.findall("s3:Contents", ns):
     last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]  # YYYY-MM-DD
     name = key.rsplit("/", 1)[-1]
     if "latest" in name or "SHA256SUMS" in name:
+        continue
+    # Versioned release artefacts only: never anything else under the prefix (install.html lives here).
+    if not re.fullmatch(r"yggdrasil-mcp-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.(mcpb|zip)(\.sha256)?", name):
         continue
     if f"-{current}." in name:
         continue
@@ -225,7 +228,7 @@ PY
 
 # 3. After reviewing the list, execute the deletes. Uncomment to run:
 # echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY' | while IFS= read -r key; do
-# import sys, xml.etree.ElementTree as ET
+# import re, sys, xml.etree.ElementTree as ET
 # cutoff, current = sys.argv[1], sys.argv[2]
 # ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 # root = ET.fromstring(sys.stdin.read())
@@ -234,17 +237,24 @@ PY
 #     last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]
 #     name = key.rsplit("/", 1)[-1]
 #     if "latest" in name or "SHA256SUMS" in name: continue
+#     if not re.fullmatch(r"yggdrasil-mcp-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.(mcpb|zip)(\.sha256)?", name): continue
 #     if f"-{current}." in name: continue
 #     if last_modified >= cutoff: continue
 #     print(key)
 # PY
 #   [ -n "$key" ] || continue
-#   pnpm exec wrangler r2 object delete "${BUCKET}/${key}" --remote
+#   code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE --aws-sigv4 "aws:amz:auto:s3" \
+#     --user "${AKID}:${SECRET}" "${S3_ENDPOINT}/${BUCKET}/${key}")
+#   [ "$code" = "204" ] || { echo "DELETE failed: HTTP $code for ${key}"; exit 1; }
 # done
 ```
 
 **Notes:**
 
+- **Last run: 2026-10-02 (v1.2.12 release).** Pruned 1.2.0 to 1.2.5 (24 files); kept 1.2.7, 1.2.10, 1.2.11, 1.2.12, the `latest` pointers, `SHA256SUMS` and `install.html`.
+- **The filter matches versioned release file names only.** Before 2026-10-02 it matched everything under the prefix that was not `latest` or `SHA256SUMS`, and the dry run listed `install.html` as a candidate.
+- **Deletes go through the S3 API with the same R2 key as the listing** (it has delete permission; a delete returns HTTP 204). The earlier `wrangler r2 object delete` step with `ADMIN_API_KEY` as `CLOUDFLARE_API_TOKEN` fails with "Invalid format for Authorization header": that item is not a Cloudflare API token.
+- From a non-interactive agent shell, inject the two R2 values with `op run --env-file` instead of `op read`.
 - Always start with the DRY RUN. Inspect the candidate list. Surprises (e.g. a hand-uploaded test artefact) should be investigated, not auto-deleted.
 - The filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, and anchors on `-<CURRENT>.` so the current version's full asset set (`.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256`) is preserved.
 - Pre-release artefacts (`-rc.0`, `-beta.1`) WILL be pruned by this filter once they age past 90 days. That is intentional — pre-releases are transient.
