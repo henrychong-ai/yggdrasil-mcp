@@ -26,12 +26,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -39,7 +39,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Use Node.js 24.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
           cache: 'pnpm'
@@ -80,7 +80,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -91,7 +91,13 @@ jobs:
         # from forks/contributors) would let a poisoned cache entry execute install-time scripts
         # under elevated privileges, enabling OIDC-token theft and malicious npm publish.
         # Trade-off: ~30s slower install on each tag push. Worth it.
-        uses: actions/setup-node@v6
+        #
+        # `registry-url` makes setup-node write an .npmrc whose token is `${NODE_AUTH_TOKEN}`.
+        # From v7 the action no longer exports a placeholder for that variable, and this job
+        # must not set one: `npm publish` exchanges the OIDC token and uses the result in its
+        # place. The `pnpm install` below warns "Failed to replace env in config:
+        # ${NODE_AUTH_TOKEN}" and carries on; that warning is expected.
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
@@ -143,7 +149,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -152,7 +158,7 @@ jobs:
         # Deliberately NO `cache: 'pnpm'` — same rationale as publish job: this job has
         # `contents: write` (uploads to GitHub Release + R2). Shared dep cache poisoned by a
         # lower-trust PR workflow could execute install-time scripts under elevated privileges.
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
 
