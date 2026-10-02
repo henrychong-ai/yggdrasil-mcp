@@ -42,6 +42,9 @@ curl -sI https://henrychong.com/yggdrasil-latest
 
 # Local integrity check (after downloading)
 shasum -a 256 -c yggdrasil-mcp-latest.mcpb.sha256
+
+# The published bundle starts: extract, initialize, tools/list (run from the repo root)
+pnpm verify:mcpb path/to/yggdrasil-mcp-<version>.mcpb
 ```
 
 ## Maintainer credentials
@@ -105,6 +108,8 @@ If the npm publish is broken due to OIDC config drift (Trusted Publisher revoked
 ### Scenario 2: `release-mcpb` fails, `publish` succeeds
 
 **Symptom:** npm has new version; GitHub Release missing or incomplete; R2 `latest` still points at old version.
+
+If the step that failed is "Build .mcpb bundle" with "Bundle check failed", the bundle itself is at fault and a re-run will fail the same way: nothing was uploaded. Reproduce with `pnpm build:mcpb`, fix, and ship the next patch version (see `mcpb/README.md` → "Bundle check").
 
 **Fix:** re-run failed job. Subsequent run is idempotent — R2 PUTs overwrite, GitHub Release assets de-dup by filename, `softprops/action-gh-release` won't duplicate the release.
 
@@ -238,7 +243,9 @@ head -5 CHANGELOG.md
 # 3. Quality gate
 pnpm check && pnpm test
 
-# 4. Local artefact smoke test (optional but recommended for major releases)
+# 4. Local artefact build (optional but recommended for major releases).
+#    build:mcpb ends with the bundle check: the packed .mcpb is extracted and the
+#    server must answer initialize and tools/list, or the build fails.
 pnpm build:dist
 ls -lh dist-mcpb/ dist-cowork/
 

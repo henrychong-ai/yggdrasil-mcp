@@ -21,12 +21,31 @@ pnpm build:mcpb
 The build script (`scripts/build-mcpb.sh`):
 
 1. Builds the TypeScript sources (`pnpm build`)
-2. Stages `dist/` + production `node_modules` + manifest + icon into `build/mcpb/`
-3. Packs `build/mcpb/` into `dist-mcpb/yggdrasil-mcp-{version}.mcpb` via `@anthropic-ai/mcpb pack`
-4. Validates via `@anthropic-ai/mcpb validate`
-5. Computes SHA256 alongside the `.mcpb`
+2. Stages `dist/` + production `node_modules` + manifest + icon into `build/mcpb/`. The dependencies are installed with pnpm's hoisted node linker: a flat `node_modules` of real directories, with pnpm's state files and command shims removed
+3. Validates the manifest via `@anthropic-ai/mcpb validate`
+4. Packs `build/mcpb/` into `dist-mcpb/yggdrasil-mcp-{version}.mcpb` via `@anthropic-ai/mcpb pack`
+5. Checks the packed file with `scripts/verify-mcpb.mjs` (below); a bundle that fails is deleted and the build stops
+6. Computes SHA256 alongside the `.mcpb`
 
-`@anthropic-ai/mcpb` is **pinned** to `^2.1.0` in the build script — do not allow it to float (defends against package hijack).
+`@anthropic-ai/mcpb` is an **exact** devDependency, locked by `pnpm-lock.yaml` — do not allow it to float (defends against package hijack).
+
+### Why the hoisted linker
+
+`mcpb pack` stores every symlink as a copy of its target. pnpm's default layout is built from symlinks, so a bundle packed from it had each package copied to the top of `node_modules` without its own dependencies beside it, and the server exited at start-up with `ERR_MODULE_NOT_FOUND`. All ten published bundles, v1.2.0 to v1.2.12, have that fault. The hoisted layout has no symlinks to lose, and it holds one copy of each package, so the bundle is about 4 MB where it was 13 to 15 MB.
+
+### Bundle check
+
+```bash
+pnpm verify:mcpb                              # the bundle just built, in dist-mcpb/
+pnpm verify:mcpb path/to/yggdrasil-mcp.mcpb   # any bundle, e.g. a downloaded release
+```
+
+The check extracts the archive with `unzip` into a new temporary directory that has no `node_modules` above it, then:
+
+- rejects an environment or `*.local` file, pnpm install state, a command shim, an installed devDependency and a missing production dependency;
+- starts the server as the manifest's `mcp_config` says, with no `NODE_PATH` and an empty home directory, and completes an MCP `initialize` and `tools/list` over stdio. The reported version must equal the manifest version and every tool in the manifest must be served.
+
+It proves that the extracted files run under Node on the build machine. It does not install the bundle into Claude Desktop.
 
 ## Installation (end users)
 

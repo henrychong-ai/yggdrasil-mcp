@@ -85,10 +85,14 @@ pnpm typecheck
 # Watch mode for TypeScript
 pnpm watch
 
-# Build .mcpb (Claude Desktop Extension)
+# Build .mcpb (Claude Desktop Extension): hoisted production node_modules, then the bundle check
 pnpm build:mcpb
 
-# Build .zip (Claude Code / Cowork plugin) — uses hoisted node_modules layout
+# Check a packed .mcpb: extract it, start the server, initialize + tools/list
+# (no argument: the bundle in dist-mcpb/)
+pnpm verify:mcpb
+
+# Build .zip (Claude Code / Cowork plugin): manifest + .mcp.json + README, no server code
 pnpm build:cowork-plugin
 
 # Build BOTH distribution artefacts
@@ -118,6 +122,7 @@ yggdrasil-mcp/
 │   ├── coercion.test.ts            # Coercion test suite
 │   ├── mcpb-manifest.test.ts       # MCPB manifest validation suite
 │   ├── cowork-plugin-manifest.test.ts # Cowork plugin manifest validation suite
+│   ├── verify-mcpb.test.ts         # Bundle check suite (small bundles zipped at test time)
 │   ├── r2-prune.test.ts            # scripts/r2-prune.sh against generated listings (offline)
 │   └── check-public-sanitization.test.ts # Public-content gate suite
 ├── mcpb/                    # Claude Desktop Extension assets
@@ -132,7 +137,8 @@ yggdrasil-mcp/
 │   ├── .mcp.json            # MCP server config (stdio, ${CLAUDE_PLUGIN_ROOT})
 │   └── README.md            # Plugin build + install docs
 ├── scripts/
-│   ├── build-mcpb.sh         # .mcpb bundle build (pinned @anthropic-ai/mcpb)
+│   ├── build-mcpb.sh         # .mcpb bundle build (pinned @anthropic-ai/mcpb, hoisted node_modules)
+│   ├── verify-mcpb.mjs       # Bundle check: extract, start, initialize + tools/list (pnpm verify:mcpb)
 │   ├── build-cowork-plugin.sh # Cowork/Code plugin ZIP build
 │   ├── r2-prune.sh           # R2 retention prune (dry run by default, --apply deletes)
 │   └── check-public-sanitization.mjs # Public-content gate (pnpm public:check)
@@ -545,4 +551,10 @@ unzip -l dist-cowork/yggdrasil-mcp-*.zip | awk '{print $NF}' | grep -oE '[^a-zA-
 
 ### .mcpb vs .zip architectural difference
 
-The `.mcpb` (Claude Desktop) **does** bundle `node_modules/` because the MCPB installer doesn't perform the same path-character validation Cowork does. Result: `.mcpb` is ~12 MB while the Cowork `.zip` is ~2.5 KB. The two formats serve different surfaces with different validator strictness.
+The `.mcpb` (Claude Desktop) **does** bundle `node_modules/` because the MCPB installer doesn't perform the same path-character validation Cowork does. Result: `.mcpb` is about 4 MB (about 2,400 files) while the Cowork `.zip` is ~2.5 KB. The two formats serve different surfaces with different validator strictness.
+
+### .mcpb fails to start — `ERR_MODULE_NOT_FOUND`
+
+**The production install in `scripts/build-mcpb.sh` must keep `--config.node-linker=hoisted`.** `mcpb pack` stores every symlink as a copy of its target. pnpm's default layout is made of symlinks, so packing it left each top-level package without its own dependencies, and the server exited with `Cannot find package 'zod-to-json-schema'`. All ten published bundles, v1.2.0 to v1.2.12, have this fault (13 to 15 MB; v1.2.12 has 8,800 files). The staging directory `build/mcpb/server` starts either way, because its symlinks are still in place: only an extracted bundle shows the fault.
+
+`scripts/verify-mcpb.mjs` (`pnpm verify:mcpb`) is the guard, and the build runs it on every bundle: it extracts the packed file into a temporary directory with no `node_modules` above it, starts the server from the manifest's `mcp_config` and completes `initialize` and `tools/list`. It also fails on pnpm state files and command shims (they record the build machine's paths), on `.env*` and `*.local` files and on an installed devDependency. A failed bundle is deleted. The check runs the extracted bundle under Node; it does not install it into Claude Desktop.

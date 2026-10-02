@@ -51,6 +51,7 @@
     "build:cowork-plugin": "bash scripts/build-cowork-plugin.sh",
     "build:dist": "pnpm build:mcpb && pnpm build:cowork-plugin",
     "validate:mcpb": "pnpm exec mcpb validate mcpb/manifest.json",
+    "verify:mcpb": "node scripts/verify-mcpb.mjs",
     "prepare": "husky",
     "watch": "tsc --watch",
     "test": "vitest run --coverage",
