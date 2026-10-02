@@ -71,6 +71,8 @@ op run --env-file=.env.release.local -- <command>
 
 `op run` resolves the references in memory for that one process. Nothing resolved is ever written to disk: do not `export` the values, do not paste them into a file, and do not replace the placeholders in `.env.release.example`. Any other secret manager works the same way, as long as it puts the three variables in the command's environment.
 
+`pnpm public:check` (part of `pnpm check`, the pre-commit hook and CI) fails if a real reference, an account identifier or another private detail is written into a tracked file.
+
 CI does not use this file. The `release-mcpb` job reads the same values from the repository's Actions secrets (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`).
 
 ## Failure modes — known and how to react

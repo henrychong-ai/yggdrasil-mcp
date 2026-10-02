@@ -61,7 +61,8 @@
     "format:check": "biome check .",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck"
+    "public:check": "node scripts/check-public-sanitization.mjs",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm public:check"
   },
   "lint-staged": {
     "*.ts": [

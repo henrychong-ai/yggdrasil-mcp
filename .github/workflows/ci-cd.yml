@@ -47,6 +47,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Public content check
+        # This repository is public: fails if a tracked file carries private operational
+        # detail (personal paths, secret-manager references, private hosts or identifiers).
+        run: pnpm public:check
+
       - name: Lint
         run: pnpm lint
 
