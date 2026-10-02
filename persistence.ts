@@ -128,13 +128,13 @@ function readJsonSafe(filePath: string): Record<string, unknown> | null {
  */
 export function resolvePlansDirectory(projectRoot?: string): string {
   // 1. Env var override
-  const envDir = process.env.YGGDRASIL_PLANS_DIR;
+  const envDir = process.env['YGGDRASIL_PLANS_DIR'];
   if (envDir) return envDir;
 
   // 2. Project-level CC setting
   if (projectRoot) {
     const projectSettings = readJsonSafe(path.join(projectRoot, '.claude', 'settings.json'));
-    const plansDir = projectSettings?.plansDirectory;
+    const plansDir = projectSettings?.['plansDirectory'];
     if (typeof plansDir === 'string') {
       return path.resolve(projectRoot, plansDir);
     }
@@ -142,7 +142,7 @@ export function resolvePlansDirectory(projectRoot?: string): string {
 
   // 3. Global CC setting
   const globalConfig = readJsonSafe(path.join(homedir(), '.claude.json'));
-  const globalPlansDir = globalConfig?.plansDirectory;
+  const globalPlansDir = globalConfig?.['plansDirectory'];
   if (typeof globalPlansDir === 'string') return globalPlansDir;
 
   // 4. CC default

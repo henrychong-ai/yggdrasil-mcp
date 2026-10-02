@@ -182,15 +182,15 @@ function parseJsonArray<T>(value: string | undefined, fieldName: string): T[] {
 }
 
 export function normalizePlanStep(raw: Record<string, unknown>, index: number): PlanStep {
-  const rawTitle = raw.title ?? raw.action ?? raw.name ?? raw.step;
-  const rawDescription = raw.description ?? raw.detail ?? raw.details ?? raw.info;
+  const rawTitle = raw['title'] ?? raw['action'] ?? raw['name'] ?? raw['step'];
+  const rawDescription = raw['description'] ?? raw['detail'] ?? raw['details'] ?? raw['info'];
 
   return {
     title: typeof rawTitle === 'string' ? rawTitle : `Step ${String(index + 1)}`,
     description: typeof rawDescription === 'string' ? rawDescription : '',
-    ...(raw.files ? { files: raw.files as string[] } : {}),
-    ...(raw.dependencies ? { dependencies: raw.dependencies as number[] } : {}),
-    ...(raw.complexity ? { complexity: raw.complexity as 'low' | 'medium' | 'high' } : {}),
+    ...(raw['files'] ? { files: raw['files'] as string[] } : {}),
+    ...(raw['dependencies'] ? { dependencies: raw['dependencies'] as number[] } : {}),
+    ...(raw['complexity'] ? { complexity: raw['complexity'] as 'low' | 'medium' | 'high' } : {}),
   };
 }
 
@@ -336,7 +336,7 @@ export class DeepPlanningServer {
   private persistence: PersistenceManager;
 
   constructor(projectRoot?: string) {
-    this.disableLogging = (process.env.DISABLE_THOUGHT_LOGGING ?? '').toLowerCase() === 'true';
+    this.disableLogging = (process.env['DISABLE_THOUGHT_LOGGING'] ?? '').toLowerCase() === 'true';
     this.persistence = new PersistenceManager(projectRoot);
   }
 

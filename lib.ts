@@ -19,7 +19,7 @@ export class SequentialThinkingServer {
 
   constructor() {
     this.disableThoughtLogging =
-      (process.env.DISABLE_THOUGHT_LOGGING ?? '').toLowerCase() === 'true';
+      (process.env['DISABLE_THOUGHT_LOGGING'] ?? '').toLowerCase() === 'true';
   }
 
   private formatThought(thoughtData: ThoughtData): string {
