@@ -445,11 +445,11 @@ v1.2.9).
 
 **pnpm overrides do NOT apply to auto-installed peers.** `vite` reaches the tree only as an auto-installed peer of `vitest`, so a `pnpm.overrides.vite` entry is silently ignored — resolution stays put even after deleting `pnpm-lock.yaml` and purging the pnpm metadata cache. Any transitive that arrives only as an auto-installed peer must be declared as a **direct devDependency** for its override to bind. Symptom: one override does nothing while every other override in the same block applies.
 
-**Bound every override that shadows an exact upstream pin.** `miniflare` pins `undici` at exactly `7.28.0`; an unbounded `undici: ">=7.28.0"` override floated the tree to undici **8.9.0** — a transitive major outside miniflare's expectation, with no error. Prefer `>=X <MAJOR+1` for any override on a package the tooling pins precisely (`undici`, `fast-uri`, `sharp`).
+**Bound every override that shadows an exact upstream pin.** An unbounded `>=X` override can float a transitive to a new major with no error: while `wrangler` was a devDependency, `miniflare` pinned `undici` at exactly `7.28.0` and an unbounded `undici: ">=7.28.0"` override floated the tree to undici **8.9.0**. Prefer `>=X <MAJOR+1` for any override on a package the tooling pins precisely (`fast-uri`, `esbuild`).
 
 **Overrides pinning a transitive major need the parent's declared range checked first.** `@hono/node-server >=2.0.5` is only legitimate from MCP SDK 1.30.0, which widened its range to `^1.19.9 || ^2.0.5`.
 
-**`wrangler` is NOT an unused devDependency.** It has no config file and no `package.json` script, but `RELEASE_RUNBOOK.md` invokes `pnpm exec wrangler r2 object delete` for R2 release operations. Do not prune it as dead weight — it is also the transitive source of the `sharp` and `undici` advisories, so those need overrides rather than removal.
+**`wrangler` is not a devDependency any more** (removed 2026-10-02). Nothing in the repo invokes it: the R2 prune is `scripts/r2-prune.sh` (curl against the S3-compatible API) and the CI upload uses the AWS CLI. Removing it took `miniflare`, `workerd`, `sharp`, `undici` and `ws` out of the tree, so the `sharp`, `undici` and `ws` overrides went with it. An override for a package that is not in `pnpm-lock.yaml` is dead: remove it instead of keeping it "in case".
 
 **`pnpm update` leaves the `vite` importer specifier out of step with its override**, so the next `pnpm install --frozen-lockfile` fails with "1 dependencies are mismatched: vite". Run a plain `pnpm install` after `pnpm update`, then the frozen install.
 
