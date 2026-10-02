@@ -44,6 +44,35 @@ curl -sI https://henrychong.com/yggdrasil-latest
 shasum -a 256 -c yggdrasil-mcp-latest.mcpb.sha256
 ```
 
+## Maintainer credentials
+
+The R2 commands in this runbook (Scenario 4 and `scripts/r2-prune.sh`) read three environment variables and nothing else:
+
+| Variable | What it is |
+|---|---|
+| `R2_ACCESS_KEY_ID` | Access key ID of an R2 S3-compatible key pair with object read, write and delete on the `packages` bucket |
+| `R2_SECRET_ACCESS_KEY` | The matching secret access key |
+| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account that owns the bucket (32 hexadecimal characters) |
+
+Where a maintainer keeps these is not recorded in this repository. Each maintainer has an untracked `.env.release.local` at the repo root (git-ignored by the `*.local` rule; start from the tracked template `.env.release.example`) that maps each variable to a reference into their own secret manager, never to a value. With 1Password, as one example:
+
+```bash
+# .env.release.local — untracked; references only
+R2_ACCESS_KEY_ID=op://your-vault/your-item/access-key-id
+R2_SECRET_ACCESS_KEY=op://your-vault/your-item/secret-access-key
+CLOUDFLARE_ACCOUNT_ID=op://your-vault/your-item/account-id
+```
+
+Run every command that needs them as:
+
+```bash
+op run --env-file=.env.release.local -- <command>
+```
+
+`op run` resolves the references in memory for that one process. Nothing resolved is ever written to disk: do not `export` the values, do not paste them into a file, and do not replace the placeholders in `.env.release.example`. Any other secret manager works the same way, as long as it puts the three variables in the command's environment.
+
+CI does not use this file. The `release-mcpb` job reads the same values from the repository's Actions secrets (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`).
+
 ## Failure modes — known and how to react
 
 The four distribution channels are **not transactional** — they can land in inconsistent state if a job partially succeeds. The matrix below is the operator's response per scenario.
@@ -96,22 +125,23 @@ Note: npm requires 2FA / OIDC for dist-tag operations on Trusted-Publisher packa
 
 ### Scenario 4: R2 `latest` pointer points at a bad version
 
+Needs the AWS CLI and the variables from "Maintainer credentials".
+
 ```bash
 # Get the previous version's SHA256
-PREV=1.2.1
+export PREV=1.2.1
 curl -s "https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-${PREV}.mcpb.sha256"
 
-# Repoint -latest to the previous version (using R2 token from 1Password)
-AKID=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
-SECRET=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
-ACCOUNT_ID=32882cce864ab5c754075741115ca269
-
-# Server-side copy versioned → latest
-AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SECRET" AWS_DEFAULT_REGION=auto \
-  aws s3 cp "s3://packages/yggdrasil-mcp/yggdrasil-mcp-${PREV}.mcpb" \
-            "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
-            --endpoint-url "https://${ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --content-type application/zip --cache-control "public, max-age=300"
+# Repoint -latest to the previous version: server-side copy versioned → latest.
+# The single quotes matter: the variables are expanded by the inner shell, after
+# `op run` has put them in its environment.
+op run --env-file=.env.release.local -- bash -c '
+  AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" AWS_DEFAULT_REGION=auto \
+    aws s3 cp "s3://packages/yggdrasil-mcp/yggdrasil-mcp-${PREV}.mcpb" \
+              "s3://packages/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb" \
+              --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+              --content-type application/zip --cache-control "public, max-age=300"
+'
 
 # Same for .zip + sidecars; regenerate latest sidecar with correct filename ref
 # (see ci-cd.yml release-mcpb job for exact pattern)
@@ -168,98 +198,28 @@ Build artefacts:
 
 Per the policy in `CLAUDE.md` → "R2 Retention Policy": after a successful release upload, prune versioned R2 artefacts older than 90 days. Always retain the latest version's artefacts regardless of age. Never touch `latest.*` pointers or `SHA256SUMS` aggregations. The pruned artefacts remain available via GitHub Release (`github.com/henrychong-ai/yggdrasil-mcp/releases/download/vX.Y.Z/...`).
 
+The procedure is `scripts/r2-prune.sh`. Run it AFTER a successful release (the latest pointer has been repointed), from the repo root, on the checkout of the released version. It needs the variables from "Maintainer credentials".
+
 ```bash
-# Run AFTER a successful release (latest pointer has been repointed).
-# Working dir: yggdrasil-mcp repo root.
-# Tool choice: curl + AWS SigV4 (curl built-in `--aws-sigv4`, no `aws` CLI required) for
-# listing via the S3-compatible API; wrangler for delete. Both satisfy the repo's
-# "prefer CF MCP / curl+API / wrangler over AWS CLI" tool-selection rule.
-set -euo pipefail
+# 1. Dry run: lists the prefix and prints the prune candidates. Deletes nothing.
+op run --env-file=.env.release.local -- scripts/r2-prune.sh
 
-# S3-compatible credentials for the LIST call
-AKID=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/w5p4vnlxigx22bzrscj4ohc74a' | tr -d '\n\r')
-SECRET=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/packages R2 API Key/qavrprw6327kzvpulzqzwk5yau' | tr -d '\n\r')
-
-# CF account-scoped API token for wrangler (R2 Edit scope on `packages` bucket)
-# Stopgap: ADMIN_API_KEY works. Follow-up: issue a scoped "packages R2 Edit" token.
-export CLOUDFLARE_API_TOKEN=$(op --account chongfamily.1password.com read 'op://Technology/Cloudflare - HC/API Tokens/ADMIN_API_KEY' | tr -d '\n\r')
-
-ACCOUNT_ID=32882cce864ab5c754075741115ca269
-S3_ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
-BUCKET=packages
-PREFIX=yggdrasil-mcp/
-
-# Anchor values (always-keep)
-CURRENT=$(node -p "require('./package.json').version")
-CUTOFF_DATE=$(date -v-90d +%Y-%m-%d)   # macOS. Linux: date -d "90 days ago" +%Y-%m-%d
-
-echo "Current latest version (always kept): $CURRENT"
-echo "Cutoff date (anything older is a prune candidate): $CUTOFF_DATE"
-echo ""
-
-# 1. LIST objects via S3-compatible API + SigV4 (curl, not `aws` CLI)
-#    Returns S3 XML; parse with python's stdlib xml.etree.
-LIST_XML=$(curl -s --aws-sigv4 "aws:amz:auto:s3" \
-  --user "${AKID}:${SECRET}" \
-  "${S3_ENDPOINT}/${BUCKET}/?list-type=2&prefix=${PREFIX}")
-
-# 2. DRY RUN — show prune candidates
-echo "=== Prune candidates (DRY RUN) ==="
-echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY'
-import re, sys, xml.etree.ElementTree as ET
-cutoff, current = sys.argv[1], sys.argv[2]
-ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
-root = ET.fromstring(sys.stdin.read())
-for obj in root.findall("s3:Contents", ns):
-    key = obj.findtext("s3:Key", default="", namespaces=ns)
-    last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]  # YYYY-MM-DD
-    name = key.rsplit("/", 1)[-1]
-    if "latest" in name or "SHA256SUMS" in name:
-        continue
-    # Versioned release artefacts only: never anything else under the prefix (install.html lives here).
-    if not re.fullmatch(r"yggdrasil-mcp-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.(mcpb|zip)(\.sha256)?", name):
-        continue
-    if f"-{current}." in name:
-        continue
-    if last_modified >= cutoff:
-        continue
-    print(f"  PRUNE: {key}  (uploaded {last_modified})")
-PY
-
-# 3. After reviewing the list, execute the deletes. Uncomment to run:
-# echo "$LIST_XML" | python3 - "$CUTOFF_DATE" "$CURRENT" <<'PY' | while IFS= read -r key; do
-# import re, sys, xml.etree.ElementTree as ET
-# cutoff, current = sys.argv[1], sys.argv[2]
-# ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
-# root = ET.fromstring(sys.stdin.read())
-# for obj in root.findall("s3:Contents", ns):
-#     key = obj.findtext("s3:Key", default="", namespaces=ns)
-#     last_modified = obj.findtext("s3:LastModified", default="", namespaces=ns)[:10]
-#     name = key.rsplit("/", 1)[-1]
-#     if "latest" in name or "SHA256SUMS" in name: continue
-#     if not re.fullmatch(r"yggdrasil-mcp-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.(mcpb|zip)(\.sha256)?", name): continue
-#     if f"-{current}." in name: continue
-#     if last_modified >= cutoff: continue
-#     print(key)
-# PY
-#   [ -n "$key" ] || continue
-#   code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE --aws-sigv4 "aws:amz:auto:s3" \
-#     --user "${AKID}:${SECRET}" "${S3_ENDPOINT}/${BUCKET}/${key}")
-#   [ "$code" = "204" ] || { echo "DELETE failed: HTTP $code for ${key}"; exit 1; }
-# done
+# 2. After reviewing the candidates: delete them.
+op run --env-file=.env.release.local -- scripts/r2-prune.sh --apply
 ```
 
 **Notes:**
 
 - **Last run: 2026-10-02 (v1.2.12 release).** Pruned 1.2.0 to 1.2.5 (24 files); kept 1.2.7, 1.2.10, 1.2.11, 1.2.12, the `latest` pointers, `SHA256SUMS` and `install.html`.
-- **The filter matches versioned release file names only.** Before 2026-10-02 it matched everything under the prefix that was not `latest` or `SHA256SUMS`, and the dry run listed `install.html` as a candidate.
-- **Deletes go through the S3 API with the same R2 key as the listing** (it has delete permission; a delete returns HTTP 204). The earlier `wrangler r2 object delete` step with `ADMIN_API_KEY` as `CLOUDFLARE_API_TOKEN` fails with "Invalid format for Authorization header": that item is not a Cloudflare API token.
-- From a non-interactive agent shell, inject the two R2 values with `op run --env-file` instead of `op read`.
-- Always start with the DRY RUN. Inspect the candidate list. Surprises (e.g. a hand-uploaded test artefact) should be investigated, not auto-deleted.
-- The filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, and anchors on `-<CURRENT>.` so the current version's full asset set (`.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256`) is preserved.
+- Always start with the dry run. Inspect the candidate list. Surprises (e.g. a hand-uploaded test artefact) should be investigated, not auto-deleted.
+- `--apply` takes a fresh listing and selects from it again; it prints the candidates before it deletes them. It stops at the first delete that does not return HTTP 204, and re-running it is safe: deleting an object that is already gone also returns 204.
+- **A candidate is a versioned release file name and nothing else:** `yggdrasil-mcp-<semver>.(mcpb|zip)` and its `.sha256` sidecar, directly under the prefix. Before 2026-10-02 the filter matched everything under the prefix that was not `latest` or `SHA256SUMS`, and the dry run listed `install.html` as a candidate.
+- The filter is intentionally conservative: it excludes anything containing `latest` or `SHA256SUMS`, it never selects the version in `package.json` (so the current version's full asset set — `.mcpb`, `.zip`, `.mcpb.sha256`, `.zip.sha256` — is preserved whatever its age), and it only selects objects uploaded before the cutoff, today (UTC) minus 90 days.
 - Pre-release artefacts (`-rc.0`, `-beta.1`) WILL be pruned by this filter once they age past 90 days. That is intentional — pre-releases are transient.
-- **Tool choice**: `curl --aws-sigv4` for the LIST call (S3-style auth via curl built-in, no `aws` CLI installed). `wrangler r2 object delete --remote` for the DELETE calls. Both satisfy the repo's "no AWS CLI for R2" rule. The remaining `aws s3 cp` calls in Scenario 4 and `ci-cd.yml`'s `release-mcpb` job are tracked for a coupled cleanup PR (see CI-automation plan for the prune step).
-- **`CLOUDFLARE_API_TOKEN` scope**: stopgap uses `ADMIN_API_KEY` (broad). Follow-up: issue a scoped "packages R2 Edit" CF API token, reference path TBD in path-registry.
+- **The script refuses rather than guesses.** It exits non-zero, selecting nothing, when the listing is truncated (more than one page), is not a listing at all (an error document, an empty body, a non-200 response), has an object without a readable upload date, or holds no artefact for the `package.json` version (wrong checkout, or a version bumped but not released yet).
+- **Tool choice**: `curl --aws-sigv4` (curl 7.75 or newer) for both the list and the delete calls, through R2's S3-compatible API with the one key pair. No `aws` CLI and no `wrangler` are involved, and no Cloudflare API token: an earlier version of this procedure deleted through `wrangler r2 object delete`, and that step never worked. The `aws s3 cp` calls in Scenario 4 and in `ci-cd.yml`'s `release-mcpb` job are the remaining uses of the AWS CLI.
+- The key pair reaches `curl` on standard input, so it is in no argument list and in no file.
+- **Testing the selection offline**: `scripts/r2-prune.sh --list-file <saved-listing.xml>` selects from a saved ListObjectsV2 response without credentials or network, and cannot be combined with `--apply`. `__tests__/r2-prune.test.ts` covers the selection and the delete loop this way.
 
 ## Sanity checks before tagging
 
