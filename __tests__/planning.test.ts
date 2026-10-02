@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   calculateWeightedScore,
-  DeepPlanningServer,
   type DeepPlanningInput,
   type DeepPlanningOutput,
+  DeepPlanningServer,
   type EvaluationScores,
-  type PlanningSession,
   normalizePlanStep,
+  type PlanningSession,
 } from '../planning.js';
 
 function parseOutput(

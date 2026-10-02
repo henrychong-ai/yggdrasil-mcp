@@ -12,7 +12,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { appendFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
