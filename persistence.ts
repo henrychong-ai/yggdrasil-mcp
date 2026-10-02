@@ -389,7 +389,7 @@ export class PersistenceManager {
         }
       }
 
-      return orphans.sort((a, b) => b.date.localeCompare(a.date));
+      return orphans.toSorted((a, b) => b.date.localeCompare(a.date));
     } catch {
       return [];
     }

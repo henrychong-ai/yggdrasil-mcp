@@ -70,12 +70,11 @@ describe('Cowork/Code plugin manifest', () => {
 
   it('points at the GitHub repo for homepage + repository', () => {
     const m = loadManifest();
-    if (m.homepage) {
-      expect(m.homepage).toMatch(/github\.com\/henrychong-ai\/yggdrasil-mcp/);
-    }
-    if (m.repository) {
-      expect(m.repository).toMatch(/github\.com\/henrychong-ai\/yggdrasil-mcp/);
-    }
+    // `name` is the only required plugin.json key, so either field may be absent.
+    // A field that is present (including '' or null) must be a string pointing at the repo.
+    const repoUrl = expect.stringMatching(/github\.com\/henrychong-ai\/yggdrasil-mcp/);
+    expect(m.homepage).toBeOneOf([undefined, repoUrl]);
+    expect(m.repository).toBeOneOf([undefined, repoUrl]);
   });
 
   it('declares MIT license', () => {

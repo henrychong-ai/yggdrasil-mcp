@@ -78,9 +78,12 @@ describe('MCPB manifest', () => {
     const m = loadManifest();
     expect(m.homepage).toMatch(/github\.com\/henrychong-ai\/yggdrasil-mcp/);
     expect(m.repository.url).toMatch(/github\.com\/henrychong-ai\/yggdrasil-mcp/);
-    if (m.support) {
-      expect(m.support).toMatch(/github\.com\/henrychong-ai\/yggdrasil-mcp\/issues/);
-    }
+    // `support` is not in the MCPB v0.3 schema's `required` list, so it may be absent.
+    // When present (including '' or null) it must be a string pointing at the issue tracker.
+    expect(m.support).toBeOneOf([
+      undefined,
+      expect.stringMatching(/github\.com\/henrychong-ai\/yggdrasil-mcp\/issues/),
+    ]);
   });
 
   describe('server config', () => {

@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | MCP SDK         | @modelcontextprotocol/sdk                              |
 | Validation      | Zod                                                    |
 | Testing         | Vitest + @vitest/coverage-v8                           |
-| Linting         | Oxlint (Rust-based, 668 built-in rules)                |
+| Linting         | Oxlint (Rust-based, built-in plugins only)             |
 | Formatting      | Biome (linter disabled, Prettier-compatible)            |
 | Git Hooks       | Husky + lint-staged                                    |
 | Package Manager | pnpm                                                   |
@@ -141,7 +141,7 @@ yggdrasil-mcp/
 ├── CONTRIBUTING.md          # Contribution guidelines
 ├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1
 ├── SECURITY.md              # Vulnerability reporting policy
-├── oxlint.json              # Oxlint config (8 native plugins, zero npm deps)
+├── .oxlintrc.json           # Oxlint config (eslint core + 7 built-in plugins, zero npm deps)
 ├── biome.json               # Biome formatter config (linter disabled)
 ├── tsconfig.json            # TypeScript config (ES2024, NodeNext)
 ├── vitest.config.ts         # Vitest configuration

@@ -586,9 +586,9 @@ describe('DeepPlanningServer', () => {
 
     it('should include name in index entry', async () => {
       // Use a temp dir to avoid polluting real plans directory
-      const { mkdtemp, rm } = await import('node:fs/promises');
-      const { tmpdir } = await import('node:os');
-      const td = await mkdtemp(path.join(tmpdir(), 'ygg-name-'));
+      const { mkdtemp: makeTempDir, rm: removeDir } = await import('node:fs/promises');
+      const { tmpdir: osTmpdir } = await import('node:os');
+      const td = await makeTempDir(path.join(osTmpdir(), 'ygg-name-'));
       vi.stubEnv('YGGDRASIL_PLANS_DIR', td);
 
       const srv = new DeepPlanningServer();
@@ -601,7 +601,7 @@ describe('DeepPlanningServer', () => {
 
       expect(entry?.name).toBe('indexed-name');
 
-      await rm(td, { recursive: true });
+      await removeDir(td, { recursive: true });
     });
   });
 

@@ -48,8 +48,8 @@ describe('coerceBoolean', () => {
     expect(() => coerceBoolean(0)).toThrow('Cannot coerce "0" to boolean');
     expect(() => coerceBoolean(null)).toThrow('Cannot coerce "null" to boolean');
     expect(() => coerceBoolean()).toThrow('Cannot coerce "undefined" to boolean');
-    expect(() => coerceBoolean({})).toThrow();
-    expect(() => coerceBoolean([])).toThrow();
+    expect(() => coerceBoolean({})).toThrow('Cannot coerce "[object Object]" to boolean');
+    expect(() => coerceBoolean([])).toThrow('Cannot coerce "" to boolean');
   });
 });
 
@@ -85,8 +85,8 @@ describe('coerceNumber', () => {
     expect(() => coerceNumber()).toThrow('Cannot coerce "undefined" to number');
     expect(() => coerceNumber(true)).toThrow('Cannot coerce "true" to number');
     expect(() => coerceNumber(false)).toThrow('Cannot coerce "false" to number');
-    expect(() => coerceNumber({})).toThrow();
-    expect(() => coerceNumber([])).toThrow();
+    expect(() => coerceNumber({})).toThrow('Cannot coerce "[object Object]" to number');
+    expect(() => coerceNumber([])).toThrow('Cannot coerce "" to number');
   });
 });
 
@@ -102,8 +102,8 @@ describe('booleanSchema', () => {
   });
 
   it('should throw for invalid values', () => {
-    expect(() => booleanSchema.parse('invalid')).toThrow();
-    expect(() => booleanSchema.parse(1)).toThrow();
+    expect(() => booleanSchema.parse('invalid')).toThrow('Cannot coerce "invalid" to boolean');
+    expect(() => booleanSchema.parse(1)).toThrow('Cannot coerce "1" to boolean');
   });
 });
 
@@ -115,14 +115,15 @@ describe('numberSchema', () => {
   });
 
   it('should reject zero and negative numbers', () => {
-    expect(() => numberSchema.parse(0)).toThrow();
-    expect(() => numberSchema.parse(-1)).toThrow();
-    expect(() => numberSchema.parse('-5')).toThrow();
+    expect(() => numberSchema.parse(0)).toThrow(/too_small/);
+    expect(() => numberSchema.parse(-1)).toThrow(/too_small/);
+    expect(() => numberSchema.parse('-5')).toThrow(/too_small/);
   });
 
   it('should reject non-integers', () => {
-    expect(() => numberSchema.parse(1.5)).toThrow();
-    expect(() => numberSchema.parse('3.14')).toThrow();
+    // `invalid_type` alone would also match an un-coerced string; pin the integer check.
+    expect(() => numberSchema.parse(1.5)).toThrow(/"expected": "int"/);
+    expect(() => numberSchema.parse('3.14')).toThrow(/"expected": "int"/);
   });
 });
 
@@ -152,8 +153,8 @@ describe('optionalNumberSchema', () => {
   });
 
   it('should reject invalid values', () => {
-    expect(() => optionalNumberSchema.parse(0)).toThrow();
-    expect(() => optionalNumberSchema.parse(-1)).toThrow();
+    expect(() => optionalNumberSchema.parse(0)).toThrow(/too_small/);
+    expect(() => optionalNumberSchema.parse(-1)).toThrow(/too_small/);
   });
 });
 
@@ -174,7 +175,7 @@ describe('optionalNonNegativeNumberSchema', () => {
   });
 
   it('should reject negative numbers', () => {
-    expect(() => optionalNonNegativeNumberSchema.parse(-1)).toThrow();
+    expect(() => optionalNonNegativeNumberSchema.parse(-1)).toThrow(/too_small/);
   });
 });
 
@@ -198,12 +199,12 @@ describe('optionalScoreSchema', () => {
   });
 
   it('should reject scores outside 0-10 range', () => {
-    expect(() => optionalScoreSchema.parse(-1)).toThrow();
-    expect(() => optionalScoreSchema.parse(11)).toThrow();
-    expect(() => optionalScoreSchema.parse('15')).toThrow();
+    expect(() => optionalScoreSchema.parse(-1)).toThrow(/too_small/);
+    expect(() => optionalScoreSchema.parse(11)).toThrow(/too_big/);
+    expect(() => optionalScoreSchema.parse('15')).toThrow(/too_big/);
   });
 
   it('should reject non-numeric values', () => {
-    expect(() => optionalScoreSchema.parse('abc')).toThrow();
+    expect(() => optionalScoreSchema.parse('abc')).toThrow('Cannot coerce "abc" to number');
   });
 });

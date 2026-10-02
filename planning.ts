@@ -159,7 +159,7 @@ function parseJsonStringArray(value: string | undefined, fieldName: string): str
     return parsed.map(String);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new TypeError(`Invalid JSON for ${fieldName}`);
+      throw new TypeError(`Invalid JSON for ${fieldName}`, { cause: error });
     }
     throw error;
   }
@@ -175,7 +175,7 @@ function parseJsonArray<T>(value: string | undefined, fieldName: string): T[] {
     return parsed as T[];
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new TypeError(`Invalid JSON for ${fieldName}`);
+      throw new TypeError(`Invalid JSON for ${fieldName}`, { cause: error });
     }
     throw error;
   }

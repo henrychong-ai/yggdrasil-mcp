@@ -61,7 +61,7 @@ Use `pnpm check` to run all checks at once.
 ## Code Style
 
 - **TypeScript**: Strict mode enabled
-- **ESLint**: Full plugin stack (see eslint.config.js)
+- **Oxlint**: Linting with zero warnings allowed (see .oxlintrc.json)
 - **Prettier**: Auto-formatting (see .prettierrc)
 - **Tests**: Vitest with 90% coverage threshold
 
