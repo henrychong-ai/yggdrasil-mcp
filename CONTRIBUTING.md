@@ -52,11 +52,16 @@ pnpm format:check
 # Type checking
 pnpm typecheck
 
+# Public-content check (no personal paths, secret references or private hosts)
+pnpm public:check
+
 # Tests (90% coverage minimum)
 pnpm test
 ```
 
-`pnpm check` runs lint, format check and typecheck in one command. It does not run the tests: run `pnpm test` separately.
+`pnpm check` runs lint, format check, typecheck and the public-content check in one command. It does not run the tests: run `pnpm test` separately.
+
+This repository is public. `pnpm public:check` fails if a tracked file contains a personal home path, a real secret-manager reference, a private host name or a private identifier; use placeholders and environment variables instead. The pre-commit hook and CI run it too.
 
 ## Code Style
 

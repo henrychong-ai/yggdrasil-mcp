@@ -29,7 +29,7 @@ Maintainer-only operational notes, when present, are in the untracked `CLAUDE.lo
 | Testing         | Vitest + @vitest/coverage-v8                           |
 | Linting         | Oxlint (Rust-based, built-in plugins only)             |
 | Formatting      | Biome (linter disabled, Prettier-compatible)            |
-| Git Hooks       | Husky (gitleaks + lint-staged)                               |
+| Git Hooks       | Husky (gitleaks + lint-staged + public-content gate)   |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
@@ -73,8 +73,11 @@ pnpm format
 # Check formatting
 pnpm format:check
 
-# Full quality check (lint + format + typecheck)
+# Full quality check (lint + format + typecheck + public-content gate)
 pnpm check
+
+# Public-content gate on its own (see "Public Repository Hygiene")
+pnpm public:check
 
 # TypeScript type checking
 pnpm typecheck
@@ -93,6 +96,10 @@ pnpm build:dist
 
 # Validate the MCPB manifest source
 pnpm validate:mcpb
+
+# R2 retention prune: dry run, then --apply (needs the maintainer credentials;
+# see RELEASE_RUNBOOK.md)
+scripts/r2-prune.sh
 ```
 
 ## Project Structure
@@ -109,7 +116,10 @@ yggdrasil-mcp/
 │   ├── planning.test.ts            # Deep planning test suite
 │   ├── persistence.test.ts         # Persistence layer test suite
 │   ├── coercion.test.ts            # Coercion test suite
-│   └── mcpb-manifest.test.ts       # MCPB manifest validation suite
+│   ├── mcpb-manifest.test.ts       # MCPB manifest validation suite
+│   ├── cowork-plugin-manifest.test.ts # Cowork plugin manifest validation suite
+│   ├── r2-prune.test.ts            # scripts/r2-prune.sh against generated listings (offline)
+│   └── check-public-sanitization.test.ts # Public-content gate suite
 ├── mcpb/                    # Claude Desktop Extension assets
 │   ├── manifest.json        # MCPB manifest (manifest_version 0.3)
 │   ├── icon.png             # 256x256 icon
@@ -123,7 +133,9 @@ yggdrasil-mcp/
 │   └── README.md            # Plugin build + install docs
 ├── scripts/
 │   ├── build-mcpb.sh         # .mcpb bundle build (pinned @anthropic-ai/mcpb)
-│   └── build-cowork-plugin.sh # Cowork/Code plugin ZIP build
+│   ├── build-cowork-plugin.sh # Cowork/Code plugin ZIP build
+│   ├── r2-prune.sh           # R2 retention prune (dry run by default, --apply deletes)
+│   └── check-public-sanitization.mjs # Public-content gate (pnpm public:check)
 ├── dist/                    # Compiled TypeScript output (npm package)
 ├── dist-mcpb/               # Built .mcpb bundles (gitignored)
 ├── dist-cowork/             # Built plugin ZIPs (gitignored)
@@ -140,6 +152,8 @@ yggdrasil-mcp/
 │   ├── PULL_REQUEST_TEMPLATE.md # PR checklist
 │   └── dependabot.yml       # Weekly dependency updates
 ├── CHANGELOG.md             # Full version history
+├── RELEASE_RUNBOOK.md       # Release procedure, failure modes, R2 retention
+├── .env.release.example     # Template for the untracked .env.release.local (placeholders only)
 ├── CONTRIBUTING.md          # Contribution guidelines
 ├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1
 ├── SECURITY.md              # Vulnerability reporting policy
@@ -150,7 +164,7 @@ yggdrasil-mcp/
 ├── .node-version            # Node.js version (24)
 ├── LICENSE                  # MIT (Anthropic + Henry Chong)
 └── .husky/
-    └── pre-commit           # gitleaks staged scan, then lint-staged
+    └── pre-commit           # gitleaks staged scan, lint-staged, then the public-content gate
 ```
 
 ## TypeScript Configuration
@@ -379,9 +393,20 @@ On every release that uploads to `packages.henrychong.com/yggdrasil-mcp/`:
 3. **Out of scope — never prune**: `yggdrasil-mcp-latest.{mcpb,zip}`, `yggdrasil-mcp-latest.*.sha256`, any `SHA256SUMS` aggregation files.
 4. **Sequence**: prune AFTER the new upload + latest-pointer repoint succeeds. Atomic-add-then-prune; never prune-then-add.
 5. **Durable archive**: GitHub Release assets retain all versions indefinitely (`github.com/henrychong-ai/yggdrasil-mcp/releases/download/vX.Y.Z/...`). That is the canonical pin URL for consumers who need a specific historical version; `packages.henrychong.com` is the recency-bounded mirror.
-6. **Implementation**: manual today. `RELEASE_RUNBOOK.md` carries the concrete prune commands. CI-automated step in the `release-mcpb` job is a follow-up.
+6. **Implementation**: manual today, with `scripts/r2-prune.sh`: dry run by default, `--apply` deletes, both through the S3-compatible API with `curl --aws-sigv4`. `RELEASE_RUNBOOK.md` → "R2 retention" has the two commands and "Maintainer credentials" says how the three variables it reads are supplied. The selection is tested offline in `__tests__/r2-prune.test.ts`. CI-automated step in the `release-mcpb` job is a follow-up.
 
 **Rationale**: bounds R2 storage growth, reduces stable-URL exposure to old known-bad versions, preserves comfortable rollback window. The "keep latest" floor + GitHub Release fallback make this a one-way door we can always unwind from.
+
+## Public Repository Hygiene
+
+This repository is public. Tracked files describe procedures in terms of environment variables and placeholders; where a maintainer's credentials and infrastructure actually live is never recorded here.
+
+- **Gate**: `pnpm public:check` (`scripts/check-public-sanitization.mjs`) scans every git-tracked file and fails on a personal home path (`/Users/<name>/`), a secret-manager reference that is not a placeholder (write `op://your-vault/your-item/field`), a named password-manager account host, a tailnet host name, a private server name, and private email addresses and infrastructure identifiers. It also refuses to let `CLAUDE.local.md`, `*.local`, a real `.env*` file, `.claude/` or `plans/` be tracked.
+- **Where it runs**: in `pnpm check`, in the pre-commit hook (with `--staged`, against the index) and as the "Public content check" step of the CI build job.
+- **Exact private values are stored as SHA-256 hashes only.** The gate hashes every 32-hex token and every email address in a file and compares. To cover another identifier, add its hash (`printf '%s' '<value>' | shasum -a 256`), never the value.
+- **No file is exempt**, the checker and its test included; the test assembles its forbidden samples at run time. Findings name the file, line and rule and never print the matched text.
+- **If the gate fails**: move the detail to an untracked file (`CLAUDE.local.md`, `.env.release.local`) or replace it with a placeholder or variable. Do not weaken a rule, add an exemption or bypass the hook to get a commit through; a wrong rule is fixed in its own reviewed commit.
+- `packages.henrychong.com`, the `henrychong.com/yggdrasil-latest` link and the author's name and public address are published on purpose and are not findings.
 
 ## Configuration
 
@@ -481,6 +506,8 @@ If lint-staged fails:
 1. Run `pnpm lint:fix` to auto-fix issues
 2. Run `pnpm format` to format files
 3. Stage fixed files and commit again
+
+If the hook stops with "Public content check failed", a staged file carries private detail. The message gives the file, line and rule: see "Public Repository Hygiene". `--no-verify` is not a fix; CI runs the same check.
 
 ### npm Publish Skipped
 

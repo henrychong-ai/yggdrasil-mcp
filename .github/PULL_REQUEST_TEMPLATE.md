@@ -21,7 +21,7 @@ Describe testing performed.
 ## Checklist
 
 - [ ] Code follows project style guidelines
-- [ ] `pnpm check` passes (lint, format, typecheck)
+- [ ] `pnpm check` passes (lint, format, typecheck, public-content check)
 - [ ] `pnpm test` passes with 90%+ coverage
 - [ ] Documentation updated (if applicable)
 - [ ] CLAUDE.md updated (if applicable)
