@@ -37,7 +37,7 @@ curl -sI https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-<version>.m
 curl -sI https://packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.mcpb
 curl -s https://packages.henrychong.com/yggdrasil-mcp/SHA256SUMS
 
-# Bifrost vanity redirect
+# Vanity redirect to the latest bundle
 curl -sI https://henrychong.com/yggdrasil-latest
 
 # Local integrity check (after downloading)
@@ -90,8 +90,8 @@ The four distribution channels are **not transactional** — they can land in in
 | GitHub Release | `github.com/henrychong-ai/yggdrasil-mcp/releases/tag/v<version>` | `.mcpb` + `.zip` + `SHA256SUMS` + sidecars | Immutable |
 | R2 versioned | `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-<version>.{mcpb,zip}` | `.mcpb`, `.zip` | `max-age=31536000, immutable` |
 | R2 `latest` pointer | `packages.henrychong.com/yggdrasil-mcp/yggdrasil-mcp-latest.{mcpb,zip}` | Identical bytes to current versioned | `max-age=300` (5 min) |
-| Fusang Cowork plugin | Org Settings → Plugins (auto-install) | The `.zip` artefact | Anthropic-managed |
-| Fusang Desktop extension | Org Settings → Connectors → Desktop | The `.mcpb` artefact | Anthropic-managed |
+| Organisation Cowork plugin (Claude Teams) | Org Settings → Plugins (auto-install) | The `.zip` artefact | Anthropic-managed |
+| Organisation Desktop extension (Claude Teams) | Org Settings → Connectors → Desktop | The `.mcpb` artefact | Anthropic-managed |
 
 ### Scenario 1: `publish` (npm) fails, `release-mcpb` succeeds
 
@@ -173,8 +173,8 @@ Sequential steps in this order:
    git tag -d v<bad-version>
    git push origin --delete tag v<bad-version>
    ```
-5. **Fusang Cowork:** re-upload the previous `.zip` to `Organization settings → Plugins`; previous plugin overwrites the new one. Provisioning preference (auto-install) stays.
-6. **Fusang Desktop:** re-upload the previous `.mcpb` to `Organization settings → Connectors → Desktop`.
+5. **Organisation Cowork plugin:** re-upload the previous `.zip` to `Organization settings → Plugins`; previous plugin overwrites the new one. Provisioning preference (auto-install) stays.
+6. **Organisation Desktop extension:** re-upload the previous `.mcpb` to `Organization settings → Connectors → Desktop`.
 7. **Verify all:** run the verification commands at the top of this doc.
 
 ### Scenario 6: OIDC publish fails repeatedly (Trusted Publisher config drift)
@@ -259,10 +259,9 @@ git push origin v<version>
 - **npm registry issues:** support@npmjs.com
 - **GitHub Actions issues:** github.com/community
 - **Cloudflare R2 issues:** dash.cloudflare.com → Support
-- **Anthropic admin issues (Fusang plugin upload):** support@anthropic.com (Teams plan)
+- **Anthropic admin issues (organisation plugin upload):** support@anthropic.com (Teams plan)
 
 ## See also
 
-- `mcpb/SLACK_POST.md` — launch announcement templates (Fusang internal + external)
 - `CLAUDE.md` — Troubleshooting section covers Cowork upload validator + cache-poisoning rationale
 - `.github/workflows/ci-cd.yml` — canonical workflow definition; inline comments explain non-obvious choices

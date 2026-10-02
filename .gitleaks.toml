@@ -1,9 +1,8 @@
 # ============================================================================
-# Fusang canonical gitleaks config — copy to the ROOT of each repo as .gitleaks.toml
+# gitleaks config — lives at the repo root as .gitleaks.toml
 # ============================================================================
-# Source of truth: repos-fusang/ai → claude-code/skills/lint/templates/.gitleaks.toml
-# Consumed by BOTH the pre-commit hook (lint skill) and the CI secret-scan step
-# (ci-cd skill). gitleaks auto-discovers a .gitleaks.toml at the scan root, so no
+# Used by BOTH the pre-commit hook and the CI secret-scan step.
+# gitleaks auto-discovers a .gitleaks.toml at the scan root, so no
 # --config flag is needed once this file is present at the repo root.
 #
 # What it enforces:
@@ -13,7 +12,7 @@
 # Add repo-specific false positives under a [[allowlists]] block (must contain ≥1 check) at the bottom.
 # ============================================================================
 
-title = "Fusang gitleaks policy"
+title = "yggdrasil-mcp gitleaks policy"
 
 [extend]
 useDefault = true

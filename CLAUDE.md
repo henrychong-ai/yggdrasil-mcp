@@ -129,8 +129,7 @@ yggdrasil-mcp/
 │   ├── manifest.json        # MCPB manifest (manifest_version 0.3)
 │   ├── icon.png             # 256x256 icon
 │   ├── README.md            # MCPB build + install docs
-│   ├── install.html         # End-user install page (served from R2)
-│   └── SLACK_POST.md        # Launch announcement templates (Fusang + external)
+│   └── install.html         # End-user install page (served from R2)
 ├── cowork-plugin/           # Claude Code / Cowork plugin assets
 │   ├── .claude-plugin/
 │   │   └── plugin.json      # Anthropic plugin manifest
@@ -405,7 +404,7 @@ On every release that uploads to `packages.henrychong.com/yggdrasil-mcp/`:
 
 ## Public Repository Hygiene
 
-This repository is public. Tracked files describe procedures in terms of environment variables and placeholders; where a maintainer's credentials and infrastructure actually live is never recorded here.
+This repository is public. Tracked files describe procedures in terms of environment variables and placeholders; where a maintainer's credentials and infrastructure actually live is never recorded here. The same goes for any organisation's internal process (which workspace a bundle is uploaded to, internal announcements, internal repository paths): write "the organisation" here and keep the specifics in private notes.
 
 - **Gate**: `pnpm public:check` (`scripts/check-public-sanitization.mjs`) scans every git-tracked file and fails on a personal home path (`/Users/<name>/`), a secret-manager reference that is not a placeholder (write `op://your-vault/your-item/field`), a named password-manager account host, a tailnet host name, a private server name, and private email addresses and infrastructure identifiers. It also refuses to let `CLAUDE.local.md`, `*.local`, a real `.env*` file, `.claude/` or `plans/` be tracked.
 - **Where it runs**: in `pnpm check`, in the pre-commit hook (with `--staged`, against the index) and as the "Public content check" step of the CI build job.

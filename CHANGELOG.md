@@ -182,12 +182,12 @@ Tiny follow-up to v1.2.3: the install.html landing page referenced the icon via 
 
 ## v1.2.3 (2026-05-27) — Install page typography update
 
-Patched the MCPB install landing page (`mcpb/install.html`, served from `packages.henrychong.com/yggdrasil-mcp/install.html`) to use the Fusang Group canonical typography stack — **Inter Variable** (Latin sans) + **Maple Mono NL Variable** (mono for code/pre blocks), both self-hosted on `assets.fusang.co`. No CJK on this surface (English-only install flow).
+Patched the MCPB install landing page (`mcpb/install.html`, served from `packages.henrychong.com/yggdrasil-mcp/install.html`) to use the same typography stack as henrychong.com — **Inter Variable** (Latin sans) + **Maple Mono NL Variable** (mono for code/pre blocks), both self-hosted. No CJK on this surface (English-only install flow).
 
 ### Changed
 
-- **`mcpb/install.html`** — added `<link rel="preconnect" href="https://assets.fusang.co" crossorigin />`, four `@font-face` blocks (Inter roman + italic, Maple Mono NL roman + italic), body `font-family` chain now leads with Inter, `code, pre` block leads with Maple Mono NL and applies mandatory `font-feature-settings: 'cv01' 1, 'cv32' 1, 'cv33' 1, 'cv34' 1, 'cv35' 1, 'cv36' 1, 'cv37' 1` (cv01 tames Maple Mono NL v7.9's fancy `@` and broken-slash `$`; cv32–cv37 is the official "plain style" italic preset). Inter `font-optical-sizing: auto` set on `body`.
-- Aligns the install landing page with the canonical Fusang Group brand typography (same stack as henrychong.com, fusang.co, blocktree.co, portcullis.group, etc.).
+- **`mcpb/install.html`** — added a `preconnect` to the font host, four `@font-face` blocks (Inter roman + italic, Maple Mono NL roman + italic), body `font-family` chain now leads with Inter, `code, pre` block leads with Maple Mono NL and applies mandatory `font-feature-settings: 'cv01' 1, 'cv32' 1, 'cv33' 1, 'cv34' 1, 'cv35' 1, 'cv36' 1, 'cv37' 1` (cv01 tames Maple Mono NL v7.9's fancy `@` and broken-slash `$`; cv32–cv37 is the official "plain style" italic preset). Inter `font-optical-sizing: auto` set on `body`.
+- Aligns the install landing page with the typography of henrychong.com.
 
 ### Notes
 
@@ -253,7 +253,7 @@ Driven by Codex auto-PR-review + parallel `/simplify` + `/security-review` + `/c
 
 ### Added — operations docs
 
-- **`RELEASE_RUNBOOK.md`**: happy-path release procedure, per-channel verification commands, six failure-mode scenarios with concrete rollback steps (npm dist-tag rollback, R2 latest-pointer repoint, GitHub Release retraction, Fusang Cowork re-upload, OIDC config drift, emergency token fallback).
+- **`RELEASE_RUNBOOK.md`**: happy-path release procedure, per-channel verification commands, six failure-mode scenarios with concrete rollback steps (npm dist-tag rollback, R2 latest-pointer repoint, GitHub Release retraction, organisation plugin re-upload, OIDC config drift, emergency token fallback).
 
 ### Deferred (separate PRs)
 
@@ -287,15 +287,15 @@ v1.1.3, v1.1.4, and v1.2.0 had successful CI runs but failed silently at the npm
 
 Yggdrasil now ships in **two complementary formats** alongside the existing npm distribution:
 
-1. **`.mcpb` (Claude Desktop Extension)** — one-click install in Claude Desktop. Distributed via Fusang Teams workspace allowlist (org admin upload) AND public download at `packages.henrychong.com`.
-2. **`.zip` (Claude Code / Cowork plugin)** — bundled stdio MCP server packaged per Anthropic's plugin spec (`.claude-plugin/plugin.json` + `.mcp.json`). Distributed via Fusang Teams workspace plugin upload AND public download at `packages.henrychong.com`.
+1. **`.mcpb` (Claude Desktop Extension)** — one-click install in Claude Desktop. Distributed via a Claude Teams workspace allowlist (org admin upload) AND public download at `packages.henrychong.com`.
+2. **`.zip` (Claude Code / Cowork plugin)** — bundled stdio MCP server packaged per Anthropic's plugin spec (`.claude-plugin/plugin.json` + `.mcp.json`). Distributed via a Claude Teams workspace plugin upload AND public download at `packages.henrychong.com`.
 3. **npm (`npx -y yggdrasil-mcp`)** — unchanged, for Claude Code CLI / programmatic consumers.
 
 Mobile / pure-web Cowork remain architecturally out of scope (stdio MCP cannot reach those surfaces).
 
 ### Repo changes
 
-- New `mcpb/` directory: `manifest.json` (MCPB manifest_version 0.3), `icon.png`, `README.md`, `install.html` (external download page), `SLACK_POST.md` (Fusang + external launch copy)
+- New `mcpb/` directory: `manifest.json` (MCPB manifest_version 0.3), `icon.png`, `README.md`, `install.html` (external download page), `SLACK_POST.md` (launch copy; removed from the repo in a later release)
 - New `cowork-plugin/` directory: `.claude-plugin/plugin.json` (Anthropic plugin manifest), `.mcp.json` (stdio MCP config with `${CLAUDE_PLUGIN_ROOT}`), `README.md`
 - New `scripts/build-mcpb.sh` — compile → stage → pack via `@anthropic-ai/mcpb@^2.1.0` → SHA256
 - New `scripts/build-cowork-plugin.sh` — stages `.claude-plugin/plugin.json` + `.mcp.json` + `README.md` only (no bundled server runtime) → invalid-character pre-flight check → ZIP → assert <45 MB → SHA256. **Architecture matches Anthropic's reference plugins:** `.mcp.json` invokes `npx -y yggdrasil-mcp` at runtime; npm fetches the server on first use, auto-updates on each run. Resulting bundle is ~2.5 KB. The earlier attempt to bundle `server/dist/` + production `node_modules` was rejected by Cowork's plugin upload validator even with `--node-linker=hoisted` and full pnpm-metadata scrub, suggesting the validator rejects ALL paths under `node_modules/@*` not just pnpm-specific layouts — matches Anthropic's documented best practice of using `npx` / `uvx` rather than bundling
@@ -325,8 +325,8 @@ Mobile / pure-web Cowork remain architecturally out of scope (stdio MCP cannot r
 
 | Audience | Surface | Path | Mechanism |
 |---|---|---|---|
-| Fusang Teams members | Claude Desktop | A | Org admin uploads `.mcpb`; one-click install |
-| Fusang Teams members | Claude Cowork (desktop) | B | Org admin uploads `.zip`; auto-install |
+| Claude Teams workspace members | Claude Desktop | A | Org admin uploads `.mcpb`; one-click install |
+| Claude Teams workspace members | Claude Cowork (desktop) | B | Org admin uploads `.zip`; auto-install |
 | External / community / Henry's Personal plan | Claude Desktop | C | Direct download from `packages.henrychong.com` |
 | Henry's CLI | Claude Code | D | `npx -y yggdrasil-mcp` (unchanged) |
 
