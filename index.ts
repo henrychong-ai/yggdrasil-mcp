@@ -109,7 +109,11 @@ You should:
     }
 
     // Parse the JSON response to get structured content
-    const parsedContent = JSON.parse(result.content[0].text) as Record<string, unknown>;
+    const firstBlock = result.content[0];
+    if (firstBlock === undefined) {
+      throw new Error('sequential_thinking produced no content block');
+    }
+    const parsedContent = JSON.parse(firstBlock.text) as Record<string, unknown>;
 
     return {
       content: result.content,

@@ -75,7 +75,11 @@ export class SequentialThinkingServer {
         if (!(input.branchId in this.branches)) {
           this.branches[input.branchId] = [];
         }
-        this.branches[input.branchId].push(input);
+        const branch = this.branches[input.branchId];
+        if (branch === undefined) {
+          throw new Error(`Branch "${input.branchId}" has no thought list`);
+        }
+        branch.push(input);
       }
 
       if (!this.disableThoughtLogging) {

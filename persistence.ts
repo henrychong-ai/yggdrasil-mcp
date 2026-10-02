@@ -80,8 +80,9 @@ export function extractMarkdownTitle(filePath: string, fallback: string): string
   try {
     const content = readFileSync(filePath, 'utf8').slice(0, 1024);
     const headingMatch = content.match(/^#\s+(.+)$/m);
+    // `!`: capture group 1 is mandatory in the pattern, so it is set whenever the match succeeds.
     return headingMatch
-      ? headingMatch[1].trim()
+      ? headingMatch[1]!.trim()
       : (content.split('\n').find((l) => l.trim()) ?? fallback);
   } catch {
     return fallback;
@@ -374,7 +375,8 @@ export class PersistenceManager {
           const dateMatch = file.match(/^(\d{8})-/);
           let date: string;
           if (dateMatch) {
-            date = `${dateMatch[1].slice(0, 4)}-${dateMatch[1].slice(4, 6)}-${dateMatch[1].slice(6, 8)}`;
+            // `!`: capture group 1 is mandatory in the pattern, so it is set whenever the match succeeds.
+            date = `${dateMatch[1]!.slice(0, 4)}-${dateMatch[1]!.slice(4, 6)}-${dateMatch[1]!.slice(6, 8)}`;
           } else {
             try {
               date = statSync(path.join(this.plansDir, file)).mtime.toISOString().slice(0, 10);
@@ -556,10 +558,11 @@ export class PersistenceManager {
         try {
           const content = readFileSync(path.join(this.plansDir, file), 'utf8');
           const lines = content.trim().split('\n');
-          if (lines.length === 0) continue;
+          const firstLine = lines[0];
+          if (firstLine === undefined) continue;
 
           // Parse first line for init data
-          const firstEvent = JSON.parse(lines[0]) as {
+          const firstEvent = JSON.parse(firstLine) as {
             session: PlanningSession;
           };
           // Parse last line for current state
