@@ -2,6 +2,71 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.13 (2026-10-02) — Working .mcpb bundle, TypeScript 6, dependency and security updates
+
+- **`.mcpb` bundle fixed. Every bundle published before this one, v1.2.0 to
+  v1.2.12, fails to start: install the v1.2.13 bundle to replace it.** The
+  packer stores each symlink as a copy of its target, and the build staged
+  dependencies in pnpm's symlinked layout, so the packed bundle held each
+  top-level package without its own dependencies. Extracted and started with
+  Node, the server in all ten published bundles exits with
+  `ERR_MODULE_NOT_FOUND` (`Cannot find package 'zod-to-json-schema'`). The
+  build now installs production dependencies with pnpm's hoisted node linker
+  (a flat `node_modules` of real directories). The bundle holds the same 93
+  package versions and goes from 14.9 MB and 8,797 files (v1.2.12) to 3.9 MB
+  and 2,373 files. pnpm's state files and command shims, which record paths
+  of the build machine, are no longer packed. The npm package (`npx -y
+  yggdrasil-mcp`) and the Claude Code / Cowork plugin, which runs it, were
+  not affected.
+- Bundle check: `scripts/verify-mcpb.mjs` (`pnpm verify:mcpb`) runs at the end
+  of every `.mcpb` build, locally and in the release job, and deletes a bundle
+  that fails. It extracts the archive into a temporary directory with no
+  `node_modules` above it, checks the contents (no environment or `*.local`
+  file, no build-machine paths, production dependencies only), starts the
+  server as the manifest's `mcp_config` says and completes an MCP `initialize`
+  and `tools/list`. It runs the extracted bundle under Node; it does not
+  install it into Claude Desktop.
+- TypeScript 5.9.3 -> 6.0.3, pinned `~6.0`. The tsconfig states the options
+  whose defaults changed in 6.0 (`types: ["node"]`, `lib: ["ES2024"]`) and
+  turns on `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`,
+  `verbatimModuleSyntax` and `isolatedModules`. Source changes are type-level:
+  43 optional properties declared `| undefined`, and 19 index-signature reads
+  written with brackets (`process.env['NAME']`). The package's exported entry
+  point still exports no types.
+- Security: `fast-uri` 3.1.8 (GHSA-hrr3-gc8f-f4qj) and `ip-address` 10.7.2
+  (GHSA-j6r3-76f7-8jcv, GHSA-h3mg-xc3c-68pw), both by raising the override
+  floor. `pnpm audit --prod` is clean. `pnpm audit` still reports `node-forge`
+  (GHSA-86w9-cpqp-85rv): no patched release exists, and it reaches the tree
+  only through the dev-only bundle packer.
+- Dependencies, within their majors: `@modelcontextprotocol/sdk` ^1.31.0,
+  `zod` ^4.6.5, `@biomejs/biome` 2.5.15, `oxlint` 1.86.0, `lint-staged`
+  17.6.0, and an in-range refresh (`hono` 4.13.12, `@hono/node-server` 2.1.3).
+  The unused `wrangler` devDependency is removed, with the `undici`, `sharp`
+  and `ws` overrides that existed only for it. Not taken (majors): chalk 6,
+  typescript 7, vite 8, vitest and @vitest/coverage-v8 5, @types/node 26.
+- CI: `actions/checkout` v7, `actions/setup-node` v7 and
+  `gitleaks/gitleaks-action` v3. From v7, setup-node no longer exports a
+  placeholder `NODE_AUTH_TOKEN`; the publish job sets none and `npm publish`
+  uses the token from its OIDC exchange.
+- Public-content gate: `pnpm public:check`, part of `pnpm check`, the
+  pre-commit hook and CI, fails when a tracked file carries a personal home
+  path, a secret-manager reference that is not a placeholder, a private host
+  or server name, or a private identifier, email address or organisation name
+  (the last three compared by SHA-256 hash). `RELEASE_RUNBOOK.md` now reads
+  its credentials from three environment variables, with a tracked template
+  (`.env.release.example`) and an untracked file for the real bindings.
+  Organisation-internal detail is removed from the tracked files, including
+  the internal announcement copy `mcpb/SLACK_POST.md`.
+- R2 retention prune is a tested script, `scripts/r2-prune.sh`: dry run by
+  default, `--apply` deletes, and only versioned release file names are ever
+  candidates (the previous runbook filter also listed `install.html`).
+- `mcpb/install.html` loads its fonts from `assets.henrychong.com`.
+- Tests no longer write into the developer's real plans directory: every run
+  gets a throwaway `YGGDRASIL_PLANS_DIR`, with a guard test.
+- Formatting: `biome check` replaces `biome format` in the scripts and
+  lint-staged, so imports are organised as well as formatted.
+- No change to tool names, inputs or outputs.
+
 ## v1.2.12 (2026-10-02) — Lint config repair, stricter type checks, working Dockerfile
 
 - Lint: the Oxlint config was named `oxlint.json`, which Oxlint does not
