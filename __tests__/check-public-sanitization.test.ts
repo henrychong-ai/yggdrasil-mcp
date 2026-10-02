@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   contentFindings,
   forbiddenPathReason,
+  ORGANISATION_NAME_HASHES,
   PRIVATE_EMAIL_HASHES,
   PRIVATE_IDENTIFIER_HASHES,
   RULE_IDS,
@@ -33,6 +34,10 @@ const SERVER_NAME = ['vps', '2'].join('-');
 const CANARY_IDENTIFIER = '0123456789abcdef'.repeat(2);
 /** The public canary whose hash heads the built-in email list. */
 const CANARY_EMAIL = ['private-canary', 'example.invalid'].join('@');
+/** The public canary whose hash heads the built-in organisation-name list. */
+const CANARY_ORGANISATION = ['gatecanary', 'orgname'].join('');
+/** A made-up organisation name that is in no list. */
+const UNLISTED_ORGANISATION = ['northwind', 'traders'].join('');
 /** A 32-hex value that is in no list. */
 const UNLISTED_IDENTIFIER = 'a1b2c3d4'.repeat(4);
 
@@ -133,6 +138,48 @@ describe('contentFindings', () => {
     expect(rulesIn(`mail someone-else@${domain}`)).toEqual([]);
   });
 
+  it('flags a hashed organisation name in any letter case', () => {
+    const titleCase = `${CANARY_ORGANISATION[0]?.toUpperCase()}${CANARY_ORGANISATION.slice(1)}`;
+    expect(rulesIn(`uploaded to the ${CANARY_ORGANISATION} workspace`)).toEqual([
+      'organisation-name',
+    ]);
+    expect(rulesIn(`${titleCase} Group typography`)).toEqual(['organisation-name']);
+    expect(rulesIn(CANARY_ORGANISATION.toUpperCase())).toEqual(['organisation-name']);
+  });
+
+  it('finds an organisation name inside a longer token, split on anything but a letter', () => {
+    expect(rulesIn(`https://assets.${CANARY_ORGANISATION}.co/fonts/a.woff2`)).toEqual([
+      'organisation-name',
+    ]);
+    expect(rulesIn(`the ${CANARY_ORGANISATION}-internal channel`)).toEqual(['organisation-name']);
+    expect(rulesIn(`${CANARY_ORGANISATION}_teams and ${CANARY_ORGANISATION}2`)).toEqual([
+      'organisation-name',
+    ]);
+    expect(rulesIn(`ops@${CANARY_ORGANISATION}.example`)).toEqual(['organisation-name']);
+  });
+
+  it('matches whole runs of letters only, so a longer word is not a finding', () => {
+    expect(rulesIn(`${CANARY_ORGANISATION}s`)).toEqual([]);
+    expect(rulesIn(`pre${CANARY_ORGANISATION}`)).toEqual([]);
+    expect(rulesIn('gatecanary orgname, as two words')).toEqual([]);
+  });
+
+  it('flags an organisation name from a supplied hash list and nothing else', () => {
+    const organisationHashes = new Set([sha256(UNLISTED_ORGANISATION)]);
+    expect(rulesIn(`built for ${UNLISTED_ORGANISATION}`, { organisationHashes })).toEqual([
+      'organisation-name',
+    ]);
+    expect(rulesIn(`built for ${CANARY_ORGANISATION}`, { organisationHashes })).toEqual([]);
+    expect(rulesIn(`built for ${UNLISTED_ORGANISATION}`)).toEqual([]);
+  });
+
+  it('reports an organisation name by line and rule, never by its text', () => {
+    const findings = contentFindings(`first line\nthe ${CANARY_ORGANISATION} team\n`);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({ rule: 'organisation-name', line: 2 });
+    expect(JSON.stringify(findings)).not.toContain(CANARY_ORGANISATION);
+  });
+
   it('reports one finding per rule and line, in line order', () => {
     const text = [
       `${SERVER_NAME} and ${SERVER_NAME} again`,
@@ -149,9 +196,15 @@ describe('contentFindings', () => {
   });
 
   it('stores only hashes: 64 hex characters each, never a raw value', () => {
-    for (const hash of [...PRIVATE_IDENTIFIER_HASHES, ...PRIVATE_EMAIL_HASHES]) {
+    for (const hash of [
+      ...PRIVATE_IDENTIFIER_HASHES,
+      ...PRIVATE_EMAIL_HASHES,
+      ...ORGANISATION_NAME_HASHES,
+    ]) {
       expect(hash).toMatch(/^[0-9a-f]{64}$/);
     }
+    expect(ORGANISATION_NAME_HASHES.has(sha256(CANARY_ORGANISATION))).toBe(true);
+    expect(ORGANISATION_NAME_HASHES.size).toBeGreaterThan(1);
     expect(PRIVATE_IDENTIFIER_HASHES.has(sha256(CANARY_IDENTIFIER))).toBe(true);
     expect(PRIVATE_IDENTIFIER_HASHES.size).toBeGreaterThan(1);
     expect(PRIVATE_EMAIL_HASHES.has(sha256(CANARY_EMAIL))).toBe(true);
@@ -164,6 +217,7 @@ describe('contentFindings', () => {
       'private-server',
       'private-email',
       'private-identifier',
+      'organisation-name',
     ]);
   });
 });

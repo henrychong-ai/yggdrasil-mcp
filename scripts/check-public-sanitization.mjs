@@ -11,8 +11,9 @@
  *
  * Exit codes: 0 clean, 1 findings, 2 could not run (not a git repository, bad argument).
  *
- * Exact private values are never written here. They are stored as SHA-256 hashes
- * and compared with the hash of every candidate token in a file. A finding
+ * Exact private values and organisation names are never written here. They are
+ * stored as SHA-256 hashes and compared with the hash of every candidate token in
+ * a file. A finding
  * reports the file, the line and the rule, never the matched text, so a CI log
  * does not repeat what the gate caught.
  *
@@ -65,6 +66,26 @@ export const PRIVATE_EMAIL_HASHES = new Set([
   '50d89b80e47642c318e283948281c088c85c5e40846df942760e841961e6fece',
   '0cdcd8fa651fb6301a819747f0631ab332135ba27570f086209c4a3d56458a93',
   'b8fef41fafbd6df8f95e67a3087cfe6947e09a0b2b89786c3d0ac5618dc9377b',
+]);
+
+/**
+ * SHA-256 of organisation names that must stay out of this repository (the
+ * maintainer's employer and its related companies), each as one lower-case word.
+ * Every run of five or more letters in a file is lower-cased, hashed and
+ * compared, so a name is caught inside a host name or a hyphenated name too.
+ * To add one, hash the lower-case word locally:
+ *
+ *   printf '%s' '<the word in lower case>' | shasum -a 256
+ *
+ * The first entry is a public test canary: "gatecanary" joined to "orgname" as
+ * one word.
+ */
+export const ORGANISATION_NAME_HASHES = new Set([
+  'b0faec5b754c5013d1c0f2620bb908168392b2c6c9a079a78d6c35a802f8339b',
+  '107c3da2fadc854ae1066f4a3cbfcbfbccf16aa067b06071111c1920b5e19008',
+  'cba2cd4612c70d7694cdb57502f1a0841d75c64155a83b041f406a354802c5b1',
+  '74e19dcd5ceecfb9f1579fda3c43a847f3fad01c8606d85caa17242e9bc99f0e',
+  '2382ead0847e36177e126d3239c7b8f49907563dfe107a1e56ef09864f148f93',
 ]);
 
 const PLACEHOLDER_HOME_NAMES = new Set(['you', 'user', 'username', 'name', 'me', 'shared']);
@@ -138,6 +159,12 @@ const CONTENT_RULES = [
     pattern: /(?<![0-9a-f])[0-9a-f]{32}(?![0-9a-f])/gi,
     flag: (match, options) => options.identifierHashes.has(sha256(match[0].toLowerCase())),
   },
+  {
+    id: 'organisation-name',
+    message: 'organisation name (write "the organisation" and keep the name in private notes)',
+    pattern: /[a-z]{5,}/gi,
+    flag: (match, options) => options.organisationHashes.has(sha256(match[0].toLowerCase())),
+  },
 ];
 
 export const RULE_IDS = CONTENT_RULES.map((rule) => rule.id);
@@ -153,12 +180,14 @@ function lineOf(text, index) {
 
 /**
  * Findings for one file's text: `{ rule, line, message }`, one per rule and line.
- * `options.identifierHashes` / `options.emailHashes` replace the built-in lists.
+ * `options.identifierHashes` / `options.emailHashes` / `options.organisationHashes`
+ * replace the built-in lists.
  */
 export function contentFindings(text, options = {}) {
   const resolved = {
     identifierHashes: options.identifierHashes ?? PRIVATE_IDENTIFIER_HASHES,
     emailHashes: options.emailHashes ?? PRIVATE_EMAIL_HASHES,
+    organisationHashes: options.organisationHashes ?? ORGANISATION_NAME_HASHES,
   };
   const findings = [];
   const seen = new Set();
