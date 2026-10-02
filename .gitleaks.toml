@@ -28,7 +28,9 @@ description = "Committing a .env file is not allowed — use 'op run' / AWS Secr
 path = '''(^|/)\.env(\.[^/]+)?$'''
   [[rules.allowlists]]
   description = "Permit example/template env files"
-  paths = ['''(^|/)\.env\.(example|sample|template|dist)$''']
+  # Repo-specific: also permits a named template such as .env.release.example
+  # (the upstream template only matches .env.example).
+  paths = ['''(^|/)\.env(\.[^/]+)?\.(example|sample|template|dist)$''']
 
 # -- Repo-specific allowlist (add only when needed) --------------------------
 # Add documented false positives here (e.g. placeholder credentials in docs).

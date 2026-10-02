@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Maintainer-only operational notes, when present, are in the untracked `CLAUDE.local.md`.
+
 ## Project Overview
 
 **Yggdrasil-MCP** is a reasoning orchestration MCP server implementing Tree of Thoughts with multi-agent evaluation. It's a fork of Anthropic's `@modelcontextprotocol/server-sequential-thinking` with critical bug fixes and an enhanced feature roadmap. Current version: see `package.json` / `CHANGELOG.md` (v1.2.0 added Claude Desktop Extension `.mcpb` distribution).

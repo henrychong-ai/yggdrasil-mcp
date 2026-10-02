@@ -30,6 +30,12 @@ package-lock.json
 .env.local
 .env.*.local
 *.local
+# Tracked templates: variable names with placeholder values only
+!.env.example
+!.env.*.example
+
+# Maintainer-only operational notes (never tracked)
+CLAUDE.local.md
 
 # Claude Code (local config)
 .claude/
