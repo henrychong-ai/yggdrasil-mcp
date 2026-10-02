@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Testing         | Vitest + @vitest/coverage-v8                           |
 | Linting         | Oxlint (Rust-based, built-in plugins only)             |
 | Formatting      | Biome (linter disabled, Prettier-compatible)            |
-| Git Hooks       | Husky + lint-staged                                    |
+| Git Hooks       | Husky (gitleaks + lint-staged)                               |
 | Package Manager | pnpm                                                   |
 | CI/CD           | GitHub Actions (npm publish on v* tags)                 |
 
@@ -148,7 +148,7 @@ yggdrasil-mcp/
 ├── .node-version            # Node.js version (24)
 ├── LICENSE                  # MIT (Anthropic + Henry Chong)
 └── .husky/
-    └── pre-commit           # lint-staged on commit
+    └── pre-commit           # gitleaks staged scan, then lint-staged
 ```
 
 ## String Coercion Fix (Critical)

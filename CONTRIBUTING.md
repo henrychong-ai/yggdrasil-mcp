@@ -56,13 +56,13 @@ pnpm typecheck
 pnpm test
 ```
 
-Use `pnpm check` to run all checks at once.
+`pnpm check` runs lint, format check and typecheck in one command. It does not run the tests: run `pnpm test` separately.
 
 ## Code Style
 
 - **TypeScript**: Strict mode enabled
 - **Oxlint**: Linting with zero warnings allowed (see .oxlintrc.json)
-- **Prettier**: Auto-formatting (see .prettierrc)
+- **Biome**: Auto-formatting (see biome.json)
 - **Tests**: Vitest with 90% coverage threshold
 
 ## Commit Messages

@@ -1,1 +1,24 @@
-pnpm exec lint-staged
+#!/usr/bin/env sh
+
+# Husky pre-commit hook
+#   1) gitleaks   — block secrets / .env files in staged changes (CI enforces too)
+#   2) lint-staged — lint/format only the staged files
+
+# -- Secret scan (gitleaks) --------------------------------------------------
+if command -v gitleaks >/dev/null 2>&1; then
+  GL_ARGS="git --staged --no-banner --redact"
+  [ -f .gitleaks.toml ] && GL_ARGS="$GL_ARGS --config .gitleaks.toml"
+  # shellcheck disable=SC2086
+  if ! gitleaks $GL_ARGS; then
+    echo "🛑 gitleaks found a secret (or a .env file) in your staged changes."
+    echo "   Remove it and use 'op run' / AWS Secrets Manager instead of committing secrets."
+    echo "   CI enforces this too — bypassing locally (--no-verify) won't get it merged."
+    exit 1
+  fi
+else
+  echo "⚠️  gitleaks not installed — skipping local secret scan (CI still enforces it)."
+  echo "   Install: brew install gitleaks"
+fi
+
+# -- Lint/format staged files ------------------------------------------------
+npx lint-staged

@@ -1,0 +1,46 @@
+# ============================================================================
+# Fusang canonical gitleaks config — copy to the ROOT of each repo as .gitleaks.toml
+# ============================================================================
+# Source of truth: repos-fusang/ai → claude-code/skills/lint/templates/.gitleaks.toml
+# Consumed by BOTH the pre-commit hook (lint skill) and the CI secret-scan step
+# (ci-cd skill). gitleaks auto-discovers a .gitleaks.toml at the scan root, so no
+# --config flag is needed once this file is present at the repo root.
+#
+# What it enforces:
+#   - useDefault = true  -> all built-in secret rules (AWS/GCP keys, tokens, PEM, ...)
+#   - dotenv-file rule   -> blocks committing any real .env file (templates allowed)
+#
+# Add repo-specific false positives under a [[allowlists]] block (must contain ≥1 check) at the bottom.
+# ============================================================================
+
+title = "Fusang gitleaks policy"
+
+[extend]
+useDefault = true
+
+# -- Block committing real .env files ----------------------------------------
+# Filename policy layered on top of content scanning: catches .env files whose
+# secrets are non-standard (DB URLs, bespoke tokens) and would slip past content
+# rules. Example/template env files are allowlisted.
+[[rules]]
+id = "dotenv-file-committed"
+description = "Committing a .env file is not allowed — use 'op run' / AWS Secrets Manager"
+path = '''(^|/)\.env(\.[^/]+)?$'''
+  [[rules.allowlists]]
+  description = "Permit example/template env files"
+  paths = ['''(^|/)\.env\.(example|sample|template|dist)$''']
+
+# -- Repo-specific allowlist (add only when needed) --------------------------
+# Add documented false positives here (e.g. placeholder credentials in docs).
+# Keep it tight — every entry is a hole in the scanner.
+#
+# ⚠️ Ship this template with NO active allowlist block. A gitleaks allowlist MUST
+# contain at least one check (paths / regexes / commits / stopwords); an EMPTY
+# block fails newer gitleaks (incl. the self-hosted /opt/gitleaks build used by
+# Bitbucket runners) with: "[[allowlists]] must contain at least one check".
+# So add a block only when there's a real false positive, using the [[allowlists]]
+# array syntax WITH real content — e.g.:
+#   [[allowlists]]
+#   description = "Repo-specific false positives"
+#   paths = ['''(^|/)docs/examples/''', '''\.(test|spec)\.[cm]?[jt]sx?$''']
+#   regexes = ['''EXAMPLE_[A-Z0-9_]+''']
