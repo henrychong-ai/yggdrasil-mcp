@@ -17,7 +17,7 @@ import { DeepPlanningServer } from './planning.js';
 
 const server = new McpServer({
   name: 'sequential-thinking-server',
-  version: '1.2.13',
+  version: '1.2.14',
 });
 
 const thinkingServer = new SequentialThinkingServer();

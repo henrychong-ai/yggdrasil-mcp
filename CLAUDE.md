@@ -485,6 +485,8 @@ v1.2.9).
 
 **`pnpm audit` reports `node-forge` (GHSA-86w9-cpqp-85rv, high) with no fix to take** (checked 2026-10-02): every published node-forge release is affected. It arrives only through the dev-only `.mcpb` packer `@anthropic-ai/mcpb`, which uses it for bundle signatures. The build scripts run `validate`, `pack` and `info` on this repo's own unsigned bundle, so no signature is ever relied on, and node-forge is not in the npm package or the `.mcpb`. `pnpm audit --prod` is clean. Re-check on each sweep and raise the floor with an override once a patched release exists.
 
+**`pnpm audit` also reports `braces` (GHSA-vfj7-8cjw-p6xm, high) with no fix to take** (checked 2026-10-08): the advisory lists no patched version (`<0.0.0`). It reaches the tree only through the dev-only build helper `shx` (`shx` > `shelljs` > `fast-glob` > `micromatch` > `braces`), which the build scripts call with fixed literal arguments, and it is not in the npm package or the `.mcpb`. Re-check on each sweep, as for node-forge.
+
 After any override change, regenerate the lockfile and confirm with `pnpm install --frozen-lockfile`.
 
 ## Version History
