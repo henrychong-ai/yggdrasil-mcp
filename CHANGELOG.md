@@ -2,16 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
-## v1.2.14 (2026-10-08) — Dependency updates
+## v1.2.14 (2026-10-15) — Dependency updates
 
-- `@modelcontextprotocol/sdk` 1.31.0 -> 1.32.1 (runtime; specifier `^1.32.1`).
-  Its declared `hono` and `@hono/node-server` ranges are unchanged, so the
-  existing override floors still bind.
-- Dev tooling: `oxlint` 1.86.0 -> 1.87.0, `vite` 7.3.6 -> 7.3.7 (specifier
-  `^7.3.7`; the override stays `>=7.3.6 <8`).
-- Transitive refresh within ranges: `hono` 4.13.13, `@hono/node-server` 2.1.4,
-  `express-rate-limit` 8.7.1, `ip-address` 10.7.3, `nanoid` 3.3.20, `postcss`
-  8.5.29, `rollup` 4.64.3, `resolve` 1.22.13, `ignore` 7.0.12.
+- Runtime: `@modelcontextprotocol/sdk` 1.31.0 -> 1.32.1 (specifier `^1.32.1`;
+  its declared `hono` and `@hono/node-server` ranges are unchanged, so the
+  existing override floors still bind), `zod` 4.6.5 -> 4.6.7.
+- Dev tooling: `oxlint` 1.86.0 -> 1.88.0, `@types/node` 24.19.1 -> 24.19.2,
+  `vite` 7.3.6 -> 7.3.7 (specifier `^7.3.7`; the override stays `>=7.3.6 <8`).
+- Transitive refresh within ranges: `hono` 4.13.13, `@hono/node-server` 2.1.5,
+  `express` 5.3.0 (with `content-disposition` 2.0.1), `express-rate-limit`
+  8.7.1, `ip-address` 10.7.4, `nanoid` 3.3.20, `postcss` 8.5.30, `rollup`
+  4.64.6, `resolve` 1.22.13, `ignore` 7.0.12. Resolved with
+  `minimum-release-age=1440`: no release under a day old was taken.
 - No major bumps: TypeScript stays on `~6.0`; `@types/node` stays on 24;
   `vitest`/`@vitest/coverage-v8` 5, `vite` 8 and `chalk` 6 are left for their
   own changes.
