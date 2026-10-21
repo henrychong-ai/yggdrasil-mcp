@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.15 (2026-10-21) — Dependency majors: chalk 6, Vitest 5
+
+- Runtime: `chalk` 5.6.2 -> 6.0.1 (specifier `^6.0.1`). Chalk 6 requires
+  Node 22 and removes no API this server uses (`blue`, `cyan`, `green`,
+  `magenta`, `yellow`); the packed `.mcpb` passes `pnpm verify:mcpb`.
+- Dev tooling: `vitest` and `@vitest/coverage-v8` 4.1.11 -> 5.0.5, `oxlint`
+  1.88.0 -> 1.89.0. `vite` stays on 7 (Vitest 5 needs Vite 6.4 or later); the
+  override stays `>=7.3.6 <8`. All 357 tests pass unchanged.
+- Transitive refresh within ranges: `fast-uri` 3.1.9, `ignore` 7.0.13, `jose`
+  6.2.13, `postcss` 8.5.31, `qs` 6.16.1, `rollup` 4.64.12. Resolved with
+  `minimum-release-age=1440`: no release under a day old was taken.
+- Not taken: TypeScript 7 (the compiler stays on `~6.0`), `@types/node` 25/26
+  (the types follow the Node 24 runtime; Dependabot now ignores its majors),
+  `vite` 8.
+- v1.2.14 was never tagged or published; this release includes its changes.
+- `pnpm audit --prod` is clean. The two dev-only advisories with no patched
+  release remain: `node-forge` (GHSA-86w9-cpqp-85rv, via `@anthropic-ai/mcpb`
+  2.1.2, still the newest) and `braces` (GHSA-vfj7-8cjw-p6xm, via `shx`).
+  Neither is in the npm package or the `.mcpb`. The `node-forge` flaw is in RSA
+  signature verification and is unrelated to the October 2026 eMudhra CA key
+  compromise; the `.mcpb` is not signed.
+- eMudhra CA key compromise: Node's bundled root store (Node 24.22.0 included)
+  still trusts emSign ECC Root CA - G3. This server makes no network
+  connections, so it is not exposed. pnpm fetches over Node's TLS, but a
+  `--frozen-lockfile` install checks every tarball against the lockfile's
+  integrity hash.
+
 ## v1.2.14 (2026-10-15) — Dependency updates
 
 - Runtime: `@modelcontextprotocol/sdk` 1.31.0 -> 1.32.1 (specifier `^1.32.1`;

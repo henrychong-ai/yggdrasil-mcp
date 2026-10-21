@@ -6,6 +6,11 @@ updates:
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 10
+    ignore:
+      # The types follow the Node 24 runtime (engines >=24); a newer major
+      # describes APIs the runtime does not have.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       # One combined PR per bucket for minor/patch bumps.
       # Majors intentionally ungrouped — each gets its own PR and review
