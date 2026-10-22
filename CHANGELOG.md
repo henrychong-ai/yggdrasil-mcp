@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.16 (2026-10-22) — Biome 2.6
+
+- Dev tooling: `@biomejs/biome` 2.5.15 -> 2.6.2. Biome 2.6 formats Markdown
+  and YAML by default; `biome.json` turns both formatters off, so the formatted
+  file set is unchanged (TypeScript, JavaScript, JSON). Schema URL migrated.
+  Taken before the one-day release age on the owner's instruction; nothing
+  else in the lockfile moved.
+- v1.2.15 was never tagged or published; this release includes its changes.
+- eMudhra CA key compromise: Node 24.22.1 (2026-10-21) rejects chains through
+  the compromised keys (nodejs/node#66871) and ships NSS 3.131.1 roots. CI
+  uses `24.x` and `.node-version` is `24`, so both pick it up without a pin
+  change. `pnpm audit` is otherwise unchanged (`node-forge`, `braces`).
+
 ## v1.2.15 (2026-10-21) — Dependency majors: chalk 6, Vitest 5
 
 - Runtime: `chalk` 5.6.2 -> 6.0.1 (specifier `^6.0.1`). Chalk 6 requires
