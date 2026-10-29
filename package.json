@@ -1,6 +1,6 @@
 {
   "name": "yggdrasil-mcp",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "description": "Reasoning orchestration MCP - Tree of Thoughts with multi-agent evaluation. Fork of Anthropic's sequential-thinking with string coercion fix.",
   "license": "MIT",
   "author": "Henry Chong <henrychong-ai@gmail.com>",
@@ -75,7 +75,7 @@
     ]
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "chalk": "^6.0.1",
     "zod": "^4.6.7"
   },
@@ -86,25 +86,26 @@
       "vite": ">=7.3.6 <8",
       "picomatch": ">=4.0.4 <5",
       "micromatch>picomatch": "^2.3.2",
-      "path-to-regexp@>=8.0.0 <8.4.0": ">=8.4.0",
+      "path-to-regexp@>=8.0.0 <8.4.0": ">=8.4.0 <9",
       "yaml@>=2.0.0 <2.8.3": ">=2.8.3",
       "ip-address": ">=10.7.1 <11",
       "tmp": "^0.2.6",
       "qs": ">=6.16.0 <7",
       "nanoid": ">=3.3.18 <4",
       "fast-uri": ">=3.1.8 <4",
-      "body-parser": ">=2.3.0 <3",
-      "esbuild": ">=0.28.1 <0.29"
+      "body-parser": ">=2.4.0 <3",
+      "esbuild": ">=0.28.1 <0.29",
+      "node-forge": ">=1.4.1 <2"
     }
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
-    "@biomejs/biome": "^2.6.2",
+    "@biomejs/biome": "^2.6.3",
     "@types/node": "^24.19.2",
     "@vitest/coverage-v8": "^5.0.5",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "oxlint": "^1.89.0",
+    "oxlint": "^1.90.0",
     "semver": "^7.8.5",
     "shx": "^0.4.0",
     "typescript": "~6.0.3",
