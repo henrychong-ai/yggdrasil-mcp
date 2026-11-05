@@ -485,7 +485,7 @@ v1.2.9).
 
 **`node-forge` (GHSA-86w9-cpqp-85rv) is patched from 1.4.1** (checked 2026-10-29): the `node-forge: ">=1.4.1 <2"` override holds the dev-only `@anthropic-ai/mcpb` copy on a patched release. The flaw is in RSA PKCS#1 v1.5 signature verification and is unrelated to the October 2026 eMudhra CA key compromise; the build never relies on a bundle signature. Drop the override once `@anthropic-ai/mcpb` requires 1.4.1 or later.
 
-**`pnpm audit` reports `zod` (GHSA-mrhx-c7xc-m3w5, high) with no fix to take** (checked 2026-10-29): it is patched only in zod 4.6.6, and the dev-only `@anthropic-ai/mcpb` 2.1.2 (the newest) requires `zod ^3.25.67`, so its 3.25.76 copy cannot be overridden onto 4. The runtime `zod` is 4.6.7, and the 3.x copy is not in the npm package or the `.mcpb`. `pnpm audit --prod` is clean. Re-check on each sweep. (The earlier `braces` advisory, GHSA-vfj7-8cjw-p6xm via `shx`, is no longer reported as of 2026-10-29.)
+**`pnpm audit` reports `zod` (GHSA-mrhx-c7xc-m3w5, high) with no fix to take** (checked 2026-11-05): it is patched only in zod 4.6.6, and the dev-only `@anthropic-ai/mcpb` 2.1.2 (the newest) requires `zod ^3.25.67`, so its 3.25.76 copy cannot be overridden onto 4. The runtime `zod` is 4.6.7, and the 3.x copy is not in the npm package or the `.mcpb`. `pnpm audit --prod` is clean. Re-check on each sweep. (The earlier `braces` advisory, GHSA-vfj7-8cjw-p6xm via `shx`, is no longer reported as of 2026-10-29.)
 
 After any override change, regenerate the lockfile and confirm with `pnpm install --frozen-lockfile`.
 

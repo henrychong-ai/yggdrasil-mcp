@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.18 (2026-11-05) — Dependency updates
+
+- Dev tooling: `vitest` and `@vitest/coverage-v8` 5.0.5 -> 5.1.0, `oxlint`
+  1.90.0 -> 1.91.0, `@biomejs/biome` 2.6.3 -> 2.6.4 (2.6.5 was under two days
+  old and is not taken; schema URL migrated), `semver` 7.8.5 -> 7.8.6.
+- Transitive refresh within ranges: `hono` 4.13.16, `@hono/node-server`
+  2.1.6, `express-rate-limit` 8.7.3, `ip-address` 10.7.6, `jose` 6.2.15,
+  `qs` 6.17.1, `rollup` 4.67.4, `encodeurl` 2.0.1, `@babel/parser` 7.29.12.
+  Resolved with `minimum-release-age=2880`: no release under two days old was
+  taken.
+- Not taken: TypeScript 7, `@types/node` 25/26, `vite` 8.
+- `pnpm audit --prod` is clean. `pnpm audit` still reports the dev-only
+  `zod` GHSA-mrhx-c7xc-m3w5 on the 3.25.76 copy `@anthropic-ai/mcpb` 2.1.2
+  (still the newest) requires; no fix to take, and it is not in the npm
+  package or the `.mcpb`.
+
 ## v1.2.17 (2026-10-29) — Dependency updates, two audit fixes
 
 - Runtime: `@modelcontextprotocol/sdk` 1.32.1 -> 1.32.2 (specifier `^1.32.2`).
