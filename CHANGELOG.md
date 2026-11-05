@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.17 (2026-10-29) — Dependency updates, two audit fixes
+
+- Runtime: `@modelcontextprotocol/sdk` 1.32.1 -> 1.32.2 (specifier `^1.32.2`).
+- Dev tooling: `oxlint` 1.89.0 -> 1.90.0, `@biomejs/biome` 2.6.2 -> 2.6.3
+  (2.6.4 was under a day old and is not taken).
+- Security: `body-parser` override floor raised to `>=2.4.0 <3` for
+  GHSA-27r3-jxmh-p828 (denial of service via trailing bytes after a
+  compressed body; reached through the MCP SDK's `express`, which this stdio
+  server never loads). `node-forge` 1.4.0 -> 1.4.2 with a new
+  `>=1.4.1 <2` override floor: GHSA-86w9-cpqp-85rv now lists 1.4.1 as
+  patched (dev-only, via `@anthropic-ai/mcpb`).
+- Override bound: `path-to-regexp@>=8.0.0 <8.4.0` now resolves to
+  `>=8.4.0 <9`. Unbounded, a refresh floated `router`'s copy to 9.0.0 outside
+  its declared `^8.0.0` range; it stays on 8.4.2.
+- Transitive refresh within ranges: `hono` 4.13.14, `ip-address` 10.7.5,
+  `postcss` 8.5.32, `qs` 6.17.0, `rollup` 4.65.1, `ignore` 7.0.14,
+  `magic-string` 1.4.5, `on-finished` 2.4.2, `@babel/parser` 7.29.11.
+  Resolved with `minimum-release-age=2880`: no release under two days old was
+  taken.
+- Not taken: TypeScript 7, `@types/node` 25/26, `vite` 8.
+- `pnpm audit --prod` is clean. `pnpm audit` reports one dev-only advisory
+  with no fix to take: `zod` GHSA-mrhx-c7xc-m3w5 (patched only in 4.6.6) on
+  the zod 3.25.76 copy that `@anthropic-ai/mcpb` 2.1.2 requires (`^3.25.67`).
+  It is not in the npm package or the `.mcpb`. The `braces` advisory is no
+  longer reported.
+
 ## v1.2.16 (2026-10-22) — Biome 2.6
 
 - Dev tooling: `@biomejs/biome` 2.5.15 -> 2.6.2. Biome 2.6 formats Markdown
