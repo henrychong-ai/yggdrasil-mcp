@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.18 (2026-11-12) — Dependency updates, node-forge 1.4.3
+
+- Dev tooling: `vitest` and `@vitest/coverage-v8` 5.0.5 -> 5.1.0, `oxlint`
+  1.90.0 -> 1.93.0, `@biomejs/biome` 2.6.3 -> 2.6.6 (2.6.7 was under a day
+  old and is not taken; schema URL migrated), `semver` 7.8.5 -> 7.8.6,
+  `vite` 7.3.7 -> 7.3.8 (specifier `^7.3.8`).
+- Security: `node-forge` 1.4.2 -> 1.4.3, override floor raised to
+  `>=1.4.3 <2` for GHSA-j8rw-jp99-435v, GHSA-w4xr-hqv8-ch44,
+  GHSA-6cv4-p8m7-4r25 (moderate) and GHSA-6889-vf6x-f3g5 (low). Dev-only,
+  via `@anthropic-ai/mcpb`.
+- Transitive refresh within ranges: `hono` 4.13.17, `@hono/node-server`
+  2.1.6, `express-rate-limit` 8.7.4, `ip-address` 10.7.6, `jose` 6.2.17,
+  `qs` 6.17.1, `rollup` 4.68.2 (drops its optional `@napi-rs/lzma` binding),
+  `encodeurl` 2.0.1, `@babel/parser` 7.29.13, `@types/estree` 1.0.10,
+  `resolve` 1.22.14, `is-core-module` 2.18.0, `tinybench` 6.2.3. Resolved
+  with `minimum-release-age=2880`: no release under two days old was taken.
+- Includes the Dependabot dev-dependencies group (#133).
+- Not taken: TypeScript 7, `@types/node` 25/26, `vite` 8.
+- `pnpm audit --prod` is clean. `pnpm audit` still reports the dev-only
+  `zod` GHSA-mrhx-c7xc-m3w5 on the 3.25.76 copy `@anthropic-ai/mcpb` 2.1.2
+  (still the newest) requires; no fix to take, and it is not in the npm
+  package or the `.mcpb`.
+
 ## v1.2.17 (2026-10-29) — Dependency updates, two audit fixes
 
 - Runtime: `@modelcontextprotocol/sdk` 1.32.1 -> 1.32.2 (specifier `^1.32.2`).
