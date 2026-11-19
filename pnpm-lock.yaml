@@ -19,7 +19,7 @@ overrides:
   fast-uri: '>=3.1.8 <4'
   body-parser: '>=2.4.0 <3'
   esbuild: '>=0.28.1 <0.29'
-  node-forge: '>=1.4.1 <2'
+  node-forge: '>=1.4.3 <2'
 
 importers:
 
@@ -1177,8 +1177,8 @@ packages:
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
 
-  node-forge@1.4.2:
-    resolution: {integrity: sha512-rRtAR5XLJ8gCKd9du4qrKAsgCG1ObGP4gLeNJMa4vYSeq4bmBMOJk5IHkrviBV0q7uoAJlVd8HEQYQSVUb4FGQ==}
+  node-forge@1.4.3:
+    resolution: {integrity: sha512-P6wzfh6t70avmV8FrVEAd/36sOPJQ+hkaJVX1Laap9J/77m7M0eyozDvc8SwnDf4P7MP94gwbAAo0rg3YVXT+g==}
     engines: {node: '>= 6.13.0'}
 
   npm-run-path@2.0.2:
@@ -1606,7 +1606,7 @@ snapshots:
       fflate: 0.8.3
       galactus: 1.0.0
       ignore: 7.0.14
-      node-forge: 1.4.2
+      node-forge: 1.4.3
       pretty-bytes: 5.6.0
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
@@ -2540,7 +2540,7 @@ snapshots:
 
   nice-try@1.0.5: {}
 
-  node-forge@1.4.2: {}
+  node-forge@1.4.3: {}
 
   npm-run-path@2.0.2:
     dependencies:
