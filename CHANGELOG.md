@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.2.18 (2026-11-27) — Dependency security patch
+
+- Update the dev-only MCPB CLI's `node-forge` dependency from `1.4.2` to
+  `1.4.4` and raise the override floor to `1.4.3`. This resolves
+  GHSA-w4xr-hqv8-ch44, GHSA-6889-vf6x-f3g5, and
+  GHSA-j8rw-jp99-435v.
+
 ## v1.2.17 (2026-10-29) — Dependency updates, two audit fixes
 
 - Runtime: `@modelcontextprotocol/sdk` 1.32.1 -> 1.32.2 (specifier `^1.32.2`).
